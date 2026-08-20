@@ -3,6 +3,7 @@
 
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
 
   padding: 4px 2px 45px;
 
@@ -454,6 +455,7 @@
 @media (max-width: 700px) {
   .ai-page {
     min-height: calc(100svh - 12px);
+    min-height: calc(100dvh - 12px);
     padding: 0 0 12px;
   }
 
@@ -488,7 +490,9 @@
     order: 1;
     width: 100%;
     min-height: calc(100svh - 142px);
+    min-height: calc(100dvh - 142px);
     height: calc(100svh - 142px);
+    height: calc(100dvh - 142px);
     border-radius: 20px;
   }
 

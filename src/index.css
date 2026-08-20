@@ -73,11 +73,13 @@ body,
   width: 100%;
   min-width: 100%;
   min-height: 100%;
+  min-height: 100dvh;
   margin: 0;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
 
   color: var(--text-primary);
   font-size: var(--font-md);
@@ -97,6 +99,14 @@ body {
       transparent 27%
     ),
     var(--bg-primary);
+}
+
+@supports (height: 100dvh) {
+  html,
+  body,
+  #root {
+    min-height: 100dvh;
+  }
 }
 
 html[data-theme="dark"] {
@@ -1350,5 +1360,18 @@ html[data-theme="dark"] :is(
   html[data-theme="dark"] .app-layout .sidebar__mobile-more a.active {
     background: var(--accent-soft);
     color: var(--accent);
+  }
+
+  :is(
+    .task-modal,
+    .reminder-modal,
+    .calendar-modal,
+    .quick-modal,
+    .delete-modal,
+    .integration-modal,
+    .file-preview,
+    .confirm-dialog
+  ) {
+    max-height: calc(100dvh - 10px);
   }
 }

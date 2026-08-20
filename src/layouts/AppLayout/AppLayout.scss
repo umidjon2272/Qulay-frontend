@@ -4,6 +4,7 @@
 
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
 
   gap: 18px;
 
@@ -68,7 +69,7 @@
 @media (max-width: 600px) {
   .app-layout {
     display: block;
-    padding: 12px 12px calc(92px + env(safe-area-inset-bottom));
+    padding: max(12px, env(safe-area-inset-top)) 12px calc(92px + env(safe-area-inset-bottom));
   }
 
   .app-layout__content {

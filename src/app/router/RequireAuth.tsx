@@ -11,7 +11,13 @@ const RequireAuth = ({ children }: RequireAuthProps) => {
   const location = useLocation();
 
   if (!getAuthSession()) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: `${location.pathname}${location.search}${location.hash}` }}
+      />
+    );
   }
 
   return <>{children}</>;

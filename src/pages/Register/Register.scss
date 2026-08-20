@@ -1,5 +1,6 @@
 .register {
   min-height: 100vh;
+  min-height: 100dvh;
 width: 100%; 
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
@@ -328,7 +329,8 @@ width: 100%;
 
     &__right {
       min-height: 100vh;
-      padding: 30px 22px;
+      min-height: 100dvh;
+      padding: max(30px, env(safe-area-inset-top)) 22px calc(30px + env(safe-area-inset-bottom));
     }
   }
 }

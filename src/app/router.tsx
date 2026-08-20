@@ -17,11 +17,12 @@ import Integrations from "../pages/Integrations/Integrations";
 
 import AppLayout from "../layouts/AppLayout/AppLayout";
 import RequireAuth from "./router/RequireAuth";
+import RootRedirect from "./router/RootRedirect";
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/register" replace />,
+    element: <RootRedirect />,
   },
 
   {
