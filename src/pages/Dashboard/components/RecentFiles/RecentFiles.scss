@@ -1,0 +1,490 @@
+.recent-files {
+  position: relative;
+  z-index: 20;
+
+  margin-top: 14px;
+
+  // MUHIM:
+  // dropdown boshqa elementlar ustidan chiqishi uchun
+  overflow: visible;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    margin-bottom: 10px;
+    padding: 0 2px;
+
+    h2 {
+      margin: 0;
+
+      color: #292631;
+
+      font-size: var(--font-xl);
+      font-weight: 700;
+
+      letter-spacing: -0.45px;
+    }
+
+    p {
+      margin: 3px 0 0;
+
+      color: #77737e;
+
+      font-size: var(--font-sm);
+      font-weight: 600;
+    }
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      border: 0;
+
+      background: transparent;
+
+      color: #7655df;
+
+      font-size: var(--font-xs);
+      font-weight: 650;
+
+      cursor: pointer;
+
+      transition: 0.2s ease;
+
+      &:hover {
+        color: #5f42c8;
+      }
+    }
+  }
+
+  // ==================================
+  // GRID
+  // ==================================
+
+  &__list {
+    position: relative;
+    z-index: 1;
+
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 8px;
+
+    overflow: visible;
+  }
+}
+
+// ======================================
+// FILE CARD
+// ======================================
+
+.recent-file {
+  position: relative;
+
+  z-index: 1;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  min-width: 0;
+
+  padding: 11px;
+
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 16px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.43),
+      rgba(248, 247, 252, 0.23)
+    );
+
+  box-shadow:
+    0 7px 25px rgba(70, 60, 100, 0.025),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+
+  backdrop-filter: blur(17px);
+  -webkit-backdrop-filter: blur(17px);
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+
+  // ==================================
+  // ENG MUHIM QISM
+  // OPEN MENU BO'LGAN CARD
+  // BOSHQA CARDLARDAN YUQORIDA
+  // ==================================
+
+  &--menu-open {
+    z-index: 9999;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+      0 18px 45px rgba(60, 50, 90, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.58),
+        rgba(249, 248, 253, 0.32)
+      );
+
+    box-shadow:
+      0 13px 30px rgba(70, 60, 100, 0.05),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+
+  // ==================================
+  // ICON
+  // ==================================
+
+  &__icon {
+    display: grid;
+    place-items: center;
+
+    width: 37px;
+    height: 37px;
+
+    flex-shrink: 0;
+
+    border: 0;
+    border-radius: 11px;
+
+    cursor: pointer;
+
+    transition:
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+
+    &--purple {
+      background:
+        rgba(235, 226, 255, 0.65);
+
+      color: #7958df;
+
+      box-shadow:
+        0 5px 14px rgba(121, 88, 223, 0.08);
+    }
+
+    &--green {
+      background:
+        rgba(225, 247, 232, 0.65);
+
+      color: #43a66b;
+
+      box-shadow:
+        0 5px 14px rgba(67, 166, 107, 0.07);
+    }
+
+    &--orange {
+      background:
+        rgba(255, 239, 222, 0.65);
+
+      color: #df8a42;
+
+      box-shadow:
+        0 5px 14px rgba(223, 138, 66, 0.07);
+    }
+
+    &--blue {
+      background:
+        rgba(224, 239, 255, 0.65);
+
+      color: #4c91e8;
+
+      box-shadow:
+        0 5px 14px rgba(76, 145, 232, 0.07);
+    }
+  }
+
+  // ==================================
+  // FILE INFO
+  // ==================================
+
+  &__info {
+    display: block;
+
+    min-width: 0;
+    flex: 1;
+
+    padding: 0;
+
+    border: 0;
+
+    background: transparent;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    h3 {
+      overflow: hidden;
+
+      margin: 0;
+
+      color: #45414b;
+
+      font-size: var(--font-sm);
+      font-weight: 650;
+
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      transition: color 0.2s ease;
+    }
+
+    div {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      margin-top: 4px;
+
+      color: #aaa6b0;
+
+      font-size: var(--font-xs);
+    }
+
+    i {
+      width: 3px;
+      height: 3px;
+
+      flex-shrink: 0;
+
+      border-radius: 50%;
+
+      background: #c5c1c9;
+    }
+
+    &:hover h3 {
+      color: #7655df;
+    }
+  }
+
+  // ==================================
+  // ACTION WRAPPER
+  // ==================================
+
+  &__actions {
+    position: relative;
+
+    z-index: 10000;
+
+    flex-shrink: 0;
+  }
+
+  // ==================================
+  // 3 DOT BUTTON
+  // ==================================
+
+  &__more {
+    position: relative;
+
+    display: grid;
+    place-items: center;
+
+    width: 29px;
+    height: 29px;
+
+    border: 0;
+    border-radius: 9px;
+
+    background: transparent;
+
+    color: #aaa6b0;
+
+    cursor: pointer;
+
+    transition:
+      background 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+
+    &:hover,
+    &--active {
+      background: rgba(255, 255, 255, 0.75);
+
+      color: #7655df;
+
+      transform: scale(1.04);
+    }
+
+    &--active {
+      box-shadow:
+        0 3px 10px rgba(80, 65, 120, 0.06);
+    }
+  }
+
+  // ==================================
+  // DROPDOWN
+  // ==================================
+
+  &__menu {
+    position: absolute;
+
+    z-index: 99999;
+
+    top: calc(100% + 7px);
+    right: 0;
+
+    width: 155px;
+
+    padding: 5px;
+
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 14px;
+
+    background:
+      linear-gradient(
+        145deg,
+        rgba(255, 255, 255, 0.96),
+        rgba(247, 245, 252, 0.94)
+      );
+
+    box-shadow:
+      0 20px 50px rgba(60, 50, 90, 0.16),
+      0 8px 20px rgba(60, 50, 90, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 1);
+
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+
+    animation: recentMenuIn 0.16s ease;
+
+    // Menu ichidagi button
+    button {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+
+      width: 100%;
+
+      min-height: 34px;
+
+      padding: 7px 9px;
+
+      border: 0;
+      border-radius: 9px;
+
+      background: transparent;
+
+      color: #4c4853;
+
+      font-family: inherit;
+
+      font-size: var(--font-xs);
+      font-weight: 600;
+
+      text-align: left;
+
+      cursor: pointer;
+
+      transition:
+        background 0.15s ease,
+        color 0.15s ease;
+
+      svg {
+        flex-shrink: 0;
+      }
+
+      &:hover {
+        background: rgba(235, 230, 255, 0.65);
+
+        color: #7655df;
+      }
+    }
+  }
+
+  // ==================================
+  // DELETE
+  // ==================================
+
+  &__delete {
+    &:hover {
+      background: rgba(255, 232, 235, 0.7) !important;
+
+      color: #df6673 !important;
+    }
+  }
+}
+
+// ======================================
+// DROPDOWN ANIMATION
+// ======================================
+
+@keyframes recentMenuIn {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(-5px)
+      scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+// ======================================
+// RESPONSIVE
+// ======================================
+
+@media (max-width: 700px) {
+  .recent-files {
+    &__list {
+      grid-template-columns: 1fr;
+    }
+  }
+}
+
+@media (max-width: 500px) {
+  .recent-files {
+    margin-top: 12px;
+
+    &__header {
+      h2 {
+        font-size: var(--font-md);
+      }
+
+      p {
+        font-size: var(--font-xs);
+      }
+    }
+  }
+
+  .recent-file {
+    padding: 10px;
+
+    &__icon {
+      width: 35px;
+      height: 35px;
+    }
+
+    &__menu {
+      width: 145px;
+    }
+  }
+}

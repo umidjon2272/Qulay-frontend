@@ -1,0 +1,1354 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+:root {
+  font-family: "Inter", sans-serif;
+
+  color-scheme: light;
+
+  --bg-primary: #f6f6f9;
+  --bg-secondary: #efedf5;
+  --surface: rgba(255, 255, 255, 0.72);
+  --surface-solid: #ffffff;
+  --surface-soft: rgba(105, 91, 133, 0.05);
+  --surface-hover: rgba(255, 255, 255, 0.88);
+  --surface-elevated: #ffffff;
+  --text-primary: #292631;
+  --text-secondary: #625b6e;
+  --text-muted: #918b9c;
+  --border: rgba(105, 91, 133, 0.16);
+  --border-strong: rgba(105, 91, 133, 0.24);
+  --accent: #7655df;
+  --accent-strong: #6944d1;
+  --accent-soft: rgba(118, 85, 223, 0.12);
+  --danger: #c95a6d;
+  --success: #3c9a71;
+  --warning: #b77b35;
+  --focus-ring: rgba(118, 85, 223, 0.34);
+  --overlay: rgba(30, 24, 45, 0.5);
+  --shadow-soft: 0 18px 48px rgba(54, 43, 80, 0.07);
+
+  /* Shared typography scale: keep visual hierarchy consistent across the app. */
+  --font-xs: 12px;
+  --font-sm: 14px;
+  --font-md: 16px;
+  --font-lg: 18px;
+  --font-xl: 22px;
+  --font-2xl: 28px;
+  --font-3xl: 36px;
+
+  --line-height-tight: 1.2;
+  --line-height-ui: 1.35;
+  --line-height-body: 1.5;
+  --line-height-relaxed: 1.6;
+
+  color: var(--text-primary);
+
+  background: var(--bg-primary);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  min-width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+
+  color: var(--text-primary);
+  font-size: var(--font-md);
+  line-height: var(--line-height-body);
+
+  overflow-x: hidden;
+
+  background:
+    radial-gradient(
+      circle at 75% 12%,
+      rgba(137, 101, 238, 0.10),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 20% 85%,
+      rgba(81, 181, 255, 0.07),
+      transparent 27%
+    ),
+    var(--bg-primary);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-primary: #0b1020;
+  --bg-secondary: #11182a;
+  --surface: #151c2f;
+  --surface-solid: #151c2f;
+  --surface-soft: rgba(148, 163, 184, 0.045);
+  --surface-hover: #1a2237;
+  --surface-elevated: #1a2237;
+  --text-primary: #f2f4f8;
+  --text-secondary: #a8b0c0;
+  --text-muted: #7c869b;
+  --border: rgba(148, 163, 184, 0.11);
+  --border-strong: rgba(148, 163, 184, 0.17);
+  --accent: #a78bfa;
+  --accent-strong: #8b6cf0;
+  --accent-soft: rgba(167, 139, 250, 0.13);
+  --danger: #f08a9b;
+  --success: #73d0a3;
+  --warning: #e2ad65;
+  --focus-ring: rgba(167, 139, 250, 0.42);
+  --overlay: rgba(4, 8, 18, 0.68);
+  --shadow-soft: 0 18px 48px rgba(3, 7, 18, 0.24);
+}
+
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(125, 92, 235, 0.085), transparent 23%),
+    radial-gradient(circle at 14% 88%, rgba(53, 137, 189, 0.045), transparent 20%),
+    var(--bg-primary);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  line-height: var(--line-height-tight);
+}
+
+button,
+input,
+textarea,
+select {
+  line-height: var(--line-height-ui);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+/* Keep controls comfortable to read and prevent iOS input zoom. */
+button {
+  min-height: 14px;
+  font-size: var(--font-sm) !important;
+}
+
+:where(button, input, textarea, select, a):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+input,
+textarea,
+select {
+  font-size: var(--font-md) !important;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(124, 88, 224, 0.18);
+
+  color: #3c315a;
+}
+
+/* =====================================
+   SCROLLBAR
+===================================== */
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+
+  background: rgba(130, 121, 145, 0.18);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(118, 84, 216, 0.3);
+}
+
+/* Shared dark surfaces. Page-specific glass is intentionally kept subtle. */
+html[data-theme="dark"] .app-layout,
+html[data-theme="dark"] .dashboard__main,
+html[data-theme="dark"] .ai-page,
+html[data-theme="dark"] .files-page,
+html[data-theme="dark"] .calendar-page,
+html[data-theme="dark"] .tasks-page,
+html[data-theme="dark"] .reminders-page,
+html[data-theme="dark"] .settings-page {
+  color: var(--text-primary);
+  background: transparent;
+}
+
+html[data-theme="dark"] .app-layout :where(
+  .sidebar,
+  .hero,
+  .ai-side-card,
+  .ai-page__main,
+  .ai-drawer,
+  .stats__card,
+  .quick-actions__item,
+  .recent-file,
+  .calendar-card,
+  .calendar-sidebar,
+  .calendar-summary,
+  .tasks-overview,
+  .tasks-list,
+  .tasks-side,
+  .task-card,
+  .reminders-list,
+  .reminders-side,
+  .reminder-card,
+  .reminders-stat,
+  .files-toolbar,
+  .file-card,
+  .folder-card,
+  .files-ai,
+  .settings-sidebar,
+  .settings-card,
+  .integration-card,
+  .integration-modal,
+  .chat-input,
+  .message-bubble__glass,
+  .message-list__typing
+) {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+html[data-theme="dark"] .app-layout :where(
+  h1, h2, h3, h4, h5, h6,
+  .sidebar__brand-text strong,
+  .sidebar__user-info strong,
+  .ai-page__header h1,
+  .ai-side-card h3,
+  .ai-welcome h2,
+  .message-bubble__glass p,
+  .action-confirmation__title,
+  .settings-card h2,
+  .task-card__body h3,
+  .reminder-card__body h3,
+  .calendar-event__body strong,
+  .file-card__info strong,
+  .recent-file__info h3
+) {
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] .app-layout :where(
+  p, label, span, small,
+  .ai-page__header p,
+  .ai-side-card__conversations button,
+  .message-bubble__meta,
+  .action-confirmation__meta,
+  .action-confirmation__summary,
+  .settings-card > p,
+  .calendar-sidebar__header span,
+  .file-card__info span,
+  .recent-file__info div
+) {
+  color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .app-layout :where(input, textarea, select) {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background: var(--surface-solid);
+}
+
+html[data-theme="dark"] .app-layout :where(input, textarea, select)::placeholder {
+  color: var(--text-muted);
+}
+
+html[data-theme="dark"] .app-layout :where(
+  .hero,
+  .sidebar__ai-card,
+  .task-modal,
+  .reminder-modal,
+  .calendar-modal,
+  .quick-modal,
+  .delete-modal,
+  .integration-modal,
+  .file-preview,
+  .action-confirmation
+) {
+  color: var(--text-primary);
+  border-color: var(--border);
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+html[data-theme="dark"] .app-layout :where(
+  .task-modal input,
+  .task-modal textarea,
+  .task-modal select,
+  .reminder-modal input,
+  .reminder-modal textarea,
+  .calendar-modal input,
+  .calendar-modal textarea,
+  .calendar-modal select,
+  .quick-modal input,
+  .quick-modal textarea,
+  .integration-modal__field
+) {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+  background: var(--surface-solid);
+}
+
+html[data-theme="dark"] .app-layout :where(
+  .task-modal h2,
+  .reminder-modal h2,
+  .calendar-modal h2,
+  .quick-modal h2,
+  .delete-modal h3,
+  .integration-modal h2,
+  .file-preview h2,
+  .action-confirmation__name
+) {
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] .app-layout :where(
+  .task-modal > p,
+  .reminder-modal > p,
+  .calendar-modal > p,
+  .quick-modal > p,
+  .delete-modal p,
+  .integration-modal > p,
+  .file-preview p
+) {
+  color: var(--text-secondary);
+}
+
+html[data-theme="dark"] .app-layout :where(
+  .sidebar__link:hover,
+  .sidebar__link--active,
+  .ai-side-card__actions button:hover,
+  .ai-side-card__conversations button:hover,
+  .ai-prompt:hover,
+  .quick-actions__item:hover,
+  .folder-card:hover,
+  .file-card:hover,
+  .task-card:hover,
+  .reminder-card:hover
+) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+html[data-theme="dark"] .app-layout :where(
+  .sidebar__link,
+  .ai-side-card__actions button,
+  .ai-prompt,
+  .quick-actions__item,
+  .calendar-card__today,
+  .calendar-sidebar__button,
+  .chat-header__btn,
+  .chat-input__icon-btn,
+  .action-confirmation__dismiss,
+  .file-card__more,
+  .task-card__more,
+  .reminder-card__more
+) {
+  color: var(--text-secondary);
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+html[data-theme="dark"] :where(
+  .sidebar__link--active,
+  .ai-prompt svg,
+  .quick-actions__item:hover,
+  .chat-header__btn:hover,
+  .chat-input__icon-btn:hover,
+  .action-confirmation__dismiss:hover
+) {
+  color: var(--accent);
+}
+
+html[data-theme="dark"] .ai-drawer-overlay,
+html[data-theme="dark"] .quick-modal__overlay,
+html[data-theme="dark"] .calendar-modal__overlay,
+html[data-theme="dark"] .task-modal__overlay,
+html[data-theme="dark"] .reminder-modal__overlay,
+html[data-theme="dark"] .delete-modal__overlay,
+html[data-theme="dark"] .integration-modal__overlay,
+html[data-theme="dark"] .file-preview__overlay {
+  background: rgba(5, 7, 13, 0.72);
+}
+
+html[data-theme="dark"] .chat-header__text strong,
+html[data-theme="dark"] .chat-header__text span {
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+html[data-theme="dark"] :where(
+  .login,
+  .register,
+  .login__right,
+  .register__right,
+  .login__google,
+  .register__google,
+  .login__field input,
+  .register__field input,
+  .auth-password input
+) {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+html[data-theme="dark"] :where(.login__right, .register__right) {
+  border-color: var(--border);
+}
+
+html[data-theme="dark"] :where(
+  .login__heading h2,
+  .register__heading h2,
+  .login__field label,
+  .register__field label,
+  .login__google,
+  .register__google
+) {
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] :where(
+  .login__heading p,
+  .register__heading p,
+  .login__remember,
+  .login__register,
+  .register__login
+) {
+  color: var(--text-secondary);
+}
+
+html[data-theme="dark"] :where(.login__field input, .register__field input) {
+  border-color: var(--border-strong);
+  background: var(--surface-solid);
+}
+
+@media (max-width: 700px) {
+  body {
+    font-size: 15px;
+  }
+
+  .app-layout :where(
+    .sidebar,
+    .ai-side-card,
+    .ai-page__main,
+    .ai-drawer,
+    .hero,
+    .stats__card,
+    .quick-actions__item,
+    .recent-file,
+    .calendar-card,
+    .calendar-sidebar,
+    .tasks-overview,
+    .tasks-list,
+    .tasks-side,
+    .task-card,
+    .reminders-list,
+    .reminders-side,
+    .reminder-card,
+    .files-ai,
+    .settings-card
+  ) {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .app-layout__content {
+    width: 100%;
+  }
+
+  :is(
+    .tasks-header__add,
+    .reminders-header__add,
+    .calendar-page__add,
+    .files-page__primary,
+    .files-page__secondary,
+    .settings-header__save,
+    .tasks-side__button,
+    .reminders-side__button,
+    .calendar-sidebar__button,
+    .files-ai button,
+    .settings-outline-btn,
+    .settings-danger-btn
+  ) {
+    min-height: 44px;
+  }
+
+  :is(.tasks-page, .reminders-page, .calendar-page, .files-page, .settings-page) {
+    padding-bottom: 8px;
+  }
+
+  :is(.tasks-header h1, .reminders-header h1, .calendar-page__header h1, .files-page__header h1, .settings-header h1) {
+    font-size: clamp(26px, 7vw, 30px);
+    letter-spacing: -0.8px;
+  }
+
+  .dashboard__main {
+    padding-bottom: 0;
+  }
+
+  .hero {
+    min-height: 0;
+  }
+
+  .hero__content {
+    padding: 26px 20px;
+  }
+
+  .hero h1 {
+    font-size: clamp(34px, 10vw, 44px);
+    letter-spacing: -2px;
+  }
+
+  .hero__button {
+    min-height: 46px;
+  }
+
+  .stats__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .stats__card {
+    min-height: 128px;
+    padding: 13px;
+  }
+
+  .stats__value {
+    font-size: 25px;
+  }
+
+  .stats__card h3 {
+    font-size: 13px;
+  }
+
+  .stats__card p {
+    font-size: 11px;
+  }
+
+  .quick-actions__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions__item {
+    min-height: 62px;
+  }
+
+  .tasks-toolbar,
+  .reminders-toolbar,
+  .files-toolbar {
+    gap: 9px;
+  }
+
+  .tasks-filters,
+  .reminders-filters {
+    width: 100%;
+    padding-bottom: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tasks-filters::-webkit-scrollbar,
+  .reminders-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tasks-filters button,
+  .reminders-filters button {
+    flex: 0 0 auto;
+    min-height: 40px;
+    padding-inline: 14px;
+  }
+
+  .tasks-search,
+  .reminders-search,
+  .files-toolbar__search {
+    min-height: 46px;
+  }
+
+  .task-card,
+  .reminder-card {
+    gap: 9px;
+    padding: 13px 11px;
+  }
+
+  .task-card__check,
+  .reminder-card__check,
+  .task-card__more,
+  .reminder-card__more,
+  .file-card__more {
+    width: 42px;
+    height: 42px;
+  }
+
+  .task-card__title-row,
+  .reminder-card__top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .task-card__body p,
+  .reminder-card__content p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .task-card__meta,
+  .reminder-card__meta {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+
+  .calendar-card__top {
+    min-height: 58px;
+  }
+
+  .calendar-card__month button,
+  .calendar-card__today {
+    min-width: 42px;
+    min-height: 42px;
+  }
+
+  .calendar-grid {
+    gap: 3px;
+  }
+
+  .calendar-day {
+    min-height: 48px;
+    padding: 5px 3px;
+    border-radius: 10px;
+  }
+
+  .calendar-grid__weekday {
+    font-size: 10px;
+  }
+
+  .calendar-event__actions button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .calendar-event__body {
+    min-width: 0;
+  }
+
+  .calendar-event__body strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .files-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .files-toolbar__right {
+    justify-content: flex-end;
+  }
+
+  .file-list {
+    grid-template-columns: 1fr;
+  }
+
+  .file-card {
+    min-height: 68px;
+    padding: 10px;
+  }
+
+  .file-card__date {
+    display: none;
+  }
+
+  .files-ai {
+    gap: 12px;
+    padding: 18px;
+  }
+
+  .files-ai > div:nth-child(2) {
+    min-width: 0;
+  }
+
+  .files-ai h2 {
+    font-size: 17px;
+  }
+
+  .files-ai p {
+    font-size: 13px;
+  }
+
+  .files-ai button {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0 !important;
+  }
+
+  .settings-nav {
+    gap: 6px;
+    padding-bottom: 3px;
+    scrollbar-width: none;
+  }
+
+  .settings-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-nav__item {
+    flex: 0 0 auto;
+    min-height: 42px;
+    padding: 0 13px;
+  }
+
+  .settings-card {
+    padding: 18px 15px;
+    border-radius: 18px;
+  }
+
+  .settings-row,
+  .settings-toggle-row,
+  .settings-integrations__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .settings-chips {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .settings-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-chips button {
+    flex: 0 0 auto;
+    min-height: 40px;
+  }
+
+  .settings-toggle-row .settings-switch,
+  .settings-toggle-row .settings-outline-btn {
+    align-self: stretch;
+  }
+
+  .settings-toggle-row .settings-switch {
+    align-self: flex-end;
+  }
+
+  :is(
+    .task-modal__overlay,
+    .reminder-modal__overlay,
+    .calendar-modal__overlay,
+    .quick-modal__overlay,
+    .delete-modal__overlay,
+    .integration-modal__overlay,
+    .file-preview__overlay
+  ) {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  :is(
+    .task-modal,
+    .reminder-modal,
+    .calendar-modal,
+    .quick-modal,
+    .delete-modal,
+    .integration-modal,
+    .file-preview
+  ) {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100svh - 10px);
+    overflow-y: auto;
+    border-radius: 24px 24px 0 0;
+    padding: 22px 16px calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .task-modal__submit,
+  .reminder-modal__submit,
+  .calendar-modal__submit,
+  .quick-modal__submit,
+  .integration-modal__connect,
+  .delete-modal__actions button {
+    min-height: 48px;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-layout {
+    padding-inline: 9px;
+  }
+
+  .sidebar {
+    right: 7px;
+    left: 7px;
+  }
+
+  .hero__content {
+    padding: 22px 16px;
+  }
+
+  .hero h1 {
+    font-size: 33px;
+  }
+
+  .stats__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-page__main {
+    min-height: calc(100svh - 138px);
+    height: calc(100svh - 138px);
+  }
+
+  .sidebar__mobile-item {
+    font-size: 9px;
+  }
+}
+
+/* Page-specific dark surfaces that predate the shared token layer. */
+html[data-theme="dark"] .app-layout :is(
+  .calendar-grid,
+  .calendar-grid__weekday,
+  .calendar-day,
+  .calendar-day--today:not(.calendar-day--selected),
+  .calendar-card__month button,
+  .calendar-event,
+  .calendar-modal__close,
+  .calendar-modal input,
+  .calendar-modal textarea,
+  .calendar-modal select,
+  .file-card__dropdown,
+  .files-empty,
+  .file-preview,
+  .task-card__menu,
+  .task-priority-select__menu,
+  .task-modal input,
+  .task-modal textarea,
+  .task-modal select,
+  .reminder-card__menu,
+  .reminder-modal input,
+  .reminder-modal textarea,
+  .reminder-modal select,
+  .quick-modal__input,
+  .quick-modal textarea,
+  .quick-modal input,
+  .settings-theme__item
+) {
+  border-color: var(--border);
+  background: var(--surface-solid);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .calendar-grid,
+  .calendar-grid__weekday,
+  .calendar-day:disabled,
+  .files-empty,
+  .settings-theme__item
+) {
+  background: var(--bg-secondary);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .calendar-day:hover:not(:disabled),
+  .calendar-card__month button:hover,
+  .calendar-event:hover,
+  .calendar-sidebar__button:hover,
+  .file-card__dropdown button:hover,
+  .task-card__menu button:hover,
+  .reminder-card__menu button:hover,
+  .settings-theme__item:hover
+) {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .calendar-day,
+  .calendar-event__body strong,
+  .calendar-modal h2,
+  .calendar-modal input,
+  .calendar-modal textarea,
+  .calendar-modal select,
+  .task-card__menu button,
+  .reminder-card__menu button,
+  .files-empty strong,
+  .file-card__dropdown button,
+  .file-preview h2,
+  .quick-modal input,
+  .quick-modal textarea
+) {
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .calendar-modal input,
+  .calendar-modal textarea,
+  .calendar-modal select,
+  .task-modal input,
+  .task-modal textarea,
+  .task-modal select,
+  .reminder-modal input,
+  .reminder-modal textarea,
+  .reminder-modal select,
+  .quick-modal input,
+  .quick-modal textarea
+)::placeholder {
+  color: var(--text-muted);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .calendar-day--selected,
+  .calendar-day--selected span,
+  .calendar-summary,
+  .files-ai,
+  .files-ai button
+) {
+  border-color: var(--border);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+html[data-theme="dark"] .toast {
+  border-color: var(--border-strong);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+html[data-theme="dark"] .confirm-dialog__overlay {
+  background: var(--overlay);
+}
+
+/* Premium dark surface hierarchy: depth comes from tone, not bright borders. */
+html[data-theme="dark"] .app-layout .sidebar {
+  border-color: var(--border);
+  background: var(--bg-secondary);
+  box-shadow: 0 18px 44px rgba(3, 7, 18, 0.22);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .stats__card,
+  .quick-actions__item,
+  .recent-file,
+  .task-card,
+  .reminder-card,
+  .file-card,
+  .folder-card,
+  .calendar-event,
+  .integration-card
+) {
+  border-color: transparent;
+  background: var(--surface-soft);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .tasks-overview,
+  .tasks-list,
+  .tasks-side,
+  .reminders-list,
+  .reminders-side,
+  .reminders-stat,
+  .files-toolbar,
+  .calendar-card,
+  .calendar-sidebar,
+  .settings-card
+) {
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .hero,
+  .ai-page__main,
+  .ai-drawer,
+  .ai-side-card,
+  .sidebar__ai-card,
+  .calendar-summary,
+  .files-ai,
+  .action-confirmation,
+  .chat-input,
+  .message-list__typing,
+  .task-modal,
+  .reminder-modal,
+  .calendar-modal,
+  .quick-modal,
+  .delete-modal,
+  .integration-modal,
+  .file-preview,
+  .confirm-dialog
+) {
+  border-color: var(--border);
+  background: var(--surface-elevated);
+  box-shadow: 0 18px 42px rgba(3, 7, 18, 0.22);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .task-card:hover,
+  .reminder-card:hover,
+  .recent-file:hover,
+  .file-card:hover,
+  .folder-card:hover,
+  .calendar-event:hover,
+  .integration-card:hover,
+  .quick-actions__item:hover
+) {
+  border-color: var(--border);
+  background: var(--surface-hover);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  input,
+  textarea,
+  select,
+  .tasks-search,
+  .reminders-search,
+  .files-toolbar__search,
+  .tasks-filters button,
+  .reminders-filters button,
+  .settings-chips button,
+  .task-priority-select__trigger,
+  .reminder-priority-select__trigger,
+  .calendar-sidebar__button,
+  .calendar-card__today,
+  .chat-header__btn,
+  .chat-input__icon-btn,
+  .file-card__more,
+  .task-card__more,
+  .reminder-card__more
+) {
+  border-color: var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  input,
+  textarea,
+  select
+):focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .sidebar__link,
+  .sidebar__user,
+  .ai-side-card__actions button,
+  .ai-side-card__conversations button,
+  .ai-prompt,
+  .quick-actions__item,
+  .tasks-filters button,
+  .reminders-filters button,
+  .settings-chips button
+) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .sidebar__link:hover,
+  .sidebar__user:hover,
+  .ai-side-card__actions button:hover,
+  .ai-side-card__conversations button:hover,
+  .ai-prompt:hover,
+  .quick-actions__item:hover,
+  .tasks-filters button:hover,
+  .reminders-filters button:hover,
+  .settings-chips button:hover
+) {
+  border-color: transparent;
+  background: var(--surface-soft);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .sidebar__link--active,
+  .tasks-filters button.active,
+  .reminders-filters button.active,
+  .settings-chips button.is-active,
+  .settings-theme__item.is-active
+) {
+  border-color: rgba(167, 139, 250, 0.18);
+  background: var(--accent-soft);
+  color: var(--accent);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout .sidebar :is(
+  .sidebar__brand-text strong,
+  .sidebar__user-info strong,
+  .sidebar__ai-content strong
+) {
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] .app-layout .sidebar :is(
+  .sidebar__brand-text span,
+  .sidebar__section-title,
+  .sidebar__user-info span,
+  .sidebar__ai-content span,
+  .sidebar__link:not(.sidebar__link--active)
+) {
+  color: var(--text-muted);
+}
+
+html[data-theme="dark"] .app-layout .sidebar__ai-card {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.15), rgba(17, 24, 42, 0.9));
+}
+
+html[data-theme="dark"] .app-layout .sidebar__ai-card :is(.sidebar__ai-icon, .sidebar__logo) {
+  border-color: rgba(167, 139, 250, 0.18);
+  box-shadow: 0 8px 18px rgba(96, 70, 175, 0.2);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .message-bubble__glass,
+  .action-confirmation__dismiss
+) {
+  border-color: transparent;
+  background: var(--surface-soft);
+  box-shadow: none;
+}
+
+html[data-theme="dark"] .app-layout .message-bubble--user .message-bubble__glass {
+  border-color: rgba(167, 139, 250, 0.18);
+  background: var(--accent-soft);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .calendar-day--selected,
+  .calendar-day--selected span,
+  .calendar-summary,
+  .files-ai,
+  .files-ai button,
+  .action-confirmation__icon
+) {
+  border-color: rgba(167, 139, 250, 0.18);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .task-priority--muhim,
+  .reminder-priority--muhim
+) {
+  border-color: rgba(240, 138, 155, 0.2);
+  background: rgba(240, 138, 155, 0.12);
+  color: #ffb6c1;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .task-priority--orta,
+  .reminder-priority--orta
+) {
+  border-color: rgba(226, 173, 101, 0.2);
+  background: rgba(226, 173, 101, 0.12);
+  color: #f0c47d;
+}
+
+html[data-theme="dark"] .app-layout :is(
+  .task-priority--oddiy,
+  .reminder-priority--oddiy
+) {
+  border-color: rgba(115, 208, 163, 0.2);
+  background: rgba(115, 208, 163, 0.11);
+  color: #91dfb8;
+}
+
+html[data-theme="dark"] :is(.login, .register) {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] :is(.login__left, .register__left) {
+  background: linear-gradient(145deg, #11182a, #0b1020);
+}
+
+html[data-theme="dark"] :is(.login__right, .register__right) {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+html[data-theme="dark"] :is(
+  .login__heading h2,
+  .register__heading h2,
+  .login__field label,
+  .register__field label,
+  .login__brand,
+  .register__brand
+) {
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] :is(
+  .login__heading p,
+  .register__heading p,
+  .login__content > p,
+  .register__content > p,
+  .login__remember,
+  .login__register,
+  .register__login,
+  .login__footer,
+  .register__footer
+) {
+  color: var(--text-secondary);
+}
+
+html[data-theme="dark"] :is(
+  .login__field input,
+  .register__field input,
+  .auth-password input,
+  .login__google,
+  .register__google
+) {
+  border-color: var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] :is(.login__google, .register__google):hover {
+  background: var(--surface-hover);
+}
+
+html[data-theme="dark"] :is(
+  .login__field input::placeholder,
+  .register__field input::placeholder
+) {
+  color: var(--text-muted);
+}
+
+html[data-theme="dark"] :is(
+  .login__left::after,
+  .register__left::after
+) {
+  opacity: 0.34;
+}
+
+html[data-theme="dark"] .toast {
+  border-color: var(--border-strong);
+  background: var(--surface-elevated);
+  color: var(--text-primary);
+  box-shadow: 0 14px 32px rgba(3, 7, 18, 0.26);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-theme="dark"] :is(
+  .ai-drawer-overlay,
+  .quick-modal__overlay,
+  .calendar-modal__overlay,
+  .task-modal__overlay,
+  .reminder-modal__overlay,
+  .delete-modal__overlay,
+  .integration-modal__overlay,
+  .file-preview__overlay,
+  .confirm-dialog__overlay
+) {
+  background: var(--overlay);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@media (max-width: 700px) {
+  .app-layout__content {
+    padding-top: 0;
+  }
+
+  html[data-theme="dark"] .app-layout .sidebar {
+    background: color-mix(in srgb, var(--surface-elevated) 94%, transparent);
+    box-shadow: 0 14px 34px rgba(3, 7, 18, 0.3);
+  }
+
+  html[data-theme="dark"] .app-layout .sidebar__mobile-more {
+    border-color: var(--border);
+    background: var(--surface-elevated);
+    box-shadow: 0 16px 36px rgba(3, 7, 18, 0.3);
+  }
+
+  html[data-theme="dark"] .app-layout .sidebar__mobile-more a:hover,
+  html[data-theme="dark"] .app-layout .sidebar__mobile-more a.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}

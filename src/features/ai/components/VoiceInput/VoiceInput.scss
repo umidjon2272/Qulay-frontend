@@ -1,0 +1,118 @@
+.voice-input {
+  display: flex;
+  align-items: center;
+
+  gap: 11px;
+
+  margin: 0 16px 10px;
+  padding: 10px 14px;
+
+  border: 1px solid rgba(93, 168, 255, 0.28);
+  border-radius: 14px;
+
+  background: linear-gradient(135deg, rgba(93, 168, 255, 0.12), rgba(130, 91, 234, 0.1));
+
+  animation: voiceInputIn 0.24s ease both;
+}
+
+@media (max-width: 700px) {
+  .voice-input {
+    margin: 0 11px 8px;
+    min-height: 54px;
+    padding: 9px 12px;
+    border-radius: 16px;
+  }
+
+  .voice-input__mic {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.voice-input__mic {
+  position: relative;
+
+  display: grid;
+  place-items: center;
+
+  width: 34px;
+  height: 34px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: linear-gradient(135deg, #5da8ff, #6944d1);
+
+  color: white;
+}
+
+.voice-input__ring {
+  position: absolute;
+  inset: 0;
+
+  border-radius: 50%;
+
+  border: 1.5px solid rgba(93, 168, 255, 0.55);
+
+  animation: voiceRing 1.8s ease-out infinite;
+}
+
+.voice-input__ring--two {
+  animation-delay: 0.4s;
+}
+
+.voice-input__ring--three {
+  animation-delay: 0.8s;
+}
+
+.voice-input__text {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+
+  min-width: 0;
+}
+
+.voice-input__text strong {
+  color: #3a3f6b;
+
+  font-size: var(--font-sm);
+  font-weight: 700;
+}
+
+.voice-input__text span {
+  overflow: hidden;
+
+  color: #7a7f9e;
+
+  font-size: var(--font-xs);
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@keyframes voiceRing {
+  0% {
+    opacity: 0.65;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+@keyframes voiceInputIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

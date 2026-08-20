@@ -1,0 +1,16 @@
+export const STORAGE_KEYS = {
+  schemaVersion: "yechim_ai_storage_schema_version",
+  aiChatHistory: "yechim_ai_chat_history",
+  tasks: "yechim_ai_tasks",
+  reminders: "yechim_ai_reminders",
+  calendarEvents: "yechim_ai_calendar_events",
+  notes: "yechim_ai_notes",
+  files: "yechim_ai_files",
+  integrations: "yechim_integrations",
+  settings: "yechim_ai_settings",
+  authSession: "yechim_ai_auth_session",
+  profileName: "yechim_profile_name",
+  profileEmail: "yechim_profile_email",
+  profileBio: "yechim_profile_bio",
+  profileAvatar: "yechim_profile_avatar",
+} as const;

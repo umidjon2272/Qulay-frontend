@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b1020" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>Yechim AI</title>
+    <script type="module" crossorigin src="/assets/index-DcG7ZSkm.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DdL_iffI.css">
+  </head>
+  <body>
+    <script>
+      try {
+        const stored = JSON.parse(localStorage.getItem('yechim_ai_settings') || '{}');
+        const theme = stored.theme === 'dark' || stored.theme === 'light' || stored.theme === 'system' ? stored.theme : 'light';
+        document.documentElement.dataset.theme = theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : theme === 'system' ? 'light' : theme;
+      } catch {
+        document.documentElement.dataset.theme = 'light';
+      }
+    </script>
+    <div id="root"></div>
+  </body>
+</html>
