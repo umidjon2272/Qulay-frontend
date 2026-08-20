@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "build": "node ./node_modules/typescript/bin/tsc -b && node ./node_modules/vite/bin/vite.js build",
+    "lint": "oxlint --ignore-pattern node_modules --ignore-pattern dist",
     "preview": "vite preview"
   },
   "dependencies": {
