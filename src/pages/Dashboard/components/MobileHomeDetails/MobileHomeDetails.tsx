@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getDateKey } from "../../../../services/dateUtils";
-import { getCalendarEvents } from "../../../../services/meetingService";
-import { getTasks, updateTask } from "../../../../services/taskService";
+import { getCalendarEvents, loadCalendarEvents } from "../../../../services/meetingService";
+import { getTasks, loadTasks, updateTask } from "../../../../services/taskService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
 import type { Task } from "../../../../types/workspace";
 import "./MobileHomeDetails.scss";
@@ -24,6 +24,7 @@ const MobileHomeDetails = () => {
     setTasks(getTasks());
     setEvents(getCalendarEvents());
   }), []);
+  useEffect(() => { void Promise.all([loadTasks(), loadCalendarEvents()]).catch(() => undefined); }, []);
 
   const today = getDateKey();
   const todayTasks = tasks.filter((task) => !task.date || task.date === today);
@@ -33,9 +34,8 @@ const MobileHomeDetails = () => {
     return todayEvents.find((event) => event.time >= now) ?? todayEvents[0];
   }, [todayEvents]);
 
-  const toggleTask = (task: Task) => {
-    updateTask(task.id, { completed: !task.completed });
-    setTasks(getTasks());
+  const toggleTask = async (task: Task) => {
+    try { await updateTask(task.id, { completed: !task.completed }); setTasks(getTasks()); } catch { /* dashboard action is non-blocking */ }
   };
 
   return (

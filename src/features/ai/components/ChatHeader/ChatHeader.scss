@@ -141,6 +141,12 @@
   }
 }
 
+.chat-header__btn--voice {
+  border-color: rgba(118, 85, 223, 0.22);
+  background: linear-gradient(135deg, rgba(118, 85, 223, 0.14), rgba(82, 190, 255, 0.12));
+  color: #7655df;
+}
+
 @media (max-width: 700px) {
   .chat-header {
     min-height: 62px;

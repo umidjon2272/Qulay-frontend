@@ -23,6 +23,7 @@ import {
   createTask as createTaskRecord,
   deleteTask as deleteTaskRecord,
   getTasks,
+  loadTasks,
   updateTask as updateTaskRecord,
 } from "../../services/taskService";
 import { subscribeToWorkspaceData } from "../../services/workspaceEvents";
@@ -68,10 +69,10 @@ const Tasks = () => {
     useState(getDateKey());
 
   const [editId, setEditId] =
-    useState<number | null>(null);
+    useState<string | number | null>(null);
 
   const [openMenuId, setOpenMenuId] =
-    useState<number | null>(null);
+    useState<string | number | null>(null);
 
   const [pendingDelete, setPendingDelete] =
     useState<Task | null>(null);
@@ -85,15 +86,18 @@ const Tasks = () => {
     () => subscribeToWorkspaceData("tasks", () => setTasks(getTasks())),
     [],
   );
+  useEffect(() => { void loadTasks().catch(() => showToast("Vazifalarni yuklab bo'lmadi", "error")); }, [showToast]);
 
-  const toggleTask = (id: number) => {
+  const toggleTask = async (id: string | number) => {
     const task = tasks.find((item) => item.id === id);
 
     if (!task) return;
 
-    updateTaskRecord(id, { completed: !task.completed });
-    setTasks(getTasks());
-    showToast(task.completed ? "Vazifa qayta faollashtirildi" : "Vazifa bajarildi", "success");
+    try {
+      const updated = await updateTaskRecord(id, { completed: !task.completed });
+      setTasks((current) => current.map((item) => item.id === id ? updated : item));
+      showToast(task.completed ? "Vazifa qayta faollashtirildi" : "Vazifa bajarildi", "success");
+    } catch { showToast("Vazifa holatini yangilab bo'lmadi", "error"); }
   };
 
   const deleteTask = (task: Task) => {
@@ -101,11 +105,11 @@ const Tasks = () => {
     setOpenMenuId(null);
   };
 
-  const confirmDeleteTask = () => {
+  const confirmDeleteTask = async () => {
     if (!pendingDelete) return;
 
     const task = pendingDelete;
-    deleteTaskRecord(task.id);
+    try { await deleteTaskRecord(task.id); } catch { showToast("Vazifani o'chirib bo'lmadi", "error"); return; }
     setTasks(getTasks());
 
     setOpenMenuId(null);
@@ -181,7 +185,7 @@ const Tasks = () => {
         )
       : 0;
 
-  const createTask = () => {
+  const createTask = async () => {
     if (!newTitle.trim()) {
       showToast("Vazifa nomini kiriting", "error");
       return;
@@ -205,10 +209,10 @@ const Tasks = () => {
       };
 
       if (editId !== null) {
-        updateTaskRecord(editId, payload);
+        await updateTaskRecord(editId, payload);
         showToast("Vazifa yangilandi", "success");
       } else {
-        createTaskRecord(payload);
+        await createTaskRecord(payload);
         showToast("Vazifa yaratildi", "success");
       }
 

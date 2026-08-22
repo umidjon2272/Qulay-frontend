@@ -20,6 +20,7 @@ import {
   createReminder as createReminderRecord,
   deleteReminder as deleteReminderRecord,
   getReminders,
+  loadReminders,
   updateReminder as updateReminderRecord,
 } from "../../services/reminderService";
 import { subscribeToWorkspaceData } from "../../services/workspaceEvents";
@@ -48,15 +49,15 @@ const Reminders = () => {
     useState(false);
 
   const [openMenuId, setOpenMenuId] =
-    useState<number | null>(null);
+    useState<string | number | null>(null);
 
   useCloseOnOutsideClick(openMenuId !== null, () => setOpenMenuId(null));
 
   const [deleteId, setDeleteId] =
-    useState<number | null>(null);
+    useState<string | number | null>(null);
 
   const [editId, setEditId] =
-    useState<number | null>(null);
+    useState<string | number | null>(null);
 
   const [priority, setPriority] =
     useState<TaskPriority>("O‘rta");
@@ -86,29 +87,32 @@ const Reminders = () => {
       ),
     [],
   );
+  useEffect(() => { void loadReminders().catch(() => showToast("Eslatmalarni yuklab bo'lmadi", "error")); }, [showToast]);
 
   /* =========================
      TOGGLE
   ========================= */
 
-  const toggleReminder = (id: number) => {
+  const toggleReminder = async (id: string | number) => {
     const reminder = reminders.find((item) => item.id === id);
 
     if (!reminder) return;
 
-    updateReminderRecord(id, { completed: !reminder.completed });
-    setReminders(getReminders());
-    showToast(reminder.completed ? "Eslatma qayta faollashtirildi" : "Eslatma bajarildi", "success");
+    try {
+      await updateReminderRecord(id, { completed: !reminder.completed });
+      setReminders(getReminders());
+      showToast(reminder.completed ? "Eslatma qayta faollashtirildi" : "Eslatma bajarildi", "success");
+    } catch { showToast("Eslatma holatini yangilab bo'lmadi", "error"); }
   };
 
   /* =========================
      DELETE CONFIRM
   ========================= */
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteId === null) return;
 
-    deleteReminderRecord(deleteId);
+    try { await deleteReminderRecord(deleteId); } catch { showToast("Eslatmani o'chirib bo'lmadi", "error"); return; }
     setReminders(getReminders());
 
     setDeleteId(null);
@@ -140,7 +144,7 @@ const Reminders = () => {
      CREATE / UPDATE
   ========================= */
 
-  const saveReminder = () => {
+  const saveReminder = async () => {
     if (!newTitle.trim()) {
       showToast("Eslatma nomini kiriting", "error");
       return;
@@ -154,7 +158,7 @@ const Reminders = () => {
 
     try {
       if (editId !== null) {
-        updateReminderRecord(editId, {
+        await updateReminderRecord(editId, {
           title: newTitle.trim(),
           description: newDescription.trim() || "Eslatma",
           time: newTime,
@@ -163,7 +167,7 @@ const Reminders = () => {
           dateKey: newDate,
         });
       } else {
-        createReminderRecord({
+        await createReminderRecord({
           title: newTitle.trim(),
           description: newDescription.trim() || "Yangi eslatma",
           date: getDateLabel(newDate),

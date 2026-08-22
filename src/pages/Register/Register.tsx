@@ -4,16 +4,17 @@ import type { FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { getSafeReturnPath } from "../../app/router/routeUtils";
-import { createMockSession } from "../../services/authService";
+import { signUp } from "../../services/authService";
+import { getApiErrorMessage } from "../../services/api";
 import { getSettings } from "../../services/settingsService";
-import { updateProfile } from "../../services/profileService";
 import "./Register.scss";
 
 const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const returnPath = getSafeReturnPath(location.state);
-  const [name, setName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -33,31 +34,31 @@ const Register = () => {
     navigate(page === "AI yordamchi" ? "/ai-assistant" : page === "Vazifalar" ? "/tasks" : "/dashboard", { replace: true });
   };
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (loading) return;
     setError("");
     setSuccess("");
-    if (name.trim().length < 2) { setError("Ismingizni kiriting."); return; }
+    if (firstName.trim().length < 1 || lastName.trim().length < 1) { setError("Ism va familiyangizni kiriting."); return; }
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) { setError("To'g'ri email manzilini kiriting."); return; }
-    if (password.length < 6) { setError("Parol kamida 6 ta belgidan iborat bo'lishi kerak."); return; }
+    if (password.length < 8) { setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak."); return; }
     if (password !== confirm) { setError("Parollar mos kelmadi."); return; }
 
     setLoading(true);
-    window.setTimeout(() => {
-      updateProfile({ name: name.trim(), email: normalizedEmail });
-      createMockSession(name.trim(), normalizedEmail);
+    try {
+      await signUp({ email: normalizedEmail, password, firstName: firstName.trim(), lastName: lastName.trim() });
       setLoading(false);
       setSuccess("Hisob yaratildi. Yuborilmoqda...");
       window.setTimeout(goToDefaultPage, 450);
-    }, 550);
+    } catch (reason) {
+      setLoading(false);
+      setError(getApiErrorMessage(reason));
+    }
   };
 
   const signUpWithGoogle = () => {
-    updateProfile({ name: "Google foydalanuvchi", email: "google@yechim.ai" });
-    createMockSession("Google foydalanuvchi", "google@yechim.ai");
-    goToDefaultPage();
+    setError("Google OAuth hali ulanmagan.");
   };
 
   return (
@@ -76,7 +77,8 @@ const Register = () => {
         <div className="register__form-wrapper">
           <div className="register__heading"><h2>Hisob yaratish 👋</h2><p>YECHIM AI'dan foydalanishni boshlang.</p></div>
           <form className="register__form" onSubmit={submit}>
-            <div className="register__field"><label htmlFor="register-name">Ismingiz</label><input id="register-name" type="text" placeholder="Ismingizni kiriting" value={name} onChange={(event) => setName(event.target.value)} required /></div>
+            <div className="register__field"><label htmlFor="register-first-name">Ism</label><input id="register-first-name" type="text" placeholder="Ismingizni kiriting" value={firstName} onChange={(event) => setFirstName(event.target.value)} required /></div>
+            <div className="register__field"><label htmlFor="register-last-name">Familiya</label><input id="register-last-name" type="text" placeholder="Familiyangizni kiriting" value={lastName} onChange={(event) => setLastName(event.target.value)} required /></div>
             <div className="register__field"><label htmlFor="register-email">Email</label><input id="register-email" type="email" placeholder="example@gmail.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
             <div className="register__field"><label htmlFor="register-password">Parol</label><div className="auth-password"><input id="register-password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></div>
             <div className="register__field"><label htmlFor="register-confirm">Parolni tasdiqlang</label><div className="auth-password"><input id="register-confirm" type={showConfirm ? "text" : "password"} placeholder="••••••••" value={confirm} onChange={(event) => setConfirm(event.target.value)} minLength={6} required /><button type="button" onClick={() => setShowConfirm((value) => !value)} aria-label={showConfirm ? "Tasdiqlash parolini yashirish" : "Tasdiqlash parolini ko'rsatish"}>{showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></div>

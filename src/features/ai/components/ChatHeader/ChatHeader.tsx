@@ -1,4 +1,4 @@
-import { Bot, Minus, Trash2, X } from "lucide-react";
+import { Bot, Mic, Minus, Trash2, X } from "lucide-react";
 
 import "./ChatHeader.scss";
 
@@ -6,9 +6,10 @@ type ChatHeaderProps = {
   onClose?: () => void;
   onMinimize?: () => void;
   onClear?: () => void;
+  onVoice?: () => void;
 };
 
-const ChatHeader = ({ onClose, onMinimize, onClear }: ChatHeaderProps) => {
+const ChatHeader = ({ onClose, onMinimize, onClear, onVoice }: ChatHeaderProps) => {
   return (
     <header className="chat-header">
       <div className="chat-header__identity">
@@ -28,6 +29,18 @@ const ChatHeader = ({ onClose, onMinimize, onClear }: ChatHeaderProps) => {
       </div>
 
       <div className="chat-header__actions">
+        {onVoice && (
+          <button
+            type="button"
+            className="chat-header__btn chat-header__btn--voice"
+            onClick={onVoice}
+            title="Voice Mode"
+            aria-label="Voice Mode'ni ochish"
+          >
+            <Mic size={15} />
+          </button>
+        )}
+
         {onClear && (
           <button
             type="button"

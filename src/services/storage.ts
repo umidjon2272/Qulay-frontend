@@ -2,7 +2,7 @@ import { STORAGE_KEYS } from "../constants/storageKeys";
 
 type StorageLike = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
-export const STORAGE_SCHEMA_VERSION = 1;
+export const STORAGE_SCHEMA_VERSION = 2;
 
 const getStorage = (): StorageLike | null => {
   if (typeof window === "undefined") return null;
@@ -92,6 +92,14 @@ export const initializeStorageSchema = (): void => {
   );
 
   if (version !== STORAGE_SCHEMA_VERSION) {
+    if (version < 2) {
+      // Business records previously seeded by the demo are never a source of truth.
+      removeStorage(STORAGE_KEYS.tasks);
+      removeStorage(STORAGE_KEYS.reminders);
+      removeStorage(STORAGE_KEYS.calendarEvents);
+      removeStorage(STORAGE_KEYS.notes);
+      removeStorage(STORAGE_KEYS.authSession);
+    }
     writeStorage(STORAGE_KEYS.schemaVersion, STORAGE_SCHEMA_VERSION);
   }
 };

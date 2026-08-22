@@ -102,19 +102,6 @@ html[data-theme="dark"] ::selection {
   color: var(--dark-text-primary);
 }
 
-/* App frame and desktop rhythm */
-
-html[data-theme="dark"] .app-layout {
-  max-width: 1800px;
-  margin-inline: auto;
-  background: transparent !important;
-}
-
-html[data-theme="dark"] .app-layout__content {
-  max-width: 1450px;
-  margin-inline: auto;
-}
-
 html[data-theme="dark"] :where(.dashboard__main, .ai-page, .tasks-page, .reminders-page, .calendar-page, .files-page, .settings-page) {
   color: var(--dark-text-primary);
 }
@@ -816,32 +803,12 @@ html[data-theme="dark"] .theme-toggle--floating:hover {
   color: var(--dark-accent) !important;
 }
 
-@media (min-width: 1400px) {
-  html[data-theme="dark"] .app-layout {
-    padding: 26px;
-    gap: 24px;
-  }
-
-  html[data-theme="dark"] .sidebar {
-    top: 26px;
-    height: calc(100dvh - 52px);
-  }
-
-  html[data-theme="dark"] .app-layout__content {
-    padding-top: 58px;
-  }
-}
-
 @media (max-width: 700px) {
   html[data-theme="dark"] body {
     background:
       radial-gradient(circle at 88% 1%, rgba(125, 92, 235, 0.16), transparent 30%),
       radial-gradient(circle at 4% 45%, rgba(40, 151, 208, 0.08), transparent 28%),
       #0b1020;
-  }
-
-  html[data-theme="dark"] .app-layout {
-    padding-bottom: calc(106px + env(safe-area-inset-bottom));
   }
 
   html[data-theme="dark"] .sidebar {
@@ -939,9 +906,6 @@ html[data-theme="dark"] .theme-toggle--floating:hover {
     border-radius: 12px;
   }
 
-  html[data-theme="dark"] .app-layout__content > :where(.tasks-page, .reminders-page, .calendar-page, .files-page, .settings-page) {
-    padding-top: 3px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

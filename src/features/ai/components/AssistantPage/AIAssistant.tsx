@@ -1,32 +1,31 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Bot,
-  Sparkles,
-  CalendarDays,
-  ListTodo,
-  BellPlus,
-  FolderSearch,
-  MessageSquareText,
   ArrowLeft,
+  BellPlus,
+  CalendarDays,
+  FolderSearch,
+  ListTodo,
+  MessageSquareText,
+  Mic,
+  Sparkles,
   Trash2,
 } from "lucide-react";
 
 import { useAIChat } from "../../hooks/useAIChat";
 
 import ChatHeader from "../ChatHeader/ChatHeader";
-import MessageList from "../MessageList/MessageList";
 import ChatInput from "../ChatInput/ChatInput";
+import MessageList from "../MessageList/MessageList";
+import VoiceMode from "../VoiceMode/VoiceMode";
 
 import "./AIAssistant.scss";
 
 const suggestedPrompts = [
   "Bugungi rejamni ayt",
   "Yangi vazifa yarat",
-  "Eslatma qo‘sh",
-  "Loyiha g‘oyasini yozib ol",
-  "Fayllarimdan top",
-  "Telegram xabarini tayyorla",
+  "Eslatma qo'sh",
+  "Loyiha g'oyasini yozib ol",
 ];
 
 const quickActions = [
@@ -39,14 +38,23 @@ const quickActions = [
 const recentConversations = [
   "Bugungi rejalarim nima?",
   "Ertangi uchrashuvni tashkil qil",
-  "Loyiha uchun g‘oya taklif qil",
+  "Loyiha uchun g'oya taklif qil",
 ];
 
 const AIAssistant = () => {
-  const { messages, isTyping, sendMessage, executeAction, clearChat, speakingId, speak, stopSpeaking } = useAIChat();
+  const {
+    messages,
+    isTyping,
+    sendMessage,
+    executeAction,
+    clearChat,
+    speakingId,
+    speak,
+    stopSpeaking,
+  } = useAIChat();
   const [input, setInput] = useState("");
+  const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
   const navigate = useNavigate();
-
   const hasConversation = messages.length > 1;
 
   const handleSend = () => {
@@ -55,44 +63,45 @@ const AIAssistant = () => {
     setInput("");
   };
 
+  const openVoiceMode = () => {
+    stopSpeaking();
+    setIsVoiceModeOpen(true);
+  };
+
+  const closeVoiceMode = () => setIsVoiceModeOpen(false);
+  const focusTextComposer = () => {
+    closeVoiceMode();
+    window.setTimeout(() => {
+      document.querySelector<HTMLTextAreaElement>(".ai-page .chat-input textarea")?.focus();
+    }, 0);
+  };
+
   return (
     <main className="ai-page">
-      <div className="ai-page__orb ai-page__orb--one" />
-      <div className="ai-page__orb ai-page__orb--two" />
+      <div className="ai-page__ambient ai-page__ambient--one" />
+      <div className="ai-page__ambient ai-page__ambient--two" />
 
-      <header className="ai-page__mobile-bar">
-        <button type="button" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={19} /></button>
-        <div><strong>AI Assistant</strong><span><i /> Onlayn · Tayyor</span></div>
-        <button type="button" onClick={clearChat} aria-label="Suhbatni tozalash"><Trash2 size={17} /></button>
-      </header>
-
-      <header className="ai-page__header">
-        <div>
-          <span className="ai-page__eyebrow">AQLLI ISH MAYDONI</span>
-          <h1>AI yordamchi</h1>
-          <p>G‘oyalar, rejalar va kundalik ishlaringiz uchun aqlli yordamchi.</p>
-        </div>
-      </header>
-
-      <div className="ai-page__layout">
-        <section className="ai-page__side">
-          <div className="ai-side-card">
-            <div className="ai-side-card__icon">
-              <Sparkles size={16} />
+      <section className="ai-page__workspace">
+        <aside className="ai-page__rail" aria-label="AI yordamchi tezkor paneli">
+          <div className="ai-page__rail-heading">
+            <div className="ai-page__rail-mark"><Sparkles size={15} /></div>
+            <div>
+              <strong>AI yordamchi</strong>
+              <span>Smart ish maydoni</span>
             </div>
+          </div>
 
-            <h3>Tezkor amallar</h3>
+          <div className="ai-side-card">
+            <div className="ai-side-card__title">
+              <div className="ai-side-card__icon"><Sparkles size={15} /></div>
+              <h2>Tezkor amallar</h2>
+            </div>
 
             <div className="ai-side-card__actions">
               {quickActions.map((action) => {
                 const Icon = action.icon;
-
                 return (
-                  <button
-                    type="button"
-                    key={action.label}
-                    onClick={() => navigate(action.route)}
-                  >
+                  <button type="button" key={action.label} onClick={() => navigate(action.route)}>
                     <Icon size={15} />
                     {action.label}
                   </button>
@@ -101,41 +110,33 @@ const AIAssistant = () => {
             </div>
           </div>
 
-          <div className="ai-side-card">
-            <div className="ai-side-card__icon">
-              <MessageSquareText size={16} />
+          <div className="ai-side-card ai-side-card--history">
+            <div className="ai-side-card__title">
+              <div className="ai-side-card__icon ai-side-card__icon--soft"><MessageSquareText size={15} /></div>
+              <h2>So'nggi suhbatlar</h2>
             </div>
-
-            <h3>So‘nggi suhbatlar</h3>
 
             <div className="ai-side-card__conversations">
               {recentConversations.map((item) => (
-                <button type="button" key={item} onClick={() => sendMessage(item)}>
-                  {item}
-                </button>
+                <button type="button" key={item} onClick={() => sendMessage(item)}>{item}</button>
               ))}
             </div>
           </div>
-        </section>
+        </aside>
 
         <section className="ai-page__main">
+          <ChatHeader onClear={clearChat} onVoice={openVoiceMode} />
+
           {!hasConversation ? (
             <div className="ai-welcome">
-              <div className="ai-welcome__icon">
-                <div className="ai-welcome__ring ai-welcome__ring--one" />
-                <div className="ai-welcome__ring ai-welcome__ring--two" />
-                <Bot size={32} />
+              <div className="ai-welcome__orb" aria-hidden="true">
+                <span /><span /><span />
+                <Sparkles size={28} />
               </div>
 
-              <span className="ai-welcome__small">SALOM</span>
-
-              <h2>
-                Bugun sizga
-                <br />
-                qanday yordam beray?
-              </h2>
-
-              <p>Savol bering, reja tuzing yoki yangi g‘oyalar yarating.</p>
+              <span className="ai-welcome__small">SALOM, MEN YECHIM AI</span>
+              <h1>Bugun sizga qanday yordam beray?</h1>
+              <p>Reja tuzing, vazifa yarating yoki shunchaki gaplashishni boshlang.</p>
 
               <div className="ai-prompts">
                 {suggestedPrompts.map((prompt) => (
@@ -149,11 +150,14 @@ const AIAssistant = () => {
               <div className="ai-welcome__input">
                 <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isTyping} />
               </div>
+
+              <button type="button" className="ai-welcome__voice" onClick={openVoiceMode}>
+                <Mic size={15} />
+                Voice Mode'ni ochish
+              </button>
             </div>
           ) : (
             <div className="ai-conversation">
-              <ChatHeader onClear={clearChat} />
-
               <MessageList
                 messages={messages}
                 isTyping={isTyping}
@@ -167,7 +171,22 @@ const AIAssistant = () => {
             </div>
           )}
         </section>
-      </div>
+      </section>
+
+      <header className="ai-page__mobile-bar">
+        <button type="button" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={18} /></button>
+        <div><strong>AI Assistant</strong><span><i /> Onlayn · Tayyor</span></div>
+        <button type="button" className="ai-page__mobile-voice" onClick={openVoiceMode} aria-label="Voice Mode'ni ochish"><Mic size={17} /></button>
+        <button type="button" onClick={clearChat} aria-label="Suhbatni tozalash"><Trash2 size={16} /></button>
+      </header>
+
+      {isVoiceModeOpen && (
+        <VoiceMode
+          open={isVoiceModeOpen}
+          onClose={closeVoiceMode}
+          onKeyboard={focusTextComposer}
+        />
+      )}
     </main>
   );
 };

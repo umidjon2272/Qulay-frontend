@@ -11,8 +11,8 @@ export type AIActionExecutionResult = {
   data?: unknown;
 };
 
-const formatPlanMessage = (action: Extract<AIAction, { type: "getTodayPlan" }>) => {
-  const plan = getTodayPlan(action.payload.dateKey);
+const formatPlanMessage = async (action: Extract<AIAction, { type: "getTodayPlan" }>) => {
+  const plan = await getTodayPlan(action.payload.dateKey);
   const items = [
     ...plan.meetings.map((meeting) => ({ time: meeting.time, text: `• ${meeting.time} — ${meeting.title}` })),
     ...plan.tasks
@@ -36,7 +36,7 @@ export const executeAIAction = async (
   try {
     switch (action.type) {
       case "createTask": {
-        const task = createTask({
+        const task = await createTask({
           title: action.payload.title,
           description: action.payload.description,
           time: action.payload.time,
@@ -50,7 +50,7 @@ export const executeAIAction = async (
       }
 
       case "createReminder": {
-        const reminder = createReminder({
+        const reminder = await createReminder({
           title: action.payload.title,
           description: action.payload.description,
           date: action.payload.dateLabel,
@@ -64,7 +64,7 @@ export const executeAIAction = async (
       }
 
       case "createMeeting": {
-        const meeting = createMeeting({
+        const meeting = await createMeeting({
           title: action.payload.title,
           date: action.payload.date,
           time: action.payload.time,
@@ -78,7 +78,7 @@ export const executeAIAction = async (
       }
 
       case "createNote": {
-        const note = createNote({
+        const note = await createNote({
           title: action.payload.title,
           content: action.payload.content,
         });
@@ -89,8 +89,8 @@ export const executeAIAction = async (
       case "getTodayPlan":
         return {
           success: true,
-          message: formatPlanMessage(action),
-          data: getTodayPlan(action.payload.dateKey),
+          message: await formatPlanMessage(action),
+          data: await getTodayPlan(action.payload.dateKey),
         };
     }
   } catch {

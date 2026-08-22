@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getDateKey } from "../../../../services/dateUtils";
-import { getCalendarEvents } from "../../../../services/meetingService";
-import { getReminders } from "../../../../services/reminderService";
-import { getTasks } from "../../../../services/taskService";
+import { getCalendarEvents, loadCalendarEvents } from "../../../../services/meetingService";
+import { getReminders, loadReminders } from "../../../../services/reminderService";
+import { getTasks, loadTasks } from "../../../../services/taskService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
 import "./Stats.scss";
 
@@ -20,6 +20,9 @@ const Stats = () => {
     setReminders(getReminders());
     setEvents(getCalendarEvents());
   }), []);
+  useEffect(() => {
+    void Promise.all([loadTasks(), loadReminders(), loadCalendarEvents()]).catch(() => undefined);
+  }, []);
 
   const today = getDateKey();
   const todayTasks = tasks.filter((task) => !task.date || task.date === today);

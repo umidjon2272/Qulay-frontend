@@ -1,67 +1,62 @@
 import { STORAGE_KEYS } from "../constants/storageKeys";
-import {
-  readSessionStorageString,
-  readStorage,
-  removeSessionStorage,
-  writeSessionStorageString,
-  writeStorage,
-} from "./storage";
+import { authApi } from "./api";
+import { getStoredUser, getTokens, clearAuth, saveAuth, type AuthTokens } from "./api/tokenStorage";
+import type { User } from "./api/types";
+import { removeStorage } from "./storage";
+import { clearWorkspaceCache } from "./workspaceCache";
 
-export type AuthSession = { name: string; email: string; createdAt: string };
-
+export type AuthSession = User;
 export const AUTH_SESSION_CHANGED = "yechim_ai_auth_session_changed";
 
 const notifyAuthChanged = () => {
-  if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event(AUTH_SESSION_CHANGED));
-  }
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_SESSION_CHANGED));
 };
 
-const isAuthSession = (value: unknown): value is AuthSession =>
-  typeof value === "object" &&
-  value !== null &&
-  typeof (value as AuthSession).name === "string" &&
-  typeof (value as AuthSession).email === "string" &&
-  typeof (value as AuthSession).createdAt === "string";
+export const getAuthSession = (): AuthSession | null => getStoredUser();
+export const getAuthTokens = (): AuthTokens | null => getTokens();
 
-export const getAuthSession = (): AuthSession | null => {
-  const localSession = readStorage<unknown>(STORAGE_KEYS.authSession, null);
-  if (isAuthSession(localSession)) return localSession;
+export const signIn = async (email: string, password: string, remember = true): Promise<User> => {
+  const response = await authApi.login(email.trim().toLowerCase(), password);
+  saveAuth({ accessToken: response.accessToken, refreshToken: response.refreshToken }, response.user, remember);
+  notifyAuthChanged();
+  return response.user;
+};
 
-  const sessionRaw = readSessionStorageString(STORAGE_KEYS.authSession);
-  if (!sessionRaw) return null;
+export const signUp = async (input: { email: string; password: string; firstName: string; lastName: string }, remember = true): Promise<User> => {
+  const response = await authApi.register({ ...input, email: input.email.trim().toLowerCase() });
+  saveAuth({ accessToken: response.accessToken, refreshToken: response.refreshToken }, response.user, remember);
+  notifyAuthChanged();
+  return response.user;
+};
 
+export const restoreSession = async (): Promise<User | null> => {
+  if (!getTokens()) return null;
   try {
-    const session: unknown = JSON.parse(sessionRaw);
-    return isAuthSession(session) ? session : null;
+    const user = await authApi.me();
+    const current = getTokens();
+    if (current) {
+      const remember = typeof window !== "undefined" && Boolean(window.localStorage.getItem("yechim_ai_auth_tokens"));
+      saveAuth(current, user, remember);
+    }
+    notifyAuthChanged();
+    return user;
   } catch {
+    clearAuth();
+    notifyAuthChanged();
     return null;
   }
 };
 
-export const createMockSession = (
-  name: string,
-  email: string,
-  options: { remember?: boolean } = {},
-): AuthSession => {
-  const session = { name, email, createdAt: new Date().toISOString() };
-
-  if (options.remember === false) {
-    writeStorage(STORAGE_KEYS.authSession, null);
-    writeSessionStorageString(STORAGE_KEYS.authSession, JSON.stringify(session));
-  } else {
-    writeStorage(STORAGE_KEYS.authSession, session);
-    removeSessionStorage(STORAGE_KEYS.authSession);
-  }
-
+export const logout = async (): Promise<void> => {
+  const refreshToken = getTokens()?.refreshToken;
+  try {
+    if (refreshToken) await authApi.logout(refreshToken);
+  } catch { /* local cleanup must still happen if the server is asleep/unavailable */ }
+  clearAuth();
+  clearWorkspaceCache();
+  removeStorage(STORAGE_KEYS.authSession);
   notifyAuthChanged();
-
-  return session;
 };
 
-export const clearMockSession = () => {
-  const clearedLocal = writeStorage(STORAGE_KEYS.authSession, null);
-  const clearedSession = removeSessionStorage(STORAGE_KEYS.authSession);
-  notifyAuthChanged();
-  return clearedLocal || clearedSession;
-};
+/** Backwards-compatible name used by the settings screen. */
+export const clearMockSession = (): void => { void logout(); };

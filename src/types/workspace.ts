@@ -1,7 +1,7 @@
 export type TaskPriority = "Muhim" | "O‘rta" | "Oddiy";
 
 export type Task = {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   time: string;
@@ -12,7 +12,7 @@ export type Task = {
 };
 
 export type Reminder = {
-  id: number;
+  id: string | number;
   title: string;
   description: string;
   date: string;
@@ -23,7 +23,7 @@ export type Reminder = {
 };
 
 export type CalendarEvent = {
-  id: number;
+  id: string | number;
   title: string;
   date: string;
   time: string;
@@ -35,7 +35,7 @@ export type CalendarEvent = {
 };
 
 export type Note = {
-  id: number;
+  id: string | number;
   title: string;
   content: string;
   createdAt: string;

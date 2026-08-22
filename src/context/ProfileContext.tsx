@@ -6,17 +6,24 @@ import {
   type ReactNode,
 } from "react";
 
-import { getProfile, updateProfile } from "../services/profileService";
+import { getProfile, loadProfile } from "../services/profileService";
 import { subscribeToWorkspaceData } from "../services/workspaceEvents";
 import { ProfileContext } from "./ProfileContextValue";
+import { useAuth } from "../hooks/useAuth";
 
 const initialProfile = getProfile();
 
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
+  const { status } = useAuth();
   const [name, setNameState] = useState(initialProfile.name);
   const [email, setEmailState] = useState(initialProfile.email);
   const [bio, setBioState] = useState(initialProfile.bio);
   const [avatar, setAvatarState] = useState<string | null>(initialProfile.avatar);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    void loadProfile().catch(() => undefined);
+  }, [status]);
 
   useEffect(() => subscribeToWorkspaceData("profile", () => {
     const next = getProfile();
@@ -28,22 +35,18 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
 
   const setName = useCallback((value: string) => {
     setNameState(value);
-    updateProfile({ name: value });
   }, []);
 
   const setEmail = useCallback((value: string) => {
     setEmailState(value);
-    updateProfile({ email: value });
   }, []);
 
   const setBio = useCallback((value: string) => {
     setBioState(value);
-    updateProfile({ bio: value });
   }, []);
 
   const setAvatar = useCallback((value: string | null) => {
     setAvatarState(value);
-    updateProfile({ avatar: value });
   }, []);
 
   const value = useMemo(

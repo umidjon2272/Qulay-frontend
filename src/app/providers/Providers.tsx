@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { AIChatProvider } from "../../features/ai/context/AIChatContext";
 import { IntegrationProvider } from "../../context/IntegrationContext";
 import { ProfileProvider } from "../../context/ProfileContext";
+import { AuthProvider } from "../../context/AuthContext";
 import { ToastProvider } from "../../components/Toast/ToastContext";
 import { getSettings } from "../../services/settingsService";
 import { initializeStorageSchema } from "../../services/storage";
@@ -45,12 +46,14 @@ const ThemeSync = ({ children }: ProvidersProps) => {
 
 export const Providers = ({ children }: ProvidersProps) => (
   <ToastProvider>
-    <ThemeSync>
-      <ProfileProvider>
-        <IntegrationProvider>
-          <AIChatProvider>{children}</AIChatProvider>
-        </IntegrationProvider>
-      </ProfileProvider>
-    </ThemeSync>
+    <AuthProvider>
+      <ThemeSync>
+        <ProfileProvider>
+          <IntegrationProvider>
+            <AIChatProvider>{children}</AIChatProvider>
+          </IntegrationProvider>
+        </ProfileProvider>
+      </ThemeSync>
+    </AuthProvider>
   </ToastProvider>
 );

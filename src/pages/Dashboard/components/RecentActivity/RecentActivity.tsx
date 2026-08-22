@@ -1,10 +1,10 @@
 import { Bell, CalendarDays, CheckCircle2, ListTodo, NotebookPen } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { getCalendarEvents } from "../../../../services/meetingService";
-import { getNotes } from "../../../../services/noteService";
-import { getReminders } from "../../../../services/reminderService";
-import { getTasks } from "../../../../services/taskService";
+import { getCalendarEvents, loadCalendarEvents } from "../../../../services/meetingService";
+import { getNotes, loadNotes } from "../../../../services/noteService";
+import { getReminders, loadReminders } from "../../../../services/reminderService";
+import { getTasks, loadTasks } from "../../../../services/taskService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
 import "./RecentActivity.scss";
 
@@ -13,6 +13,7 @@ type Activity = { id: string; title: string; meta: string; icon: typeof ListTodo
 const RecentActivity = () => {
   const [version, setVersion] = useState(0);
   useEffect(() => subscribeToWorkspaceData(["tasks", "reminders", "calendarEvents", "notes"], () => setVersion((value) => value + 1)), []);
+  useEffect(() => { void Promise.all([loadTasks(), loadReminders(), loadCalendarEvents(), loadNotes()]).catch(() => undefined); }, []);
 
   const activities = useMemo<Activity[]>(() => {
     void version;

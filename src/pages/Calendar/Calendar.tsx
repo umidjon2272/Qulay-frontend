@@ -21,6 +21,7 @@ import {
   createMeeting as createMeetingRecord,
   deleteMeeting,
   getCalendarEvents,
+  loadCalendarEvents,
   updateMeeting,
 } from "../../services/meetingService";
 import { subscribeToWorkspaceData } from "../../services/workspaceEvents";
@@ -37,7 +38,7 @@ const Calendar = () => {
   const [events, setEvents] = useState<CalendarEvent[]>(getCalendarEvents);
   const [selectedDay, setSelectedDay] = useState(today.getDate());
   const [showModal, setShowModal] = useState(false);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | number | null>(null);
   const [newTitle, setNewTitle] = useState("");
   const [newDate, setNewDate] = useState(getDateKey(today));
   const [newTime, setNewTime] = useState("10:00");
@@ -49,6 +50,7 @@ const Calendar = () => {
   const { showToast } = useToast();
 
   useEffect(() => subscribeToWorkspaceData("calendarEvents", () => setEvents(getCalendarEvents())), []);
+  useEffect(() => { void loadCalendarEvents().catch(() => showToast("Uchrashuvlarni yuklab bo'lmadi", "error")); }, [showToast]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -108,7 +110,7 @@ const Calendar = () => {
     setShowModal(true);
   };
 
-  const saveMeeting = () => {
+  const saveMeeting = async () => {
     if (!newTitle.trim()) {
       showToast("Uchrashuv nomini kiriting", "error");
       return;
@@ -129,10 +131,10 @@ const Calendar = () => {
     };
     try {
       if (editId !== null) {
-      updateMeeting(editId, payload);
+      await updateMeeting(editId, payload);
       showToast("Uchrashuv yangilandi", "success");
     } else {
-      createMeetingRecord(payload);
+      await createMeetingRecord(payload);
       showToast("Uchrashuv kalendarga qo‘shildi", "success");
       }
       setEvents(getCalendarEvents());
@@ -148,11 +150,11 @@ const Calendar = () => {
     setPendingDelete(event);
   };
 
-  const confirmRemoveMeeting = () => {
+  const confirmRemoveMeeting = async () => {
     if (!pendingDelete) return;
 
     const event = pendingDelete;
-    deleteMeeting(event.id);
+    try { await deleteMeeting(event.id); } catch { showToast("Uchrashuvni o'chirib bo'lmadi", "error"); return; }
     setEvents(getCalendarEvents());
     setPendingDelete(null);
     showToast("Uchrashuv o‘chirildi", "success");

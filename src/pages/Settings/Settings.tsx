@@ -31,6 +31,7 @@ import { STORAGE_KEYS } from "../../constants/storageKeys";
 import { readStorageString, removeStorage, writeStorage } from "../../services/storage";
 import { defaultSettings, getSettings, updateSettings } from "../../services/settingsService";
 import { clearMockSession } from "../../services/authService";
+import { updateProfile } from "../../services/profileService";
 import { subscribeToWorkspaceData, notifyWorkspaceDataChanged } from "../../services/workspaceEvents";
 
 import "./Settings.scss";
@@ -117,11 +118,17 @@ const Settings = () => {
     updateSettings({ theme, language, timezone, dateFormat, defaultPage, notifications, replyStyle, replyLength, ai, twoFactor });
   }, [theme, language, timezone, dateFormat, defaultPage, notifications, replyStyle, replyLength, ai, twoFactor]);
 
+  useEffect(() => {
+    const backendLanguage = language === "O'zbekcha" ? "uz" : language === "English" ? "en" : "ru";
+    const backendTimezone = timezone.startsWith("Toshkent") ? "Asia/Tashkent" : timezone.startsWith("Moskva") ? "Europe/Moscow" : "Europe/London";
+    void updateProfile({ language: backendLanguage, timezone: backendTimezone }).catch(() => undefined);
+  }, [language, timezone]);
+
   useEffect(() => subscribeToWorkspaceData("settings", () => {
     setTheme(getSettings().theme);
   }), []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (name.trim().length < 2) {
       showToast("Ism kamida 2 ta belgidan iborat bo'lsin", "error");
       return;
@@ -132,7 +139,14 @@ const Settings = () => {
     }
 
     updateSettings({ theme, language, timezone, dateFormat, defaultPage, notifications, replyStyle, replyLength, ai, twoFactor });
-    showToast("Sozlamalar saqlandi", "success");
+    const backendLanguage = language === "O'zbekcha" ? "uz" : language === "English" ? "en" : "ru";
+    const backendTimezone = timezone.startsWith("Toshkent") ? "Asia/Tashkent" : timezone.startsWith("Moskva") ? "Europe/Moscow" : "Europe/London";
+    try {
+      await updateProfile({ name, bio, avatar, language: backendLanguage, timezone: backendTimezone });
+      showToast("Sozlamalar saqlandi", "success");
+    } catch {
+      showToast("Profilni serverda saqlab bo'lmadi", "error");
+    }
   };
 
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -205,27 +219,15 @@ const Settings = () => {
     clearChat();
     clearMockSession();
     [
-      STORAGE_KEYS.tasks,
-      STORAGE_KEYS.reminders,
-      STORAGE_KEYS.calendarEvents,
-      STORAGE_KEYS.notes,
       STORAGE_KEYS.files,
       STORAGE_KEYS.integrations,
       STORAGE_KEYS.settings,
       STORAGE_KEYS.aiChatHistory,
     ].forEach(removeStorage);
 
-    writeStorage(STORAGE_KEYS.tasks, []);
-    writeStorage(STORAGE_KEYS.reminders, []);
-    writeStorage(STORAGE_KEYS.calendarEvents, []);
-    writeStorage(STORAGE_KEYS.notes, []);
     writeStorage(STORAGE_KEYS.files, []);
     writeStorage(STORAGE_KEYS.integrations, {});
     updateSettings(defaultSettings);
-    notifyWorkspaceDataChanged("tasks");
-    notifyWorkspaceDataChanged("reminders");
-    notifyWorkspaceDataChanged("calendarEvents");
-    notifyWorkspaceDataChanged("notes");
     notifyWorkspaceDataChanged("files");
     notifyWorkspaceDataChanged("integrations");
 
@@ -432,6 +434,7 @@ const Settings = () => {
                 <input
                   type="email"
                   value={email}
+                  disabled
                   onChange={(event) => setEmail(event.target.value)}
                 />
               </label>

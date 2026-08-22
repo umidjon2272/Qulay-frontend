@@ -1,23 +1,21 @@
 /* YECHIM AI layout system: width, rhythm and responsive structure. */
 
 :root {
-  --layout-max-width: 1560px;
-  --layout-shell-max: 1920px;
   --layout-sidebar-width: 248px;
   --layout-shell-gap: 24px;
   --layout-section-gap: 28px;
   --layout-card-gap: 14px;
-  --layout-page-padding: 24px;
+  --layout-page-padding: clamp(24px, 2vw, 36px);
 }
 
 /* Desktop shell */
 
 .app-layout {
   width: 100%;
-  max-width: var(--layout-shell-max);
-  margin-inline: auto;
+  max-width: none;
+  margin-inline: 0;
   gap: var(--layout-shell-gap);
-  padding: var(--layout-page-padding);
+  padding: 0;
 }
 
 .sidebar {
@@ -27,10 +25,12 @@
 
 .app-layout__content {
   flex: 1 1 auto;
-  width: min(100%, var(--layout-max-width));
-  max-width: var(--layout-max-width);
-  margin-inline: auto;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin-inline: 0;
   padding-top: 56px;
+  padding-right: var(--layout-page-padding);
 }
 
 .app-layout__content > :where(
@@ -43,9 +43,9 @@
   .settings-page
 ) {
   width: 100%;
-  max-width: var(--layout-max-width);
-  margin-inline: auto;
-  padding-inline: 8px;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 0;
 }
 
 /* Dashboard rhythm */
@@ -299,7 +299,7 @@
   :root {
     --layout-sidebar-width: 236px;
     --layout-shell-gap: 20px;
-    --layout-page-padding: 20px;
+    --layout-page-padding: clamp(20px, 2vw, 28px);
   }
 
   .app-layout__content {
@@ -418,6 +418,7 @@
   .app-layout__content {
     width: 100%;
     max-width: none;
+    padding-right: 0;
     padding-top: 0;
   }
 
@@ -835,5 +836,107 @@
   .calendar-day {
     min-height: 46px;
     padding-inline: 3px;
+  }
+}
+
+/* AI Assistant is an app workspace, not a dashboard card. */
+.app-layout--ai {
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+.app-layout--ai .sidebar {
+  top: var(--layout-page-padding);
+  height: calc(100dvh - (2 * var(--layout-page-padding)));
+}
+
+.app-layout--ai .app-layout__content {
+  width: 100%;
+  max-width: none;
+  height: calc(100dvh - (2 * var(--layout-page-padding)));
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.app-layout--ai .app-layout__content > .ai-page {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Desktop regression guard: the shell must consume the viewport after the
+   provider/auth wrapper chain. Keep this scoped above the mobile breakpoint. */
+@media (min-width: 701px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .app-layout {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    min-width: 100%;
+    max-width: none;
+    min-height: 100dvh;
+    margin: 0;
+    padding: 0;
+  }
+
+  .app-layout > .sidebar {
+    flex: 0 0 var(--layout-sidebar-width);
+  }
+
+  .app-layout > .app-layout__content {
+    flex: 1 1 0;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    margin: 0;
+    padding-left: 0;
+    padding-right: var(--layout-page-padding);
+  }
+
+  .app-layout__content > :where(
+    .dashboard__main,
+    .ai-page,
+    .tasks-page,
+    .reminders-page,
+    .calendar-page,
+    .files-page,
+    .settings-page
+  ) {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .dashboard__main {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .app-layout--ai,
+  .app-layout--ai .app-layout__content,
+  .app-layout--ai .app-layout__content > .ai-page {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .app-layout--ai .app-layout__content > .ai-page {
+    padding-bottom: 0;
   }
 }

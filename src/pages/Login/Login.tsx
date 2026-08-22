@@ -4,9 +4,9 @@ import type { FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { getSafeReturnPath } from "../../app/router/routeUtils";
-import { createMockSession } from "../../services/authService";
+import { signIn } from "../../services/authService";
+import { getApiErrorMessage } from "../../services/api";
 import { getSettings } from "../../services/settingsService";
-import { updateProfile } from "../../services/profileService";
 import "./Login.scss";
 
 const Login = () => {
@@ -31,7 +31,7 @@ const Login = () => {
     navigate(page === "AI yordamchi" ? "/ai-assistant" : page === "Vazifalar" ? "/tasks" : "/dashboard", { replace: true });
   };
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (loading) return;
 
@@ -42,25 +42,25 @@ const Login = () => {
       setError("To'g'ri email manzilini kiriting.");
       return;
     }
-    if (password.length < 6) {
-      setError("Parol kamida 6 ta belgidan iborat bo'lishi kerak.");
+    if (password.length < 8) {
+      setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak.");
       return;
     }
 
     setLoading(true);
-    window.setTimeout(() => {
-      updateProfile({ name: "Yechim foydalanuvchi", email: normalizedEmail });
-      createMockSession("Yechim foydalanuvchi", normalizedEmail, { remember });
+    try {
+      await signIn(normalizedEmail, password, remember);
       setLoading(false);
       setSuccess(remember ? "Muvaffaqiyatli kirdingiz. Sessiya saqlandi." : "Muvaffaqiyatli kirdingiz.");
       window.setTimeout(goToDefaultPage, 450);
-    }, 500);
+    } catch (reason) {
+      setLoading(false);
+      setError(getApiErrorMessage(reason));
+    }
   };
 
   const signInWithGoogle = () => {
-    updateProfile({ name: "Google foydalanuvchi", email: "google@yechim.ai" });
-    createMockSession("Google foydalanuvchi", "google@yechim.ai");
-    goToDefaultPage();
+    setError("Google OAuth hali ulanmagan.");
   };
 
   return (

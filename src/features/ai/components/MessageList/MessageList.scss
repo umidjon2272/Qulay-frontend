@@ -13,6 +13,14 @@
   overflow-y: auto;
 }
 
+.message-list__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: min(100%, 1040px);
+  margin-inline: auto;
+}
+
 .message-list__typing {
   display: flex;
   align-items: center;
@@ -66,6 +74,10 @@
   .message-list {
     gap: 12px;
     padding: 14px 11px;
+  }
+
+  .message-list__inner {
+    gap: 12px;
   }
 
   .message-list__typing {

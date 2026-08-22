@@ -33,32 +33,34 @@ const MessageList = ({
 
   return (
     <div className="message-list">
-      {messages.map((message) => (
-        <MessageBubble
-          key={message.id}
-          message={message}
-          isSpeaking={speakingId === message.id}
-          onSpeak={() => onSpeak(message.id, message.text)}
-          onStopSpeak={onStopSpeak}
-          onAction={onAction}
-        />
-      ))}
+      <div className="message-list__inner">
+        {messages.map((message) => (
+          <MessageBubble
+            key={message.id}
+            message={message}
+            isSpeaking={speakingId === message.id}
+            onSpeak={() => onSpeak(message.id, message.text)}
+            onStopSpeak={onStopSpeak}
+            onAction={onAction}
+          />
+        ))}
 
-      {isTyping && (
-        <div className="message-bubble message-bubble--ai">
-          <div className="message-bubble__avatar">
-            <Bot size={13} />
+        {isTyping && (
+          <div className="message-bubble message-bubble--ai">
+            <div className="message-bubble__avatar">
+              <Bot size={13} />
+            </div>
+
+            <div className="message-list__typing">
+              <span />
+              <span />
+              <span />
+            </div>
           </div>
+        )}
 
-          <div className="message-list__typing">
-            <span />
-            <span />
-            <span />
-          </div>
-        </div>
-      )}
-
-      <div ref={bottomRef} />
+        <div ref={bottomRef} />
+      </div>
     </div>
   );
 };
