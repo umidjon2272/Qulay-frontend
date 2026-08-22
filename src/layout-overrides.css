@@ -1,0 +1,839 @@
+/* YECHIM AI layout system: width, rhythm and responsive structure. */
+
+:root {
+  --layout-max-width: 1560px;
+  --layout-shell-max: 1920px;
+  --layout-sidebar-width: 248px;
+  --layout-shell-gap: 24px;
+  --layout-section-gap: 28px;
+  --layout-card-gap: 14px;
+  --layout-page-padding: 24px;
+}
+
+/* Desktop shell */
+
+.app-layout {
+  width: 100%;
+  max-width: var(--layout-shell-max);
+  margin-inline: auto;
+  gap: var(--layout-shell-gap);
+  padding: var(--layout-page-padding);
+}
+
+.sidebar {
+  width: var(--layout-sidebar-width);
+  min-width: var(--layout-sidebar-width);
+}
+
+.app-layout__content {
+  flex: 1 1 auto;
+  width: min(100%, var(--layout-max-width));
+  max-width: var(--layout-max-width);
+  margin-inline: auto;
+  padding-top: 56px;
+}
+
+.app-layout__content > :where(
+  .dashboard__main,
+  .ai-page,
+  .tasks-page,
+  .reminders-page,
+  .calendar-page,
+  .files-page,
+  .settings-page
+) {
+  width: 100%;
+  max-width: var(--layout-max-width);
+  margin-inline: auto;
+  padding-inline: 8px;
+}
+
+/* Dashboard rhythm */
+
+.dashboard__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--layout-section-gap);
+}
+
+.dashboard__main > :where(.hero, .stats, .quick-actions, .mobile-home-details, .integrations, .recent-files, .recent-activity) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.hero {
+  min-height: 368px;
+}
+
+.hero__content {
+  padding: 52px;
+}
+
+.hero__visual {
+  right: 68px;
+}
+
+.stats__grid,
+.quick-actions__grid,
+.integration-hub__grid,
+.recent-files__list,
+.recent-activity__list {
+  gap: var(--layout-card-gap);
+}
+
+.stats__grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stats__card {
+  min-height: 160px;
+  padding: 18px;
+}
+
+.quick-actions__grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.quick-actions__item {
+  min-height: 76px;
+  padding: 14px;
+}
+
+.integration-hub__grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+}
+
+.integration-card {
+  min-height: 190px;
+  padding: 18px;
+}
+
+.recent-file {
+  min-height: 78px;
+  padding: 14px;
+}
+
+.recent-activity {
+  padding: 24px;
+}
+
+/* Shared page rhythm */
+
+:where(.ai-page, .tasks-page, .reminders-page, .calendar-page, .files-page, .settings-page) {
+  padding: 12px 8px 52px;
+}
+
+:where(
+  .tasks-header,
+  .reminders-header,
+  .calendar-page__header,
+  .files-page__header,
+  .settings-header,
+  .ai-page__header
+) {
+  margin-bottom: 28px;
+}
+
+.ai-page__layout {
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.ai-page__main {
+  min-height: 720px;
+}
+
+.tasks-overview,
+.reminders-stats,
+.tasks-toolbar,
+.reminders-toolbar,
+.tasks-content,
+.reminders-layout,
+.files-toolbar,
+.files-section,
+.settings-layout,
+.calendar-layout {
+  margin-bottom: 0;
+}
+
+.tasks-overview {
+  margin-bottom: 22px;
+}
+
+.tasks-toolbar,
+.reminders-toolbar,
+.files-toolbar {
+  margin-bottom: 22px;
+}
+
+.tasks-content,
+.reminders-layout,
+.calendar-layout {
+  gap: 20px;
+}
+
+.tasks-content {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.reminders-layout {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.tasks-list,
+.reminders-list {
+  padding: 22px;
+}
+
+.tasks-list__heading,
+.reminders-list__header {
+  margin-bottom: 16px;
+}
+
+.tasks-items,
+.reminders-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-card,
+.reminder-card {
+  min-height: 82px;
+  margin-bottom: 0;
+  padding: 14px;
+}
+
+.calendar-page__header {
+  margin-bottom: 28px;
+}
+
+.calendar-layout {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+
+.calendar-card__top {
+  min-height: 76px;
+  padding-inline: 24px;
+}
+
+.calendar-grid {
+  gap: 2px;
+  padding: 14px;
+}
+
+.calendar-grid__weekday {
+  height: 34px;
+}
+
+.calendar-day {
+  min-height: 88px;
+  padding: 12px;
+}
+
+.calendar-sidebar {
+  padding: 22px;
+}
+
+.calendar-events {
+  gap: 12px;
+  padding: 18px 0;
+}
+
+.calendar-event {
+  min-height: 72px;
+  padding: 12px;
+}
+
+.files-page__header {
+  margin-bottom: 28px;
+}
+
+.files-toolbar {
+  margin-bottom: 24px;
+}
+
+.files-section {
+  margin-bottom: 30px;
+}
+
+.files-section__heading {
+  margin-bottom: 14px;
+}
+
+.folders,
+.file-list {
+  gap: var(--layout-card-gap);
+}
+
+.folder-card,
+.file-card {
+  min-height: 82px;
+  padding: 14px;
+}
+
+.settings-header {
+  margin-bottom: 30px;
+}
+
+.settings-layout {
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
+}
+
+.settings-card {
+  padding: 30px;
+}
+
+.settings-row-list {
+  gap: 8px;
+}
+
+.settings-row {
+  padding: 18px 4px;
+}
+
+/* Mid-width desktop/tablet: retain usable card widths before stacking. */
+
+@media (max-width: 1399px) {
+  :root {
+    --layout-sidebar-width: 236px;
+    --layout-shell-gap: 20px;
+    --layout-page-padding: 20px;
+  }
+
+  .app-layout__content {
+    padding-top: 52px;
+  }
+
+  .hero__content {
+    max-width: 62%;
+    padding: 44px;
+  }
+
+  .hero__visual {
+    right: 34px;
+    width: 370px;
+  }
+
+  .hero__orb {
+    right: 46px;
+    width: 188px;
+    height: 188px;
+  }
+
+  .calendar-layout {
+    grid-template-columns: minmax(0, 1fr) 310px;
+  }
+
+  .tasks-content,
+  .reminders-layout {
+    grid-template-columns: minmax(0, 1fr) 290px;
+  }
+}
+
+@media (max-width: 1080px) {
+  :root {
+    --layout-sidebar-width: 220px;
+    --layout-shell-gap: 18px;
+    --layout-page-padding: 16px;
+  }
+
+  .stats__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quick-actions__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .integration-hub__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .calendar-layout,
+  .tasks-content,
+  .reminders-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-layout {
+    gap: 16px;
+  }
+
+  .hero__content {
+    max-width: 58%;
+    padding: 38px;
+  }
+
+  .hero__visual {
+    right: 18px;
+    width: 330px;
+  }
+
+  .hero__orb {
+    right: 24px;
+    width: 168px;
+    height: 168px;
+  }
+
+  .calendar-layout,
+  .tasks-content,
+  .reminders-layout,
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tasks-side,
+  .reminders-side {
+    order: 2;
+  }
+
+  .calendar-sidebar {
+    min-height: auto;
+  }
+}
+
+/* Mobile app structure */
+
+@media (max-width: 700px) {
+  :root {
+    --layout-section-gap: 24px;
+    --layout-card-gap: 12px;
+  }
+
+  .app-layout {
+    display: block;
+    max-width: none;
+    padding: max(16px, env(safe-area-inset-top)) 16px calc(124px + env(safe-area-inset-bottom));
+  }
+
+  .sidebar {
+    width: auto;
+    min-width: 0;
+  }
+
+  .app-layout__content {
+    width: 100%;
+    max-width: none;
+    padding-top: 0;
+  }
+
+  .app-layout__content > :where(
+    .dashboard__main,
+    .ai-page,
+    .tasks-page,
+    .reminders-page,
+    .calendar-page,
+    .files-page,
+    .settings-page
+  ) {
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  .dashboard__main {
+    gap: var(--layout-section-gap);
+  }
+
+  .dashboard__main > :where(.hero, .stats, .quick-actions, .mobile-home-details, .integrations, .recent-files, .recent-activity) {
+    margin: 0 !important;
+  }
+
+  /* The mobile home is a complete workspace, not only a teaser. */
+  .dashboard__main > .integrations,
+  .dashboard__main > .recent-files,
+  .dashboard__main > .recent-activity {
+    display: block !important;
+  }
+
+  .hero__mobile-header {
+    min-height: 48px;
+    margin-bottom: 24px;
+  }
+
+  .hero__mobile-greeting {
+    margin-bottom: 22px;
+  }
+
+  .hero__mobile-ai {
+    min-height: 198px;
+    margin-bottom: 0;
+    padding: 20px;
+  }
+
+  .stats__header,
+  .quick-actions__header {
+    margin-bottom: 14px;
+  }
+
+  .stats__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--layout-card-gap);
+  }
+
+  .stats__card {
+    min-height: 148px;
+    padding: 16px;
+  }
+
+  .quick-actions__mobile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--layout-card-gap);
+  }
+
+  .quick-actions__mobile-item {
+    min-height: 96px;
+    padding: 12px 8px;
+  }
+
+  .quick-actions__mobile-icon {
+    width: 46px;
+    height: 46px;
+  }
+
+  .mobile-home-details__meeting {
+    margin-bottom: 24px;
+    padding: 17px;
+  }
+
+  .mobile-home-details__tasks-header {
+    margin-bottom: 14px;
+  }
+
+  .mobile-task-row {
+    min-height: 82px;
+    padding: 12px 14px;
+    gap: 11px;
+  }
+
+  .integrations,
+  .recent-files,
+  .recent-activity {
+    width: 100%;
+  }
+
+  .integrations__header,
+  .recent-files__header,
+  .recent-activity__header {
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .integration-hub__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: var(--layout-card-gap);
+  }
+
+  .integration-card {
+    min-height: 184px;
+    padding: 16px;
+  }
+
+  .recent-files__list,
+  .recent-activity__list {
+    grid-template-columns: 1fr;
+    gap: var(--layout-card-gap);
+  }
+
+  .recent-file {
+    min-height: 76px;
+    padding: 13px;
+  }
+
+  .recent-activity {
+    padding: 18px;
+  }
+
+  /* Shared secondary pages */
+  :where(.ai-page, .tasks-page, .reminders-page, .calendar-page, .files-page, .settings-page) {
+    min-height: 0;
+    padding: 0 0 24px;
+  }
+
+  :where(
+    .tasks-header,
+    .reminders-header,
+    .calendar-page__header,
+    .files-page__header,
+    .settings-header,
+    .ai-page__header
+  ) {
+    margin-bottom: 22px;
+  }
+
+  .tasks-overview {
+    margin-bottom: 18px;
+    padding: 19px;
+  }
+
+  .tasks-toolbar,
+  .reminders-toolbar,
+  .files-toolbar {
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .tasks-content,
+  .reminders-layout {
+    gap: 18px;
+  }
+
+  .tasks-list,
+  .reminders-list {
+    padding: 18px 15px;
+  }
+
+  .tasks-list__heading,
+  .reminders-list__header {
+    margin-bottom: 14px;
+  }
+
+  .tasks-items,
+  .reminders-items {
+    gap: 0;
+  }
+
+  .task-card,
+  .reminder-card {
+    min-height: 86px;
+    padding: 13px 2px;
+  }
+
+  .task-card__check,
+  .reminder-card__check {
+    width: 38px;
+    height: 38px;
+  }
+
+  .task-card__more,
+  .reminder-card__more {
+    width: 38px;
+    height: 38px;
+  }
+
+  /* Calendar mobile: breathable month grid, events always below it. */
+  .calendar-page__header {
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .calendar-page__add {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .calendar-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .calendar-card {
+    padding: 0;
+    border-radius: 23px;
+  }
+
+  .calendar-card__top {
+    min-height: 68px;
+    padding: 12px 13px;
+    gap: 8px;
+  }
+
+  .calendar-card__month {
+    min-width: 0;
+    flex: 1;
+    gap: 5px;
+  }
+
+  .calendar-card__month h2 {
+    min-width: 0;
+    flex: 1;
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .calendar-card__month button,
+  .calendar-card__today {
+    flex: 0 0 auto;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .calendar-card__today {
+    padding-inline: 11px;
+  }
+
+  .calendar-grid {
+    gap: 3px;
+    padding: 12px;
+  }
+
+  .calendar-grid__weekday {
+    height: 31px;
+  }
+
+  .calendar-day {
+    min-height: 50px;
+    padding: 7px 5px;
+    border-radius: 11px;
+  }
+
+  .calendar-sidebar {
+    min-height: 0;
+    padding: 18px;
+    border-radius: 23px;
+  }
+
+  .calendar-sidebar__header {
+    padding-bottom: 16px;
+  }
+
+  .calendar-events {
+    gap: 10px;
+    padding: 16px 0 18px;
+  }
+
+  .calendar-event {
+    min-height: 76px;
+    padding: 12px 10px;
+  }
+
+  .calendar-sidebar__button {
+    min-height: 48px;
+  }
+
+  /* Files: lists stay full width; no squeezed two-column cards. */
+  .files-page__header {
+    margin-bottom: 20px;
+  }
+
+  .files-toolbar {
+    margin-bottom: 20px;
+  }
+
+  .files-section {
+    margin-bottom: 24px;
+    padding: 18px 15px;
+  }
+
+  .folders,
+  .file-list {
+    gap: var(--layout-card-gap);
+  }
+
+  .folder-card,
+  .file-card {
+    min-height: 78px;
+    padding: 13px;
+  }
+
+  /* Settings rows read like grouped native app lists. */
+  .settings-layout {
+    gap: 18px;
+  }
+
+  .settings-card {
+    padding: 20px 17px;
+  }
+
+  .settings-row-list {
+    gap: 0;
+  }
+
+  .settings-row,
+  .settings-toggle-row,
+  .settings-integrations__header {
+    gap: 12px;
+    padding: 17px 0;
+  }
+
+  .settings-chips {
+    justify-content: flex-start;
+    max-width: 100%;
+    gap: 8px;
+  }
+
+  /* AI chat gets a little more air without changing its sticky input. */
+  .ai-page__main {
+    min-height: calc(100svh - 178px);
+    height: calc(100svh - 178px);
+  }
+
+  .message-list {
+    gap: 14px;
+    padding: 16px 13px;
+  }
+
+  .chat-input-area {
+    padding-inline: 13px;
+  }
+
+  /* Bottom sheets: generous fields and a visible iOS-style handle. */
+  :where(.task-modal, .reminder-modal, .calendar-modal, .quick-modal, .delete-modal, .integration-modal, .file-preview) {
+    padding: 28px 18px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  :where(.task-modal, .reminder-modal, .calendar-modal, .quick-modal, .delete-modal, .integration-modal, .file-preview)::after {
+    content: "";
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    width: 38px;
+    height: 4px;
+    border-radius: 999px;
+    background: currentColor;
+    opacity: 0.2;
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 520px) {
+  .integration-hub__grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .integration-card {
+    min-height: 170px;
+  }
+}
+
+@media (max-width: 380px) {
+  .app-layout {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .hero__mobile-ai {
+    padding: 17px;
+  }
+
+  .stats__card {
+    min-height: 142px;
+    padding: 14px;
+  }
+
+  .quick-actions__mobile-item {
+    min-height: 92px;
+  }
+
+  .calendar-card__top {
+    padding-inline: 9px;
+  }
+
+  .calendar-card__month h2 {
+    font-size: 14px;
+  }
+
+  .calendar-grid {
+    padding: 9px;
+  }
+
+  .calendar-day {
+    min-height: 46px;
+    padding-inline: 3px;
+  }
+}
