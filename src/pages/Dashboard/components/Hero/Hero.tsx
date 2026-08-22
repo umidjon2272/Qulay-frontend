@@ -1,16 +1,11 @@
 import {
   Bell,
-  Bot,
   Sparkles,
   CalendarDays,
   ArrowUpRight,
-  Menu,
   Mic,
-  Search,
-  X,
 } from "lucide-react";
 
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAIChat } from "../../../../features/ai/hooks/useAIChat";
@@ -20,9 +15,9 @@ import "./Hero.scss";
 
 const Hero = () => {
   const { open: openAIChat, sendMessage } = useAIChat();
-  const { name, avatar } = useProfile();
+  const { name: fullName, avatar } = useProfile();
+  const name = fullName.trim().split(/\s+/)[0] || "Do'stimiz";
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleMobilePrompt = (prompt: string) => {
     openAIChat();
@@ -36,24 +31,12 @@ const Hero = () => {
       <div className="hero__ambient hero__ambient--three" />
 
       <div className="hero__mobile-header">
-        <button
-          type="button"
-          className="hero__mobile-icon-button"
-          onClick={() => setMobileMenuOpen((value) => !value)}
-          aria-label={mobileMenuOpen ? "Menyuni yopish" : "Menyuni ochish"}
-        >
-          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
-
         <div className="hero__mobile-brand">
           <div className="hero__mobile-brand-mark"><Sparkles size={15} /></div>
           <strong>YECHIM AI</strong>
         </div>
 
         <div className="hero__mobile-actions">
-          <button type="button" className="hero__mobile-icon-button" onClick={() => handleMobilePrompt("Fayllardan top")} aria-label="Qidirish">
-            <Search size={18} />
-          </button>
           <button type="button" className="hero__mobile-icon-button hero__mobile-icon-button--notification" onClick={() => navigate("/reminders")} aria-label="Bildirishnomalar">
             <Bell size={18} />
             <span>3</span>
@@ -63,14 +46,6 @@ const Hero = () => {
           </button>
         </div>
       </div>
-
-      {mobileMenuOpen && (
-        <div className="hero__mobile-menu" role="menu">
-          <button type="button" onClick={() => { navigate("/reminders"); setMobileMenuOpen(false); }}>Eslatmalar</button>
-          <button type="button" onClick={() => { navigate("/files"); setMobileMenuOpen(false); }}>Fayllar</button>
-          <button type="button" onClick={() => { navigate("/settings"); setMobileMenuOpen(false); }}>Sozlamalar</button>
-        </div>
-      )}
 
       <div className="hero__mobile-greeting">
         <span>Xush kelibsiz,</span>
@@ -90,7 +65,7 @@ const Hero = () => {
         </div>
         <button type="button" className="hero__mobile-orb" onClick={openAIChat} aria-label="AI bilan gaplashish">
           <span className="hero__mobile-orb-halo" />
-          <span className="hero__mobile-orb-core"><Bot size={22} /></span>
+          <span className="hero__mobile-orb-core"><Sparkles size={22} /></span>
         </button>
         <div className="hero__mobile-prompts">
           {["Bugun nima qilishim kerak?", "Rejamni tuz", "Eslatma qo‘y"].map((prompt) => (

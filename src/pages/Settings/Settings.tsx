@@ -20,6 +20,7 @@ import {
   Trash2,
   KeyRound,
   LogOut,
+  ArrowLeft,
 } from "lucide-react";
 
 import { useToast } from "../../hooks/useToast";
@@ -31,6 +32,8 @@ import { STORAGE_KEYS } from "../../constants/storageKeys";
 import { readStorageString, removeStorage, writeStorage } from "../../services/storage";
 import { defaultSettings, getSettings, updateSettings } from "../../services/settingsService";
 import { clearMockSession } from "../../services/authService";
+import { useAuth } from "../../hooks/useAuth";
+import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
 import { subscribeToWorkspaceData, notifyWorkspaceDataChanged } from "../../services/workspaceEvents";
 
@@ -87,6 +90,7 @@ const Settings = () => {
   const { name, email, bio, avatar, setName, setEmail, setBio, setAvatar } = useProfile();
   const { clearChat } = useAIChat();
   const { integrations, connectedCount } = useIntegrations();
+  const { logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [theme, setTheme] = useState<"light" | "dark" | "system">(() => getSettings().theme);
@@ -105,6 +109,7 @@ const Settings = () => {
 
   const [twoFactor, setTwoFactor] = useState(() => getSettings().twoFactor);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   const toggleNotification = (key: keyof typeof notifications) => {
     setNotifications((current) => ({ ...current, [key]: !current[key] }));
@@ -237,8 +242,9 @@ const Settings = () => {
   };
 
   return (
-    <main className="settings-page">
+    <main className={`settings-page settings-page--${active}`}>
       <header className="settings-header">
+        <button type="button" className="settings-header__back" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={18} /></button>
         <div>
           <span className="settings-header__eyebrow">ISH MAYDONI</span>
           <h1>Sozlamalar</h1>
@@ -735,13 +741,14 @@ const Settings = () => {
                 <div className="settings-toggle-row">
                   <div>
                     <strong>Parol</strong>
-                    <span>Hisobingiz parolini yangilang</span>
+                    <span>Bu funksiya keyingi backend yangilanishida ulanadi</span>
                   </div>
 
                   <button
                     type="button"
                     className="settings-outline-btn"
-                    onClick={() => showToast("Parolni almashtirish mock rejimda tasdiqlandi", "success")}
+                    disabled
+                    aria-disabled="true"
                   >
                     <KeyRound size={14} />
                     Parolni o'zgartirish
@@ -793,6 +800,20 @@ const Settings = () => {
           )}
         </section>
       </div>
+
+      <button type="button" className="settings-mobile-logout" onClick={() => setConfirmingLogout(true)}>
+        <LogOut size={16} /> Akkauntdan chiqish
+      </button>
+
+      {confirmingLogout && (
+        <ConfirmDialog
+          title="Akkauntdan chiqmoqchimisiz?"
+          description="Sessiyangiz va qurilmadagi tokenlar tozalanadi."
+          confirmLabel="Chiqish"
+          onCancel={() => setConfirmingLogout(false)}
+          onConfirm={async () => { setConfirmingLogout(false); await logout(); navigate("/login", { replace: true }); }}
+        />
+      )}
     </main>
   );
 };

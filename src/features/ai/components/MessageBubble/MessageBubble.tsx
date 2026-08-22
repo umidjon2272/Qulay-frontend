@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bot, User, Volume2, VolumeX } from "lucide-react";
+import { Sparkles, User, Volume2, VolumeX } from "lucide-react";
 
 import type { ChatMessage } from "../../context/AIChatContextValue";
 import type { AIAction } from "../../actions/actionTypes";
@@ -27,7 +27,7 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
 
   return (
     <div className={`message-bubble ${isUser ? "message-bubble--user" : "message-bubble--ai"}`}>
-      <div className="message-bubble__avatar">{isUser ? <User size={13} /> : <Bot size={13} />}</div>
+      <div className="message-bubble__avatar">{isUser ? <User size={13} /> : <Sparkles size={13} />}</div>
 
       <div className="message-bubble__body">
         <div className="message-bubble__glass">

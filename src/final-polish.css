@@ -1,0 +1,260 @@
+/* Final product layer. Kept separate so the existing desktop dashboard and
+   API-backed feature styles remain the source of truth outside mobile. */
+
+.app-auth-loading {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  font-size: 14px;
+}
+
+.sidebar__profile-menu {
+  position: absolute;
+  right: 14px;
+  bottom: 80px;
+  left: 14px;
+  z-index: 4;
+  display: grid;
+  gap: 3px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-soft);
+}
+
+.sidebar__profile-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sidebar__profile-menu button:hover { background: var(--accent-soft); color: var(--accent); }
+.sidebar__profile-menu button.is-danger { color: var(--danger); }
+
+.settings-header__back,
+.settings-mobile-logout { display: none; }
+
+button,
+a,
+.stats__card,
+.quick-actions__item,
+.settings-nav__item,
+.sidebar__mobile-item {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled),
+a:active { transform: scale(0.97); }
+
+@media (max-width: 700px) {
+  :root {
+    --mobile-page-pad: 14px;
+    --mobile-nav-height: 68px;
+    --mobile-soft-border: rgba(105, 91, 133, 0.13);
+  }
+
+  html[data-theme="dark"] {
+    --mobile-soft-border: rgba(164, 177, 205, 0.13);
+  }
+
+  body { overscroll-behavior-x: none; }
+
+  .app-layout {
+    min-height: 100dvh;
+    padding: max(10px, env(safe-area-inset-top)) var(--mobile-page-pad)
+      calc(var(--mobile-nav-height) + 20px + env(safe-area-inset-bottom));
+  }
+
+  .app-layout__content { min-width: 0; }
+
+  .sidebar {
+    right: 12px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    left: 12px;
+    height: var(--mobile-nav-height);
+    padding: 5px;
+    border-radius: 22px;
+  }
+
+  .sidebar__mobile-dock { gap: 2px; }
+  .sidebar__mobile-item {
+    min-height: 56px;
+    gap: 3px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .sidebar__mobile-item svg { width: 21px; height: 21px; }
+  .sidebar__mobile-item.active,
+  .sidebar__mobile-item.is-active { background: var(--accent-soft); }
+  .sidebar__mobile-item--ai {
+    width: 58px;
+    height: 58px;
+    min-height: 58px;
+    margin: -12px auto 0;
+    border-radius: 50%;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent), 0 10px 22px rgba(89, 63, 186, 0.32);
+  }
+  .sidebar__mobile-item--ai span:last-child { top: calc(100% + 4px); font-size: 11px; }
+
+  .hero__mobile-header { min-height: 42px; margin-bottom: 18px; }
+  .hero__mobile-brand { margin-left: 0; font-size: 12px; letter-spacing: 1.2px; }
+  .hero__mobile-brand-mark { width: 28px; height: 28px; }
+  .hero__mobile-actions { gap: 8px; }
+  .hero__mobile-icon-button { width: 38px; height: 38px; border-radius: 12px; }
+  .hero__mobile-avatar { width: 35px; height: 35px; }
+  .hero__mobile-greeting { margin-bottom: 16px; }
+  .hero__mobile-greeting > span { font-size: 14px; }
+  .hero__mobile-greeting h2 {
+    max-width: 100%;
+    margin: 2px 0 4px;
+    overflow-wrap: anywhere;
+    font-size: clamp(24px, 7vw, 28px);
+    line-height: 1.12;
+  }
+  .hero__mobile-greeting p { font-size: 13px; }
+
+  .hero__mobile-ai {
+    grid-template-columns: minmax(0, 1fr) 86px;
+    min-height: 224px;
+    margin-bottom: 18px;
+    padding: 17px;
+    border-radius: 22px;
+  }
+  .hero__mobile-ai h3 { font-size: 21px; }
+  .hero__mobile-ai p { max-width: 215px; margin: 8px 0 13px; font-size: 12px; }
+  .hero__mobile-orb { width: 88px; height: 88px; }
+  .hero__mobile-prompts { padding-right: 12px; scroll-snap-type: x proximity; }
+  .hero__mobile-prompts button { scroll-snap-align: start; }
+
+  .stats { margin-bottom: 18px; }
+  .stats__header { margin-bottom: 10px; }
+  .stats__heading h2,
+  .mobile-home-details__tasks-header h2 { font-size: 18px; }
+  .stats__grid { gap: 8px; }
+  .stats__card { min-height: 116px; padding: 12px; border-radius: 17px; }
+  .stats__value { margin-top: 9px; font-size: 29px; }
+  .stats h3 { font-size: 14px; }
+  .stats p { display: none; }
+
+  /* The AI card already contains the mobile quick actions; avoid a second
+     dense dashboard grid below it. Desktop keeps the full quick-actions area. */
+  .dashboard__main > .quick-actions { display: none; }
+  .mobile-home-details { margin-bottom: 8px; }
+  .mobile-home-details__meeting { margin-bottom: 18px; padding: 13px; border-radius: 18px; }
+  .mobile-task-row { min-height: 68px; }
+
+  /* AI is a full-height app surface. The regular desktop chat header is hidden
+     on phones because the compact bar below is the single mobile header. */
+  .app-layout--ai { padding: 0; }
+  .app-layout--ai .sidebar { display: none; }
+  .app-layout--ai .app-layout__content,
+  .ai-page { height: 100dvh; min-height: 100dvh; }
+  .ai-page__workspace { height: 100%; }
+  .ai-page__main { padding-top: 56px; }
+  .ai-page__main > .chat-header { display: none; }
+  .ai-page__mobile-bar {
+    top: max(8px, env(safe-area-inset-top));
+    right: 12px;
+    left: 12px;
+    min-height: 46px;
+  }
+  .ai-page__mobile-bar button { width: 38px; height: 38px; border-radius: 12px; }
+  .ai-page__mobile-bar strong { display: block; width: 0; overflow: hidden; font-size: 0; font-weight: 700; }
+  .ai-page__mobile-bar strong::before { content: "Yechim AI"; display: block; width: 90px; font-size: 15px; }
+  .ai-page__mobile-bar span { font-size: 11px; }
+  .ai-page__mobile-bar .ai-page__mobile-voice { margin-left: auto; }
+  .ai-page__mobile-bar button:last-child { margin-left: 0; }
+  .ai-welcome { padding: 18px 14px 10px; }
+  .ai-welcome__orb { width: 64px; height: 64px; margin-bottom: 12px; border-radius: 22px; }
+  .ai-welcome h1 { max-width: 290px; font-size: 24px; }
+  .ai-welcome p { max-width: 270px; margin: 8px 0 14px; font-size: 13px; }
+  .ai-prompts { gap: 7px; padding-right: 12px; }
+  .ai-prompt { flex-basis: 166px; min-height: 42px; padding-inline: 11px; }
+  .ai-conversation { min-height: 0; }
+  .message-list { padding: 12px 14px; }
+  .message-list__inner { gap: 10px; }
+  .message-bubble { max-width: 92%; }
+  .message-bubble__avatar { display: none; }
+  .message-bubble__glass { padding: 10px 12px; border-radius: 15px; }
+  .message-bubble__glass p { font-size: 16px; line-height: 1.48; }
+  .message-bubble__meta { min-height: 20px; }
+  .message-bubble__meta > span { display: none; }
+  .chat-input-area { padding: 7px 12px calc(8px + env(safe-area-inset-bottom)); }
+  .chat-input { min-height: 52px; border-radius: 17px; }
+  .chat-input textarea { min-height: 40px; max-height: 132px; font-size: 16px; }
+  .chat-input__icon-btn,
+  .chat-input__send { width: 38px; height: 38px; border-radius: 12px; }
+  .chat-input__send { width: 40px; height: 40px; }
+
+  /* Settings: one navigable iOS-style list, then one focused sub-page. */
+  .settings-page { width: 100%; min-width: 0; padding: 0 0 12px; }
+  .settings-header {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 14px;
+  }
+  .settings-header__back { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid var(--mobile-soft-border); border-radius: 12px; background: var(--surface-soft); color: var(--text-primary); cursor: pointer; }
+  .settings-header > div { min-width: 0; }
+  .settings-header__eyebrow { display: none; }
+  .settings-header h1 { margin: 0; font-size: 24px; letter-spacing: -0.5px; }
+  .settings-header p { display: none; }
+  .settings-header__save { width: 38px; height: 38px; min-height: 38px; padding: 0; border-radius: 12px; box-shadow: none; }
+  .settings-header__save { font-size: 0 !important; }
+  .settings-layout { display: flex; flex-direction: column; gap: 10px; }
+  .settings-nav { display: grid; gap: 5px; padding: 0; overflow: visible; border: 0; background: transparent; box-shadow: none; }
+  .settings-nav__item { justify-content: flex-start; min-height: 50px; padding: 0 13px; border: 1px solid var(--mobile-soft-border); border-radius: 15px; background: var(--surface); color: var(--text-secondary); font-size: 14px; }
+  .settings-nav__item::after { content: "›"; margin-left: auto; color: var(--text-muted); font-size: 22px; font-weight: 400; }
+  .settings-nav__item.is-active { color: var(--accent); background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 20%, transparent); }
+  .settings-page:not(.settings-page--general) .settings-nav { display: none; }
+  .settings-page:not(.settings-page--general) .settings-header { grid-template-columns: 38px minmax(0, 1fr) 38px; }
+  .settings-card { width: 100%; min-width: 0; padding: 17px 15px; border-radius: 18px; }
+  .settings-card h2 { font-size: 19px; }
+  .settings-card > p { margin-bottom: 15px; font-size: 13px; }
+  .settings-row,
+  .settings-toggle-row,
+  .settings-integrations__header { min-width: 0; }
+  .settings-row > div:first-child,
+  .settings-toggle-row > div:first-child { min-width: 0; }
+  .settings-chips { max-width: 100%; overflow-x: auto; padding-bottom: 1px; }
+  .settings-theme { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .settings-theme__item { display: grid; min-height: 44px; padding: 0 7px; border-radius: 11px; }
+  .settings-theme__preview,
+  .settings-theme__item > span,
+  .settings-theme__check { display: none; }
+  .settings-theme__item strong { font-size: 12px; }
+  .settings-mobile-logout { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-top: 12px; border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); border-radius: 15px; background: color-mix(in srgb, var(--danger) 8%, transparent); color: var(--danger); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+
+  .toast-stack { bottom: calc(var(--mobile-nav-height) + 16px + env(safe-area-inset-bottom)); }
+  .app-layout--ai .toast-stack { bottom: calc(82px + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 360px) {
+  :root { --mobile-page-pad: 12px; }
+  .hero__mobile-ai { grid-template-columns: minmax(0, 1fr) 76px; padding: 14px; }
+  .hero__mobile-orb { width: 76px; height: 76px; }
+  .hero__mobile-ai h3 { font-size: 19px; }
+  .stats__card { min-height: 110px; padding: 10px; }
+  .settings-nav__item { min-height: 48px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}

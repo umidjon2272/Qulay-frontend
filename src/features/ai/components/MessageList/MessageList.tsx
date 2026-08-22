@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Bot } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import type { AIAction } from "../../actions/actionTypes";
 import type { ChatMessage } from "../../context/AIChatContextValue";
@@ -48,7 +48,7 @@ const MessageList = ({
         {isTyping && (
           <div className="message-bubble message-bubble--ai">
             <div className="message-bubble__avatar">
-              <Bot size={13} />
+              <Sparkles size={13} />
             </div>
 
             <div className="message-list__typing">

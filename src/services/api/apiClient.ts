@@ -86,7 +86,9 @@ export const request = async <T>(path: string, options: RequestInit = {}, retry 
       return await rawRequest<T>(path, options, next.accessToken);
     } catch (refreshError) {
       clearAuth();
-      if (typeof window !== "undefined" && window.location.pathname !== "/login") window.location.assign("/login");
+      // Let AuthProvider/RequireAuth own the redirect. A hard location change
+      // here caused a visible login flash during app bootstrap.
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("yechim_ai_auth_session_changed"));
       throw refreshError;
     }
   }

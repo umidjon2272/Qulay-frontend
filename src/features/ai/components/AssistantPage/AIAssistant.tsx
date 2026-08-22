@@ -9,7 +9,7 @@ import {
   MessageSquareText,
   Mic,
   Sparkles,
-  Trash2,
+  MoreHorizontal,
 } from "lucide-react";
 
 import { useAIChat } from "../../hooks/useAIChat";
@@ -25,7 +25,6 @@ const suggestedPrompts = [
   "Bugungi rejamni ayt",
   "Yangi vazifa yarat",
   "Eslatma qo'sh",
-  "Loyiha g'oyasini yozib ol",
 ];
 
 const quickActions = [
@@ -177,7 +176,7 @@ const AIAssistant = () => {
         <button type="button" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={18} /></button>
         <div><strong>AI Assistant</strong><span><i /> Onlayn · Tayyor</span></div>
         <button type="button" className="ai-page__mobile-voice" onClick={openVoiceMode} aria-label="Voice Mode'ni ochish"><Mic size={17} /></button>
-        <button type="button" onClick={clearChat} aria-label="Suhbatni tozalash"><Trash2 size={16} /></button>
+        <button type="button" onClick={clearChat} aria-label="Suhbat sozlamalari"><MoreHorizontal size={18} /></button>
       </header>
 
       {isVoiceModeOpen && (

@@ -1,9 +1,11 @@
 import { STORAGE_KEYS } from "../constants/storageKeys";
 import { authApi } from "./api";
+import { ApiError } from "./api/apiClient";
 import { getStoredUser, getTokens, clearAuth, saveAuth, type AuthTokens } from "./api/tokenStorage";
 import type { User } from "./api/types";
 import { removeStorage } from "./storage";
 import { clearWorkspaceCache } from "./workspaceCache";
+import { clearProfileCache } from "./profileService";
 
 export type AuthSession = User;
 export const AUTH_SESSION_CHANGED = "yechim_ai_auth_session_changed";
@@ -30,6 +32,7 @@ export const signUp = async (input: { email: string; password: string; firstName
 };
 
 export const restoreSession = async (): Promise<User | null> => {
+  const storedUser = getAuthSession();
   if (!getTokens()) return null;
   try {
     const user = await authApi.me();
@@ -40,7 +43,12 @@ export const restoreSession = async (): Promise<User | null> => {
     }
     notifyAuthChanged();
     return user;
-  } catch {
+  } catch (error) {
+    // Keep the shell available during a temporary network outage. Only a
+    // failed refresh (401) means the refresh token is expired or revoked.
+    if (storedUser && (!(error instanceof ApiError) || error.status !== 401)) {
+      return storedUser;
+    }
     clearAuth();
     notifyAuthChanged();
     return null;
@@ -54,6 +62,7 @@ export const logout = async (): Promise<void> => {
   } catch { /* local cleanup must still happen if the server is asleep/unavailable */ }
   clearAuth();
   clearWorkspaceCache();
+  clearProfileCache();
   removeStorage(STORAGE_KEYS.authSession);
   notifyAuthChanged();
 };

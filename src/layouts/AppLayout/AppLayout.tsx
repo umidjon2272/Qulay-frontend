@@ -15,7 +15,7 @@ const AppLayout = () => {
       <Sidebar />
       <ThemeToggle />
 
-      <main className={`app-layout__content ${isAIWorkspace ? "app-layout__content--ai" : ""}`}>
+      <main key={location.pathname} className={`app-layout__content ${isAIWorkspace ? "app-layout__content--ai" : ""}`}>
         <Outlet />
       </main>
 

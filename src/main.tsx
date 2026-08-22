@@ -9,6 +9,7 @@ import "./index.css";
 import "./mobile-design.css";
 import "./dark-mode.css";
 import "./layout-overrides.css";
+import "./final-polish.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

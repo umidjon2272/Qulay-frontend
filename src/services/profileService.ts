@@ -16,6 +16,11 @@ const toProfile = (user: Awaited<ReturnType<typeof profileApi.getProfile>>): Pro
 });
 
 export const getProfile = (): Profile => cache;
+export const clearProfileCache = () => {
+  cache = { name: "", email: "", bio: "", avatar: null, timezone: "UTC", language: "en" };
+  removeStorage(STORAGE_KEYS.profileBio);
+  notifyWorkspaceDataChanged("profile");
+};
 export const loadProfile = async (): Promise<Profile> => {
   cache = toProfile(await profileApi.getProfile());
   notifyWorkspaceDataChanged("profile");

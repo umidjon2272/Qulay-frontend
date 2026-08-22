@@ -1,4 +1,4 @@
-import { Bot, Mic, Minus, Trash2, X } from "lucide-react";
+import { Mic, Minus, Sparkles, Trash2, X } from "lucide-react";
 
 import "./ChatHeader.scss";
 
@@ -14,7 +14,7 @@ const ChatHeader = ({ onClose, onMinimize, onClear, onVoice }: ChatHeaderProps) 
     <header className="chat-header">
       <div className="chat-header__identity">
         <div className="chat-header__icon">
-          <Bot size={18} />
+          <Sparkles size={18} />
           <i className="chat-header__icon-glow" />
         </div>
 
