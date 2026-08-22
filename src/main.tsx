@@ -6,6 +6,7 @@ import { router } from "./app/router";
 import { Providers } from "./app/providers/Providers";
 import { registerServiceWorker } from "./pwa/registerServiceWorker";
 import "./index.css";
+import "./mobile-design.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

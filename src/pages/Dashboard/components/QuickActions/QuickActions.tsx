@@ -5,6 +5,11 @@ import {
   FilePlus2,
   BellPlus,
   UserRoundSearch,
+  CheckSquare,
+  NotebookPen,
+  Bot,
+  FolderOpen,
+  Settings,
   ArrowUpRight,
   X,
   Search,
@@ -56,6 +61,17 @@ const actions = [
   },
 ];
 
+const mobileActions = [
+  { label: "Vazifalar", icon: CheckSquare, route: "/tasks" },
+  { label: "Eslatmalar", icon: BellPlus, route: "/reminders" },
+  { label: "Uchrashuvlar", icon: CalendarPlus, route: "/calendar" },
+  { label: "Notes", icon: NotebookPen, prompt: "Yangi qayd yozib ol" },
+  { label: "AI Chat", icon: Bot, prompt: "Bugungi rejamni ayt" },
+  { label: "Fayllar", icon: FolderOpen, route: "/files" },
+  { label: "Kalendar", icon: CalendarPlus, route: "/calendar" },
+  { label: "Sozlamalar", icon: Settings, route: "/settings" },
+];
+
 const QuickActions = () => {
   const [activeAction, setActiveAction] =
     useState<string | null>(null);
@@ -102,6 +118,29 @@ const QuickActions = () => {
             Barchasi
             <ArrowUpRight size={13} />
           </button>
+        </div>
+
+        <div className="quick-actions__mobile-grid">
+          {mobileActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <button
+                type="button"
+                className="quick-actions__mobile-item"
+                key={action.label}
+                onClick={() => {
+                  if (action.route) navigate(action.route);
+                  if (action.prompt) {
+                    openAIChat();
+                    sendMessage(action.prompt);
+                  }
+                }}
+              >
+                <span className="quick-actions__mobile-icon"><Icon size={21} /></span>
+                <span>{action.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         <div className="quick-actions__grid">

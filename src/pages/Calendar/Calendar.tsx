@@ -60,6 +60,13 @@ const Calendar = () => {
     ...Array.from({ length: daysInMonth }, (_, index) => index + 1),
   ];
   const selectedDateKey = getDateKey(new Date(year, month, selectedDay));
+  const selectDate = (dateKey: string) => {
+    const date = new Date(`${dateKey}T12:00:00`);
+    if (Number.isNaN(date.getTime())) return;
+    setCurrentDate(new Date(date.getFullYear(), date.getMonth(), 1));
+    setSelectedDay(date.getDate());
+    setNewDate(dateKey);
+  };
   const selectedEvents = useMemo(
     () => events.filter((event) => event.date === selectedDateKey).sort((a, b) => a.time.localeCompare(b.time)),
     [events, selectedDateKey],
@@ -196,8 +203,7 @@ const Calendar = () => {
                   className={["calendar-day", day === selectedDay ? "calendar-day--selected" : "", isToday ? "calendar-day--today" : "", hasEvent ? "calendar-day--event" : ""].join(" ")}
                   onClick={() => {
                     if (!day) return;
-                    setSelectedDay(day);
-                    setNewDate(dateKey);
+                    selectDate(dateKey);
                   }}
                 >
                   {day && <><span>{day}</span>{hasEvent && <i />}</>}
@@ -221,6 +227,7 @@ const Calendar = () => {
                   {event.participant && <span><UserRound size={10} />{event.participant}</span>}
                   {event.location && <span><MapPin size={10} />{event.location}</span>}
                   {event.description && <small>{event.description}</small>}
+                  {event.reminder && <small>Eslatma: {event.reminder}</small>}
                 </div>
                 <div className="calendar-event__actions">
                   <button type="button" onClick={() => openEditModal(event)} aria-label="Uchrashuvni tahrirlash"><Pencil size={12} /></button>
@@ -249,7 +256,7 @@ const Calendar = () => {
             <h2>{editId !== null ? "Uchrashuvni tahrirlash" : "Yangi uchrashuv"}</h2>
             <p>Event ma’lumotlarini kiriting.</p>
             <input type="text" placeholder="Uchrashuv nomi" aria-label="Uchrashuv nomi" value={newTitle} onChange={(event) => setNewTitle(event.target.value)} />
-            <div className="calendar-modal__row"><input type="date" aria-label="Uchrashuv sanasi" value={newDate} onChange={(event) => setNewDate(event.target.value)} /><input type="time" aria-label="Uchrashuv vaqti" value={newTime} onChange={(event) => setNewTime(event.target.value)} /></div>
+            <div className="calendar-modal__row"><input type="date" aria-label="Uchrashuv sanasi" value={newDate} onChange={(event) => selectDate(event.target.value)} /><input type="time" aria-label="Uchrashuv vaqti" value={newTime} onChange={(event) => setNewTime(event.target.value)} /></div>
             <input type="text" placeholder="Ishtirokchi" aria-label="Ishtirokchi" value={newParticipant} onChange={(event) => setNewParticipant(event.target.value)} />
             <textarea rows={3} placeholder="Tavsif" aria-label="Uchrashuv tavsifi" value={newDescription} onChange={(event) => setNewDescription(event.target.value)} />
             <select aria-label="Uchrashuv eslatmasi" value={newReminder} onChange={(event) => setNewReminder(event.target.value)}><option value="15 daqiqa oldin">15 daqiqa oldin</option><option value="1 soat oldin">1 soat oldin</option><option value="">Eslatmasin</option></select>

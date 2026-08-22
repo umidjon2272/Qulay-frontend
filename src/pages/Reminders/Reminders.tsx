@@ -98,6 +98,7 @@ const Reminders = () => {
 
     updateReminderRecord(id, { completed: !reminder.completed });
     setReminders(getReminders());
+    showToast(reminder.completed ? "Eslatma qayta faollashtirildi" : "Eslatma bajarildi", "success");
   };
 
   /* =========================

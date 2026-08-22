@@ -40,11 +40,13 @@ const supportedTypes = [
 ];
 const maxFileSize = 10 * 1024 * 1024;
 const maxPreviewSize = 2 * 1024 * 1024;
+const supportedExtensions = new Set(["pdf", "txt", "csv", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "png", "jpg", "jpeg", "webp"]);
 
 const formatSize = (bytes: number) => bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 const fileType = (file: File) => file.name.split(".").pop()?.toUpperCase() || "FILE";
 const iconFor = (file: WorkspaceFile) => file.mimeType.startsWith("image/") ? FileImage : file.mimeType.includes("sheet") || file.type === "CSV" ? FileSpreadsheet : FileText;
 const colorFor = (file: WorkspaceFile) => file.mimeType.startsWith("image/") ? "blue" : file.type === "PDF" ? "purple" : file.type === "XLSX" || file.type === "CSV" ? "green" : "orange";
+const isSupportedFile = (file: File) => supportedTypes.includes(file.type) || (!file.type && supportedExtensions.has(file.name.split(".").pop()?.toLowerCase() ?? ""));
 
 const Files = () => {
   const [files, setFiles] = useState<WorkspaceFile[]>(getFiles);
@@ -64,7 +66,7 @@ const Files = () => {
     if (!selected?.length) return;
 
     Array.from(selected).forEach((file) => {
-      if (!supportedTypes.includes(file.type)) {
+      if (!isSupportedFile(file)) {
         showToast(`${file.name}: bu fayl turi qo'llab-quvvatlanmaydi`, "error");
         return;
       }
@@ -73,9 +75,9 @@ const Files = () => {
         return;
       }
 
-      const finish = (dataUrl?: string) => {
+      const finish = (dataUrl?: string, previewText?: string) => {
         try {
-          addFile({ name: file.name, type: fileType(file), mimeType: file.type || "application/octet-stream", size: file.size, dataUrl });
+          addFile({ name: file.name, type: fileType(file), mimeType: file.type || "application/octet-stream", size: file.size, dataUrl, previewText });
           setFiles(getFiles());
           showToast(`${file.name} yuklandi`, "success");
         } catch {
@@ -88,6 +90,11 @@ const Files = () => {
         reader.onload = () => finish(typeof reader.result === "string" ? reader.result : undefined);
         reader.onerror = () => finish();
         reader.readAsDataURL(file);
+      } else if ((file.type === "text/plain" || file.type === "text/csv") && file.size <= maxPreviewSize) {
+        const reader = new FileReader();
+        reader.onload = () => finish(undefined, typeof reader.result === "string" ? reader.result : undefined);
+        reader.onerror = () => finish();
+        reader.readAsText(file);
       } else {
         finish();
       }
@@ -110,7 +117,7 @@ const Files = () => {
   };
 
   const openFile = (file: WorkspaceFile) => {
-    if (file.dataUrl) setPreview(file);
+    if (file.dataUrl || file.previewText) setPreview(file);
     else showToast("Preview faqat rasm fayllari uchun mavjud", "info");
   };
 
@@ -121,7 +128,7 @@ const Files = () => {
         <div className="files-page__actions">
           <button type="button" className="files-page__secondary" onClick={() => inputRef.current?.click()}><Upload size={15} />Yuklash</button>
           <button type="button" className="files-page__primary" onClick={() => inputRef.current?.click()}><Plus size={15} />Yangi fayl</button>
-          <input ref={inputRef} type="file" hidden multiple onChange={(event) => { handleFiles(event.target.files); event.currentTarget.value = ""; }} />
+          <input ref={inputRef} type="file" hidden multiple accept={supportedTypes.join(",")} onChange={(event) => { handleFiles(event.target.files); event.currentTarget.value = ""; }} />
         </div>
       </header>
 
@@ -142,7 +149,7 @@ const Files = () => {
 
       <section className="files-ai"><div className="files-ai__icon"><Star size={19} /></div><div><span>AI FILE ASSISTANT</span><h2>Fayllaringiz bilan aqlliroq ishlang</h2><p>Hujjatlarni tahlil qilish, xulosa chiqarish va kerakli ma'lumotlarni tez topish.</p></div><button type="button" onClick={openAIChat}>AI Assistant<ArrowUpRight size={14} /></button></section>
 
-      {preview && <div className="file-preview__overlay" onClick={() => setPreview(null)}><div className="file-preview" role="dialog" aria-modal="true" aria-labelledby="file-preview-title" onClick={(event) => event.stopPropagation()}><button type="button" onClick={() => setPreview(null)} aria-label="Previewni yopish"><X size={16} /></button><h2 id="file-preview-title">{preview.name}</h2>{preview.dataUrl && <img src={preview.dataUrl} alt={preview.name} />}<p>{preview.type} · {formatSize(preview.size)}</p></div></div>}
+      {preview && <div className="file-preview__overlay" onClick={() => setPreview(null)}><div className="file-preview" role="dialog" aria-modal="true" aria-labelledby="file-preview-title" onClick={(event) => event.stopPropagation()}><button type="button" onClick={() => setPreview(null)} aria-label="Previewni yopish"><X size={16} /></button><h2 id="file-preview-title">{preview.name}</h2>{preview.dataUrl && <img src={preview.dataUrl} alt={preview.name} />}{preview.previewText && <pre>{preview.previewText}</pre>}<p>{preview.type} · {formatSize(preview.size)}</p></div></div>}
       {pendingDelete && <ConfirmDialog title="Faylni o'chirish" description={`"${pendingDelete.name}" faylini o'chirishni tasdiqlaysizmi?`} confirmLabel="O'chirish" onConfirm={confirmRemove} onCancel={() => setPendingDelete(null)} />}
     </main>
   );

@@ -10,7 +10,7 @@ import type {
 const normalizeInput = (input: string) =>
   input
     .toLocaleLowerCase("uz-UZ")
-    .replace(/[ʻʼ‘’`]/g, "'")
+    .replace(/[ʻʼ‘’`´]/g, "'")
     .replace(/\s+/g, " ")
     .trim();
 

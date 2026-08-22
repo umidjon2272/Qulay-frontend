@@ -8,7 +8,8 @@ const isFile = (value: unknown): value is WorkspaceFile => {
   if (typeof value !== "object" || value === null) return false;
   const file = value as Partial<WorkspaceFile>;
   return typeof file.id === "number" && typeof file.name === "string" && typeof file.type === "string" &&
-    typeof file.mimeType === "string" && typeof file.size === "number" && typeof file.addedAt === "string";
+    typeof file.mimeType === "string" && typeof file.size === "number" && typeof file.addedAt === "string" &&
+    (file.previewText === undefined || typeof file.previewText === "string");
 };
 
 export const getFiles = (): WorkspaceFile[] => readStorage(STORAGE_KEYS.files, [], (value): value is WorkspaceFile[] =>

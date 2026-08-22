@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -18,6 +19,7 @@ import {
   disconnectIntegration,
   getIntegrationState,
 } from "../services/integrationService";
+import { subscribeToWorkspaceData } from "../services/workspaceEvents";
 import { useToast } from "../hooks/useToast";
 
 export type ConnectionState = {
@@ -31,6 +33,8 @@ const loadState = (): Record<string, ConnectionState> =>
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<Record<string, ConnectionState>>(loadState);
   const { showToast } = useToast();
+
+  useEffect(() => subscribeToWorkspaceData("integrations", () => setState(loadState())), []);
 
   const connect = useCallback(
     (id: IntegrationId, username: string) => {

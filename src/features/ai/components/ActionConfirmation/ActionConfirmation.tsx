@@ -105,6 +105,7 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
           type="button"
           className="action-confirmation__dismiss"
           onClick={onDismiss}
+          disabled={status === "loading"}
           aria-label="Bekor qilish"
         >
           <X size={13} />

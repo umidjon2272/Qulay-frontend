@@ -1,10 +1,8 @@
-import {
-  createBrowserRouter,
-  Navigate,
-} from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 
 import Register from "../pages/Register/Register";
 import Login from "../pages/Login/Login";
+import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
 import Dashboard from "../pages/Dashboard/Dashboard";
 
 import AIAssistant from "../features/ai/components/AssistantPage/AIAssistant";
@@ -14,6 +12,7 @@ import Reminders from "../pages/Reminders/Reminders";
 import Files from "../pages/Files/Files";
 import Settings from "../pages/Settings/Settings";
 import Integrations from "../pages/Integrations/Integrations";
+import NotFound from "../pages/NotFound/NotFound";
 
 import AppLayout from "../layouts/AppLayout/AppLayout";
 import RequireAuth from "./router/RequireAuth";
@@ -33,6 +32,11 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <Login />,
+  },
+
+  {
+    path: "/forgot-password",
+    element: <ForgotPassword />,
   },
 
   {
@@ -86,6 +90,6 @@ export const router = createBrowserRouter([
 
   {
     path: "*",
-    element: <Navigate to="/dashboard" replace />,
+    element: <NotFound />,
   },
 ]);

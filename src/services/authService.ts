@@ -9,6 +9,14 @@ import {
 
 export type AuthSession = { name: string; email: string; createdAt: string };
 
+export const AUTH_SESSION_CHANGED = "yechim_ai_auth_session_changed";
+
+const notifyAuthChanged = () => {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_SESSION_CHANGED));
+  }
+};
+
 const isAuthSession = (value: unknown): value is AuthSession =>
   typeof value === "object" &&
   value !== null &&
@@ -46,11 +54,14 @@ export const createMockSession = (
     removeSessionStorage(STORAGE_KEYS.authSession);
   }
 
+  notifyAuthChanged();
+
   return session;
 };
 
 export const clearMockSession = () => {
   const clearedLocal = writeStorage(STORAGE_KEYS.authSession, null);
   const clearedSession = removeSessionStorage(STORAGE_KEYS.authSession);
+  notifyAuthChanged();
   return clearedLocal || clearedSession;
 };

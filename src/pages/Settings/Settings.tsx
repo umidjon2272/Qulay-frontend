@@ -28,9 +28,10 @@ import { useAIChat } from "../../features/ai/hooks/useAIChat";
 import { useIntegrations } from "../../hooks/useIntegrations";
 import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
-import { readStorageString, removeStorage } from "../../services/storage";
-import { getSettings, updateSettings } from "../../services/settingsService";
+import { readStorageString, removeStorage, writeStorage } from "../../services/storage";
+import { defaultSettings, getSettings, updateSettings } from "../../services/settingsService";
 import { clearMockSession } from "../../services/authService";
+import { subscribeToWorkspaceData, notifyWorkspaceDataChanged } from "../../services/workspaceEvents";
 
 import "./Settings.scss";
 
@@ -71,8 +72,6 @@ const defaultPages = ["Bosh sahifa", "AI yordamchi", "Vazifalar"];
 
 const replyStyles = ["Professional", "Do'stona", "Qisqa", "Batafsil"];
 const replyLengths = ["Qisqa", "O'rta", "Batafsil"];
-const initialSettings = getSettings();
-
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -89,21 +88,21 @@ const Settings = () => {
   const { integrations, connectedCount } = useIntegrations();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(initialSettings.theme);
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => getSettings().theme);
 
-  const [language, setLanguage] = useState(initialSettings.language);
-  const [timezone, setTimezone] = useState(initialSettings.timezone);
-  const [dateFormat, setDateFormat] = useState(initialSettings.dateFormat);
-  const [defaultPage, setDefaultPage] = useState(initialSettings.defaultPage);
+  const [language, setLanguage] = useState(() => getSettings().language);
+  const [timezone, setTimezone] = useState(() => getSettings().timezone);
+  const [dateFormat, setDateFormat] = useState(() => getSettings().dateFormat);
+  const [defaultPage, setDefaultPage] = useState(() => getSettings().defaultPage);
 
-  const [notifications, setNotifications] = useState(initialSettings.notifications);
+  const [notifications, setNotifications] = useState(() => getSettings().notifications);
 
-  const [replyStyle, setReplyStyle] = useState(initialSettings.replyStyle);
-  const [replyLength, setReplyLength] = useState(initialSettings.replyLength);
+  const [replyStyle, setReplyStyle] = useState(() => getSettings().replyStyle);
+  const [replyLength, setReplyLength] = useState(() => getSettings().replyLength);
 
-  const [ai, setAi] = useState(initialSettings.ai);
+  const [ai, setAi] = useState(() => getSettings().ai);
 
-  const [twoFactor, setTwoFactor] = useState(initialSettings.twoFactor);
+  const [twoFactor, setTwoFactor] = useState(() => getSettings().twoFactor);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const toggleNotification = (key: keyof typeof notifications) => {
@@ -117,6 +116,10 @@ const Settings = () => {
   useEffect(() => {
     updateSettings({ theme, language, timezone, dateFormat, defaultPage, notifications, replyStyle, replyLength, ai, twoFactor });
   }, [theme, language, timezone, dateFormat, defaultPage, notifications, replyStyle, replyLength, ai, twoFactor]);
+
+  useEffect(() => subscribeToWorkspaceData("settings", () => {
+    setTheme(getSettings().theme);
+  }), []);
 
   const handleSave = () => {
     if (name.trim().length < 2) {
@@ -212,8 +215,23 @@ const Settings = () => {
       STORAGE_KEYS.aiChatHistory,
     ].forEach(removeStorage);
 
+    writeStorage(STORAGE_KEYS.tasks, []);
+    writeStorage(STORAGE_KEYS.reminders, []);
+    writeStorage(STORAGE_KEYS.calendarEvents, []);
+    writeStorage(STORAGE_KEYS.notes, []);
+    writeStorage(STORAGE_KEYS.files, []);
+    writeStorage(STORAGE_KEYS.integrations, {});
+    updateSettings(defaultSettings);
+    notifyWorkspaceDataChanged("tasks");
+    notifyWorkspaceDataChanged("reminders");
+    notifyWorkspaceDataChanged("calendarEvents");
+    notifyWorkspaceDataChanged("notes");
+    notifyWorkspaceDataChanged("files");
+    notifyWorkspaceDataChanged("integrations");
+
     setConfirmingDelete(false);
     showToast("Hisob ma'lumotlari o'chirildi", "success");
+    navigate("/login", { replace: true });
   };
 
   return (
@@ -591,11 +609,19 @@ const Settings = () => {
                   <button
                     type="button"
                     className="settings-outline-btn"
-                    onClick={() => {
-                      navigator.mediaDevices
-                        ?.getUserMedia({ audio: true })
-                        .then(() => showToast("Mikrofonga ruxsat berildi", "success"))
-                        .catch(() => showToast("Mikrofonga ruxsat berilmadi", "error"));
+                    onClick={async () => {
+                      if (!navigator.mediaDevices?.getUserMedia) {
+                        showToast("Bu brauzer mikrofon ruxsatini qo'llab-quvvatlamaydi", "error");
+                        return;
+                      }
+
+                      try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        stream.getTracks().forEach((track) => track.stop());
+                        showToast("Mikrofonga ruxsat berildi", "success");
+                      } catch {
+                        showToast("Mikrofonga ruxsat berilmadi", "error");
+                      }
                     }}
                   >
                     Ruxsat berish

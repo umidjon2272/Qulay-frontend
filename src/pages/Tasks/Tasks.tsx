@@ -93,6 +93,7 @@ const Tasks = () => {
 
     updateTaskRecord(id, { completed: !task.completed });
     setTasks(getTasks());
+    showToast(task.completed ? "Vazifa qayta faollashtirildi" : "Vazifa bajarildi", "success");
   };
 
   const deleteTask = (task: Task) => {

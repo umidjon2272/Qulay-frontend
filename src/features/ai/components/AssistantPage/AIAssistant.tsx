@@ -8,6 +8,8 @@ import {
   BellPlus,
   FolderSearch,
   MessageSquareText,
+  ArrowLeft,
+  Trash2,
 } from "lucide-react";
 
 import { useAIChat } from "../../hooks/useAIChat";
@@ -57,6 +59,12 @@ const AIAssistant = () => {
     <main className="ai-page">
       <div className="ai-page__orb ai-page__orb--one" />
       <div className="ai-page__orb ai-page__orb--two" />
+
+      <header className="ai-page__mobile-bar">
+        <button type="button" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={19} /></button>
+        <div><strong>AI Assistant</strong><span><i /> Onlayn · Tayyor</span></div>
+        <button type="button" onClick={clearChat} aria-label="Suhbatni tozalash"><Trash2 size={17} /></button>
+      </header>
 
       <header className="ai-page__header">
         <div>

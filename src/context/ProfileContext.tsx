@@ -1,11 +1,13 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 
 import { getProfile, updateProfile } from "../services/profileService";
+import { subscribeToWorkspaceData } from "../services/workspaceEvents";
 import { ProfileContext } from "./ProfileContextValue";
 
 const initialProfile = getProfile();
@@ -15,6 +17,14 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
   const [email, setEmailState] = useState(initialProfile.email);
   const [bio, setBioState] = useState(initialProfile.bio);
   const [avatar, setAvatarState] = useState<string | null>(initialProfile.avatar);
+
+  useEffect(() => subscribeToWorkspaceData("profile", () => {
+    const next = getProfile();
+    setNameState(next.name);
+    setEmailState(next.email);
+    setBioState(next.bio);
+    setAvatarState(next.avatar);
+  }), []);
 
   const setName = useCallback((value: string) => {
     setNameState(value);

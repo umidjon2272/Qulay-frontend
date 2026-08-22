@@ -50,4 +50,5 @@ export type WorkspaceFile = {
   size: number;
   addedAt: string;
   dataUrl?: string;
+  previewText?: string;
 };

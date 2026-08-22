@@ -59,8 +59,13 @@ export const readStorage = <T>(
   }
 };
 
-export const writeStorage = <T>(key: string, value: T): boolean =>
-  writeStorageString(key, JSON.stringify(value));
+export const writeStorage = <T>(key: string, value: T): boolean => {
+  try {
+    return writeStorageString(key, JSON.stringify(value));
+  } catch {
+    return false;
+  }
+};
 
 export const removeStorage = (key: string): boolean => {
   const storage = getStorage();

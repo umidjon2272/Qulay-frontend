@@ -55,10 +55,14 @@ const isChatMessage = (value: unknown): value is ChatMessage => {
 const isChatHistory = (value: unknown): value is ChatMessage[] =>
   Array.isArray(value) && value.length > 0 && value.every(isChatMessage);
 
-const loadStoredMessages = (): ChatMessage[] =>
-  getSettings().ai.saveHistory
-    ? readStorage(STORAGE_KEYS.aiChatHistory, [welcomeMessage], isChatHistory)
-    : [welcomeMessage];
+const loadStoredMessages = (): ChatMessage[] => {
+  if (!getSettings().ai.saveHistory) return [welcomeMessage];
+
+  const stored = readStorage(STORAGE_KEYS.aiChatHistory, [welcomeMessage], isChatHistory);
+  if (stored.length <= MAX_CHAT_MESSAGES) return stored;
+
+  return [stored[0], ...stored.slice(-(MAX_CHAT_MESSAGES - 1))];
+};
 
 const appendMessage = (messages: ChatMessage[], message: ChatMessage): ChatMessage[] => {
   const next = [...messages, message];
@@ -73,6 +77,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [saveHistory, setSaveHistory] = useState(() => getSettings().ai.saveHistory);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
+  const previousSaveHistoryRef = useRef(saveHistory);
 
   const mountedRef = useRef(true);
   const generationRef = useRef(0);
@@ -82,10 +87,19 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const executedActionsRef = useRef(new Set<string>());
   const executingActionsRef = useRef(new Set<string>());
 
-  useEffect(
-    () => subscribeToWorkspaceData("settings", () => setSaveHistory(getSettings().ai.saveHistory)),
-    [],
-  );
+  useEffect(() => subscribeToWorkspaceData("settings", () => {
+    const nextSaveHistory = getSettings().ai.saveHistory;
+    setSaveHistory(nextSaveHistory);
+
+    if (!nextSaveHistory) {
+      removeStorage(STORAGE_KEYS.aiChatHistory);
+      setMessages([{ ...welcomeMessage, id: 0, time: formatTime() }]);
+    } else if (!previousSaveHistoryRef.current) {
+      setMessages(loadStoredMessages());
+    }
+
+    previousSaveHistoryRef.current = nextSaveHistory;
+  }), []);
 
   useEffect(() => {
     messageIdRef.current = messages.reduce(

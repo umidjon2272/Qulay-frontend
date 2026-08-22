@@ -27,7 +27,7 @@ export type AppSettings = {
 };
 
 export const defaultSettings: AppSettings = {
-  theme: "light",
+  theme: "dark",
   language: "O'zbekcha",
   timezone: "Toshkent (GMT+5)",
   dateFormat: "12 Avgust 2026",

@@ -894,3 +894,15 @@
   margin: 14px 0 0;
   color: #8d8597;
 }
+
+.file-preview pre {
+  max-height: 60vh;
+  margin: 0;
+  padding: 14px;
+  overflow: auto;
+  border-radius: 12px;
+  color: var(--text-primary);
+  background: var(--surface-soft);
+  font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace;
+  white-space: pre-wrap;
+}
