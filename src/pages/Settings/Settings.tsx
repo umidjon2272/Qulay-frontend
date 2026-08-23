@@ -13,7 +13,6 @@ import {
   Check,
   Moon,
   Sun,
-  Monitor,
   Save,
   Camera,
   Download,
@@ -76,6 +75,53 @@ const defaultPages = ["Bosh sahifa", "AI yordamchi", "Vazifalar"];
 
 const replyStyles = ["Professional", "Do'stona", "Qisqa", "Batafsil"];
 const replyLengths = ["Qisqa", "O'rta", "Batafsil"];
+type MobileSettingsHomeProps = {
+  active: SectionId;
+  theme: "light" | "dark" | "system";
+  onThemeChange: (theme: "light" | "dark") => void;
+  onSelect: (section: SectionId) => void;
+  onLogout: () => void;
+};
+
+const MobileSettingsHome = ({ active, theme, onThemeChange, onSelect, onLogout }: MobileSettingsHomeProps) => {
+  if (active !== "general") return null;
+
+  return (
+    <section className="settings-mobile-home" aria-label="Sozlamalar">
+      <header className="settings-mobile-home__header">
+        <h1>Sozlamalar</h1>
+        <span>Qulay AI</span>
+      </header>
+
+      <div className="settings-mobile-home__group">
+        <span className="settings-mobile-home__label">Akkaunt</span>
+        <button type="button" onClick={() => onSelect("profile")}><User size={18} /><span>Profil</span><b>›</b></button>
+        <button type="button" className="is-disabled" disabled><KeyRound size={18} /><span>Parolni o‘zgartirish</span><small>Soon</small><b>›</b></button>
+        <button type="button" className="is-danger" onClick={onLogout}><LogOut size={18} /><span>Akkauntdan chiqish</span><b>›</b></button>
+      </div>
+
+      <div className="settings-mobile-home__group">
+        <span className="settings-mobile-home__label">Ko‘rinish</span>
+        <div className="settings-mobile-home__theme" role="group" aria-label="Mavzu">
+          <button type="button" className={theme === "light" ? "is-active" : ""} onClick={() => onThemeChange("light")}><Sun size={15} /> Yorug‘</button>
+          <button type="button" className={theme === "dark" ? "is-active" : ""} onClick={() => onThemeChange("dark")}><Moon size={15} /> Qorong‘i</button>
+        </div>
+      </div>
+
+      <div className="settings-mobile-home__group">
+        <span className="settings-mobile-home__label">Bildirishnomalar</span>
+        <button type="button" onClick={() => onSelect("notifications")}><Bell size={18} /><span>Bildirishnomalar</span><b>›</b></button>
+        <button type="button" onClick={() => onSelect("integrations")}><Link2 size={18} /><span>Integratsiyalar</span><b>›</b></button>
+      </div>
+
+      <div className="settings-mobile-home__group">
+        <span className="settings-mobile-home__label">Integratsiyalar</span>
+        <button type="button" onClick={() => onSelect("integrations")}><Link2 size={18} /><span>Integratsiyalar</span><b aria-hidden="true">›</b></button>
+      </div>
+    </section>
+  );
+};
+
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -93,7 +139,7 @@ const Settings = () => {
   const { logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => getSettings().theme);
+  const [theme, setTheme] = useState<"light" | "dark">(() => getSettings().theme === "dark" ? "dark" : "light");
 
   const [language, setLanguage] = useState(() => getSettings().language);
   const [timezone, setTimezone] = useState(() => getSettings().timezone);
@@ -130,7 +176,7 @@ const Settings = () => {
   }, [language, timezone]);
 
   useEffect(() => subscribeToWorkspaceData("settings", () => {
-    setTheme(getSettings().theme);
+    setTheme(getSettings().theme === "dark" ? "dark" : "light");
   }), []);
 
   const handleSave = async () => {
@@ -219,7 +265,7 @@ const Settings = () => {
 
     setName("Yechim foydalanuvchi");
     setEmail("user@yechim.ai");
-    setBio("Yechim AI foydalanuvchisi");
+    setBio("Qulay AI foydalanuvchisi");
     setAvatar(null);
     clearChat();
     clearMockSession();
@@ -243,6 +289,7 @@ const Settings = () => {
 
   return (
     <main className={`settings-page settings-page--${active}`}>
+      <div className="settings-desktop-shell">
       <header className="settings-header">
         <button type="button" className="settings-header__back" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={18} /></button>
         <div>
@@ -474,7 +521,6 @@ const Settings = () => {
                 {[
                   { id: "light" as const, label: "Yorug'", hint: "Tavsiya etiladi", icon: Sun },
                   { id: "dark" as const, label: "Qorong'i", hint: "Ko'zga yumshoq", icon: Moon },
-                  { id: "system" as const, label: "Tizim", hint: "Avtomatik moslashadi", icon: Monitor },
                 ].map((option) => {
                   const Icon = option.icon;
                   const isActive = theme === option.id;
@@ -514,12 +560,10 @@ const Settings = () => {
               <div className="settings-toggle-list">
                 {(
                   [
-                    { key: "aiReplies" as const, label: "AI javoblari", hint: "AI javob bergani haqida bildirishnoma" },
-                    { key: "newTasks" as const, label: "Yangi vazifalar", hint: "Yangi vazifa yaratilganda xabar berish" },
-                    { key: "meetingReminders" as const, label: "Uchrashuv eslatmalari", hint: "Uchrashuvdan oldin eslatish" },
-                    { key: "telegram" as const, label: "Telegram xabarlari", hint: "Telegram orqali bildirishnomalar" },
-                    { key: "email" as const, label: "Email bildirishnomalari", hint: "Muhim yangiliklar email orqali" },
-                    { key: "weekly" as const, label: "Haftalik hisobot", hint: "Har hafta faoliyat xulosasi" },
+                    { key: "newTasks" as const, label: "Vazifalar", hint: "Vazifa yangilanganda xabar berish" },
+                    { key: "reminders" as const, label: "Eslatmalar", hint: "Eslatma vaqti yaqinlashganda xabar berish" },
+                    { key: "meetingReminders" as const, label: "Uchrashuvlar", hint: "Uchrashuvdan oldin eslatish" },
+                    { key: "aiReplies" as const, label: "AI tavsiyalar", hint: "Qulay AI tavsiyalari haqida xabar berish" },
                   ]
                 ).map((item) => (
                   <div className="settings-toggle-row" key={item.key}>
@@ -547,7 +591,7 @@ const Settings = () => {
           {active === "ai" && (
             <div className="settings-card">
               <h2>AI sozlamalari</h2>
-              <p>Yechim AI qanday ishlashini sozlang.</p>
+              <p>Qulay AI qanday ishlashini sozlang.</p>
 
               <div className="settings-row-list">
                 <div className="settings-row">
@@ -673,7 +717,7 @@ const Settings = () => {
               <div className="settings-integrations__header">
                 <div>
                   <h2>Integratsiyalar</h2>
-                  <p>Yechim AI'ni kundalik xizmatlaringiz bilan bog'lang.</p>
+                  <p>Qulay AI'ni kundalik xizmatlaringiz bilan bog'lang.</p>
                 </div>
 
                 <div className="settings-integrations__stats">
@@ -800,6 +844,16 @@ const Settings = () => {
           )}
         </section>
       </div>
+
+      </div>
+
+      <MobileSettingsHome
+        active={active}
+        theme={theme}
+        onThemeChange={setTheme}
+        onSelect={setActive}
+        onLogout={() => setConfirmingLogout(true)}
+      />
 
       <button type="button" className="settings-mobile-logout" onClick={() => setConfirmingLogout(true)}>
         <LogOut size={16} /> Akkauntdan chiqish

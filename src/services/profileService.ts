@@ -29,7 +29,7 @@ export const loadProfile = async (): Promise<Profile> => {
 
 const nameParts = (name: string) => {
   const parts = name.trim().split(/\s+/).filter(Boolean);
-  return { firstName: parts[0] ?? "Yechim", lastName: parts.slice(1).join(" ") || "AI" };
+  return { firstName: parts[0] ?? "Qulay", lastName: parts.slice(1).join(" ") || "AI" };
 };
 
 export const updateProfile = async (patch: Partial<Profile>): Promise<Profile> => {

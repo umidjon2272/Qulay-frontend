@@ -46,6 +46,7 @@
 
 .settings-header__back,
 .settings-mobile-logout { display: none; }
+.settings-mobile-home { display: none; }
 
 button,
 a,
@@ -135,17 +136,24 @@ a:active { transform: scale(0.97); }
     border-radius: 22px;
   }
   .hero__mobile-ai h3 { font-size: 21px; }
-  .hero__mobile-ai p { max-width: 215px; margin: 8px 0 13px; font-size: 12px; }
+  .hero__mobile-ai p { display: none; }
   .hero__mobile-orb { width: 88px; height: 88px; }
   .hero__mobile-prompts { padding-right: 12px; scroll-snap-type: x proximity; }
   .hero__mobile-prompts button { scroll-snap-align: start; }
+  .hero__mobile-prompts button { font-size: 0; }
+  .hero__mobile-prompts button::after { font-size: 11px; }
+  .hero__mobile-prompts button:nth-child(1)::after { content: "Bugungi rejam"; }
+  .hero__mobile-prompts button:nth-child(2)::after { content: "Eslatma qo‘y"; }
+  .hero__mobile-prompts button:nth-child(3)::after { content: "Uchrashuv yarat"; }
+  .hero__mobile-ai-actions button:last-child { display: none; }
 
   .stats { margin-bottom: 18px; }
   .stats__header { margin-bottom: 10px; }
   .stats__heading h2,
-  .mobile-home-details__tasks-header h2 { font-size: 18px; }
+  .mobile-home-details__tasks-header h2 { font-size: 0; }
+  .stats__heading h2::before { content: "Bugun"; font-size: 18px; }
   .stats__grid { gap: 8px; }
-  .stats__card { min-height: 116px; padding: 12px; border-radius: 17px; }
+  .stats__card { min-height: 108px; padding: 12px; border-radius: 17px; }
   .stats__value { margin-top: 9px; font-size: 29px; }
   .stats h3 { font-size: 14px; }
   .stats p { display: none; }
@@ -155,14 +163,16 @@ a:active { transform: scale(0.97); }
   .dashboard__main > .quick-actions { display: none; }
   .mobile-home-details { margin-bottom: 8px; }
   .mobile-home-details__meeting { margin-bottom: 18px; padding: 13px; border-radius: 18px; }
-  .mobile-task-row { min-height: 68px; }
+  .mobile-home-details__meeting-copy strong { font-size: 14px; }
+  .mobile-task-row { grid-template-columns: 28px minmax(0, 1fr) auto; min-height: 64px; }
+  .mobile-task-row__time { font-size: 11px; }
 
   /* AI is a full-height app surface. The regular desktop chat header is hidden
      on phones because the compact bar below is the single mobile header. */
   .app-layout--ai { padding: 0; }
   .app-layout--ai .sidebar { display: none; }
   .app-layout--ai .app-layout__content,
-  .ai-page { height: 100dvh; min-height: 100dvh; }
+  .ai-page { height: var(--visual-viewport-height, 100dvh); min-height: var(--visual-viewport-height, 100dvh); }
   .ai-page__workspace { height: 100%; }
   .ai-page__main { padding-top: 56px; }
   .ai-page__main > .chat-header { display: none; }
@@ -174,7 +184,7 @@ a:active { transform: scale(0.97); }
   }
   .ai-page__mobile-bar button { width: 38px; height: 38px; border-radius: 12px; }
   .ai-page__mobile-bar strong { display: block; width: 0; overflow: hidden; font-size: 0; font-weight: 700; }
-  .ai-page__mobile-bar strong::before { content: "Yechim AI"; display: block; width: 90px; font-size: 15px; }
+  .ai-page__mobile-bar strong::before { content: "Qulay AI"; display: block; width: 90px; font-size: 15px; }
   .ai-page__mobile-bar span { font-size: 11px; }
   .ai-page__mobile-bar .ai-page__mobile-voice { margin-left: auto; }
   .ai-page__mobile-bar button:last-child { margin-left: 0; }
@@ -187,12 +197,15 @@ a:active { transform: scale(0.97); }
   .ai-conversation { min-height: 0; }
   .message-list { padding: 12px 14px; }
   .message-list__inner { gap: 10px; }
-  .message-bubble { max-width: 92%; }
+  .message-bubble { max-width: 85%; }
+  .message-bubble--user { max-width: 78%; }
   .message-bubble__avatar { display: none; }
   .message-bubble__glass { padding: 10px 12px; border-radius: 15px; }
   .message-bubble__glass p { font-size: 16px; line-height: 1.48; }
   .message-bubble__meta { min-height: 20px; }
   .message-bubble__meta > span { display: none; }
+  .message-bubble__speak { opacity: 0; }
+  .message-bubble:focus-within .message-bubble__speak { opacity: 1; }
   .chat-input-area { padding: 7px 12px calc(8px + env(safe-area-inset-bottom)); }
   .chat-input { min-height: 52px; border-radius: 17px; }
   .chat-input textarea { min-height: 40px; max-height: 132px; font-size: 16px; }
@@ -202,6 +215,26 @@ a:active { transform: scale(0.97); }
 
   /* Settings: one navigable iOS-style list, then one focused sub-page. */
   .settings-page { width: 100%; min-width: 0; padding: 0 0 12px; }
+  .settings-page--general .settings-desktop-shell { display: none; }
+  .settings-page:not(.settings-page--general) .settings-desktop-shell { display: block; }
+  .settings-mobile-home { display: block; width: 100%; min-width: 0; }
+  .settings-mobile-home__header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+  .settings-mobile-home__header h1 { margin: 0; color: var(--text-primary); font-size: 26px; letter-spacing: -0.7px; }
+  .settings-mobile-home__header span { color: var(--accent); font-size: 12px; font-weight: 700; }
+  .settings-mobile-home__group { margin-bottom: 18px; padding: 0 12px; border: 1px solid var(--mobile-soft-border); border-radius: 18px; background: color-mix(in srgb, var(--surface-solid) 76%, transparent); }
+  .settings-mobile-home__label { display: block; padding: 12px 0 6px; color: var(--text-muted); font-size: 11px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
+  .settings-mobile-home__group > button { display: flex; align-items: center; gap: 11px; width: 100%; min-height: 52px; padding: 0; border: 0; border-top: 1px solid var(--mobile-soft-border); background: transparent; color: var(--text-primary); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+  .settings-mobile-home__group > button svg { flex: 0 0 auto; color: var(--accent); }
+  .settings-mobile-home__group > button span { min-width: 0; }
+  .settings-mobile-home__group > button small { margin-left: auto; color: var(--text-muted); font-size: 11px; }
+  .settings-mobile-home__group > button b { margin-left: auto; color: var(--text-muted); font-size: 22px; font-weight: 400; }
+  .settings-mobile-home__group > button small + b { margin-left: 0; }
+  .settings-mobile-home__group > button.is-danger { color: var(--danger); }
+  .settings-mobile-home__group > button.is-disabled { cursor: not-allowed; opacity: 0.55; }
+  .settings-mobile-home__group > button.is-danger svg { color: currentColor; }
+  .settings-mobile-home__theme { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding: 8px 0 12px; }
+  .settings-mobile-home__theme button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 42px; border: 1px solid var(--mobile-soft-border); border-radius: 12px; background: var(--surface-soft); color: var(--text-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+  .settings-mobile-home__theme button.is-active { border-color: color-mix(in srgb, var(--accent) 38%, transparent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
   .settings-header {
     display: grid;
     grid-template-columns: 38px minmax(0, 1fr) 38px;
@@ -232,16 +265,50 @@ a:active { transform: scale(0.97); }
   .settings-row > div:first-child,
   .settings-toggle-row > div:first-child { min-width: 0; }
   .settings-chips { max-width: 100%; overflow-x: auto; padding-bottom: 1px; }
-  .settings-theme { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .settings-theme { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
   .settings-theme__item { display: grid; min-height: 44px; padding: 0 7px; border-radius: 11px; }
   .settings-theme__preview,
   .settings-theme__item > span,
   .settings-theme__check { display: none; }
   .settings-theme__item strong { font-size: 12px; }
   .settings-mobile-logout { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-top: 12px; border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); border-radius: 15px; background: color-mix(in srgb, var(--danger) 8%, transparent); color: var(--danger); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
+  .settings-page--general .settings-mobile-logout { display: none; }
+  .settings-page--profile .settings-card label:nth-of-type(3) { display: none; }
+  .settings-mobile-home__group { animation: settingsMobileGroupIn 180ms ease both; }
+  .settings-mobile-home__group:nth-child(3) { animation-delay: 30ms; }
+  .settings-mobile-home__group:nth-child(4) { animation-delay: 60ms; }
+  .settings-mobile-home__group:nth-child(5) { animation-delay: 90ms; }
+  .settings-mobile-home__group:nth-child(4) > button:nth-of-type(2) { display: none; }
+
+  .settings-page--integrations .integration-hub__grid,
+  .integrations .integration-hub__grid { grid-template-columns: minmax(0, 1fr) !important; gap: 8px; }
+  .settings-page--integrations .integration-card,
+  .integrations .integration-card {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 76px;
+    padding: 10px 12px;
+    border-radius: 16px;
+  }
+  .settings-page--integrations .integration-card__top,
+  .integrations .integration-card__top { grid-column: 1; grid-row: 1; }
+  .settings-page--integrations .integration-card__info,
+  .integrations .integration-card__info { grid-column: 2; grid-row: 1; min-width: 0; margin: 0; }
+  .settings-page--integrations .integration-card__info h3,
+  .integrations .integration-card__info h3 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+  .settings-page--integrations .integration-card__info p,
+  .integrations .integration-card__info p { display: none; }
+  .settings-page--integrations .integration-card__button,
+  .integrations .integration-card__button { grid-column: 3; grid-row: 1; position: static; min-height: 34px; padding: 0 9px; border-radius: 10px; font-size: 11px; }
 
   .toast-stack { bottom: calc(var(--mobile-nav-height) + 16px + env(safe-area-inset-bottom)); }
   .app-layout--ai .toast-stack { bottom: calc(82px + env(safe-area-inset-bottom)); }
+}
+
+@keyframes settingsMobileGroupIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 360px) {
@@ -249,7 +316,7 @@ a:active { transform: scale(0.97); }
   .hero__mobile-ai { grid-template-columns: minmax(0, 1fr) 76px; padding: 14px; }
   .hero__mobile-orb { width: 76px; height: 76px; }
   .hero__mobile-ai h3 { font-size: 19px; }
-  .stats__card { min-height: 110px; padding: 10px; }
+  .stats__card { min-height: 104px; padding: 10px; }
   .settings-nav__item { min-height: 48px; }
 }
 

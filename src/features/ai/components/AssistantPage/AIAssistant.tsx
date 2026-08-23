@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -56,6 +56,24 @@ const AIAssistant = () => {
   const navigate = useNavigate();
   const hasConversation = messages.length > 1;
 
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return undefined;
+
+    const syncViewportHeight = () => {
+      document.documentElement.style.setProperty("--visual-viewport-height", `${viewport.height}px`);
+    };
+
+    syncViewportHeight();
+    viewport.addEventListener("resize", syncViewportHeight);
+    viewport.addEventListener("scroll", syncViewportHeight);
+    return () => {
+      viewport.removeEventListener("resize", syncViewportHeight);
+      viewport.removeEventListener("scroll", syncViewportHeight);
+      document.documentElement.style.removeProperty("--visual-viewport-height");
+    };
+  }, []);
+
   const handleSend = () => {
     if (!input.trim()) return;
     sendMessage(input);
@@ -85,8 +103,8 @@ const AIAssistant = () => {
           <div className="ai-page__rail-heading">
             <div className="ai-page__rail-mark"><Sparkles size={15} /></div>
             <div>
-              <strong>AI yordamchi</strong>
-              <span>Smart ish maydoni</span>
+              <strong>Qulay AI</strong>
+              <span>AI ish maydoni</span>
             </div>
           </div>
 
@@ -133,7 +151,7 @@ const AIAssistant = () => {
                 <Sparkles size={28} />
               </div>
 
-              <span className="ai-welcome__small">SALOM, MEN YECHIM AI</span>
+              <span className="ai-welcome__small">SALOM, MEN QULAY AI</span>
               <h1>Bugun sizga qanday yordam beray?</h1>
               <p>Reja tuzing, vazifa yarating yoki shunchaki gaplashishni boshlang.</p>
 
@@ -174,7 +192,7 @@ const AIAssistant = () => {
 
       <header className="ai-page__mobile-bar">
         <button type="button" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={18} /></button>
-        <div><strong>AI Assistant</strong><span><i /> Onlayn · Tayyor</span></div>
+        <div><strong>Qulay AI</strong><span><i /> Onlayn · Tayyor</span></div>
         <button type="button" className="ai-page__mobile-voice" onClick={openVoiceMode} aria-label="Voice Mode'ni ochish"><Mic size={17} /></button>
         <button type="button" onClick={clearChat} aria-label="Suhbat sozlamalari"><MoreHorizontal size={18} /></button>
       </header>

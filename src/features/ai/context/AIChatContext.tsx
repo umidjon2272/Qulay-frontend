@@ -28,7 +28,7 @@ const formatTime = () =>
 const welcomeMessage: ChatMessage = {
   id: 0,
   role: "ai",
-  text: "Assalomu alaykum! Men Yechim AI. Vazifa, eslatma, uchrashuv va qayd yaratish yoki bugungi rejangizni ko‘rishda yordam beraman.",
+  text: "Assalomu alaykum! Men Qulay AI. Vazifa, eslatma, uchrashuv va qayd yaratish yoki bugungi rejangizni ko‘rishda yordam beraman.",
   time: formatTime(),
 };
 

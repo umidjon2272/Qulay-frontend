@@ -64,18 +64,18 @@ const Register = () => {
   return (
     <main className="register">
       <div className="register__left">
-        <div className="register__brand"><div className="register__logo">✦</div><span>YECHIM AI</span></div>
+        <div className="register__brand"><div className="register__logo">✦</div><span>QULAY AI</span></div>
         <div className="register__content">
           <span className="register__badge">AI Business Assistant</span>
           <h1>Biznesingizni<br /><span>AI bilan boshqaring.</span></h1>
           <p>Vazifalar, uchrashuvlar, hujjatlar va kundalik ishlaringizni bitta aqlli yordamchi orqali boshqaring.</p>
           <div className="register__features"><div><span>✓</span>AI bilan ovozli muloqot</div><div><span>✓</span>Vazifa va uchrashuvlarni boshqarish</div><div><span>✓</span>Telegram, Gmail va Calendar integratsiyasi</div></div>
         </div>
-        <div className="register__footer">© 2026 YECHIM AI</div>
+        <div className="register__footer">© 2026 QULAY AI</div>
       </div>
       <div className="register__right">
         <div className="register__form-wrapper">
-          <div className="register__heading"><h2>Hisob yaratish 👋</h2><p>YECHIM AI'dan foydalanishni boshlang.</p></div>
+          <div className="register__heading"><h2>Hisob yaratish 👋</h2><p>QULAY AI'dan foydalanishni boshlang.</p></div>
           <form className="register__form" onSubmit={submit}>
             <div className="register__field"><label htmlFor="register-first-name">Ism</label><input id="register-first-name" type="text" placeholder="Ismingizni kiriting" value={firstName} onChange={(event) => setFirstName(event.target.value)} required /></div>
             <div className="register__field"><label htmlFor="register-last-name">Familiya</label><input id="register-last-name" type="text" placeholder="Familiyangizni kiriting" value={lastName} onChange={(event) => setLastName(event.target.value)} required /></div>

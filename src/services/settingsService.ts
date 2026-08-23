@@ -11,6 +11,7 @@ export type AppSettings = {
   notifications: {
     aiReplies: boolean;
     newTasks: boolean;
+    reminders: boolean;
     meetingReminders: boolean;
     telegram: boolean;
     email: boolean;
@@ -35,6 +36,7 @@ export const defaultSettings: AppSettings = {
   notifications: {
     aiReplies: true,
     newTasks: true,
+    reminders: true,
     meetingReminders: true,
     telegram: false,
     email: true,

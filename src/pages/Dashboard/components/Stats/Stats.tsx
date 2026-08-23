@@ -35,7 +35,7 @@ const Stats = () => {
     { title: "Vazifalar", value: String(todayTasks.length), subtitle: `${completed} ta bajarildi`, progress: taskProgress, trend: `${completed}/${todayTasks.length}`, icon: CheckCircle2, route: "/tasks" },
     { title: "Eslatmalar", value: String(activeReminders.length), subtitle: "Faol eslatmalar", progress: activeReminders.length ? 100 : 0, trend: activeReminders[0]?.time ?? "—", icon: Bell, route: "/reminders" },
     { title: "Uchrashuvlar", value: String(todayEvents.length), subtitle: "Bugun rejalashtirilgan", progress: todayEvents.length ? 100 : 0, trend: todayEvents[0]?.time ?? "—", icon: CalendarDays, route: "/calendar" },
-    { title: "Bajarilganlar", value: String(completed), subtitle: "Bugungi natija", progress: taskProgress, trend: `${taskProgress}%`, icon: CheckCircle2, route: "/tasks" },
+    
   ];
 
   return (

@@ -20,7 +20,7 @@ const Integrations = () => {
           <h2>Integratsiyalar</h2>
 
           <p>
-            Yechim AI'ni kundalik xizmatlaringizga ulang.
+            Qulay AI'ni kundalik xizmatlaringizga ulang.
           </p>
         </div>
 

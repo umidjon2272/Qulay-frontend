@@ -51,7 +51,7 @@ const AIChatDrawer = () => {
         className={`ai-drawer ${isOpen ? "is-open" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Yechim AI suhbat oynasi"
+        aria-label="Qulay AI suhbat oynasi"
         aria-hidden={!isOpen}
       >
         <ChatHeader onClose={close} onClear={clearChat} />

@@ -19,7 +19,7 @@ const ChatHeader = ({ onClose, onMinimize, onClear, onVoice }: ChatHeaderProps) 
         </div>
 
         <div className="chat-header__text">
-          <strong>Yechim AI</strong>
+          <strong>Qulay AI</strong>
 
           <span className="chat-header__status">
             <i />

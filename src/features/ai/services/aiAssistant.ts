@@ -69,7 +69,7 @@ export const getAIReply = async (
 
   if (lower.includes("salom") || lower.includes("assalom")) {
     return {
-      text: "Salom! Men Yechim AI — vazifa, eslatma, uchrashuv va qaydlarni boshqarishda yordam beraman.",
+      text: "Salom! Men Qulay AI — vazifa, eslatma, uchrashuv va qaydlarni boshqarishda yordam beraman.",
     };
   }
 

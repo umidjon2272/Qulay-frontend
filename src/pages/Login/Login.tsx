@@ -66,14 +66,14 @@ const Login = () => {
   return (
     <main className="login">
       <div className="login__left">
-        <div className="login__brand"><div className="login__logo">вњ¦</div><span>YECHIM AI</span></div>
+        <div className="login__brand"><div className="login__logo">✦</div><span>QULAY AI</span></div>
         <div className="login__content">
           <span className="login__badge">AI Business Assistant</span>
           <h1>Ishingizni<br /><span>AI'ga topshiring.</span></h1>
           <p>Kunlik vazifalar, uchrashuvlar, hujjatlar va biznes ishlaringizni aqlli yordamchi bilan boshqaring.</p>
-          <div className="login__assistant"><div className="login__assistant-icon">вњ¦</div><div><span>YECHIM AI</span><strong>Bugun sizga yordam berishga tayyor.</strong></div></div>
+          <div className="login__assistant"><div className="login__assistant-icon">✦</div><div><span>QULAY AI</span><strong>Bugun sizga yordam berishga tayyor.</strong></div></div>
         </div>
-        <div className="login__footer">В© 2026 YECHIM AI</div>
+        <div className="login__footer">© 2026 QULAY AI</div>
       </div>
 
       <div className="login__right">

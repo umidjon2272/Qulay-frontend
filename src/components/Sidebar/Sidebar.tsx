@@ -48,7 +48,7 @@ const Sidebar = () => {
     <aside className="sidebar">
       <div className="sidebar__brand">
         <div className="sidebar__logo"><Sparkles size={20} /></div>
-        <div className="sidebar__brand-text"><strong>Yechim AI</strong><span>Smart ish maydoni</span></div>
+        <div className="sidebar__brand-text"><strong>Qulay AI</strong><span>AI ish maydoni</span></div>
       </div>
 
       <nav className="sidebar__nav">

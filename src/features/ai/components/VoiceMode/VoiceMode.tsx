@@ -206,7 +206,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   };
 
   return (
-    <div className="voice-mode" role="dialog" aria-modal="true" aria-label="Yechim AI Voice Mode">
+    <div className="voice-mode" role="dialog" aria-modal="true" aria-label="Qulay AI Voice Mode">
       <div className="voice-mode__backdrop" />
 
       <div className="voice-mode__shell">
@@ -214,7 +214,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
           <div className="voice-mode__brand">
             <span className="voice-mode__brand-dot" />
             <div>
-              <strong>Yechim AI</strong>
+              <strong>Qulay AI</strong>
               <span>Voice Mode · O'zbekcha</span>
             </div>
           </div>
@@ -235,7 +235,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
           <div className="voice-mode__transcript" aria-live="polite">
             {transcriptMessages.length > 0 ? transcriptMessages.map((message) => (
               <div className={`voice-mode__line voice-mode__line--${message.role}`} key={message.id}>
-                <span>{message.role === "user" ? "Siz" : "Yechim AI"}</span>
+                <span>{message.role === "user" ? "Siz" : "Qulay AI"}</span>
                 <p>{message.text}</p>
               </div>
             )) : (

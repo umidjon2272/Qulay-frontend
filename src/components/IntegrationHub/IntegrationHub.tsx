@@ -124,8 +124,8 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
 
             <p>
               {selected.connected
-                ? `${selected.name} Yechim AI bilan ulangan.`
-                : `${selected.name}ni Yechim AI bilan ulang.`}
+                ? `${selected.name} Qulay AI bilan ulangan.`
+                : `${selected.name}ni Qulay AI bilan ulang.`}
             </p>
 
             {selected.connected ? (

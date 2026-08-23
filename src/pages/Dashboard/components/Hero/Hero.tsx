@@ -33,7 +33,7 @@ const Hero = () => {
       <div className="hero__mobile-header">
         <div className="hero__mobile-brand">
           <div className="hero__mobile-brand-mark"><Sparkles size={15} /></div>
-          <strong>YECHIM AI</strong>
+          <strong>QULAY AI</strong>
         </div>
 
         <div className="hero__mobile-actions">
@@ -56,7 +56,7 @@ const Hero = () => {
       <div className="hero__mobile-ai">
         <div className="hero__mobile-ai-copy">
           <div className="hero__mobile-ai-status"><i /> AI YORDAMCHI <span>ONLAYN</span></div>
-          <h3>Bugun nimadan boshlaymiz?</h3>
+          <h3>Bugun sizga qanday yordam beray?</h3>
           <p>Rejangiz, vazifalaringiz va g‘oyalaringiz uchun men tayyorman.</p>
           <div className="hero__mobile-ai-actions">
             <button type="button" onClick={openAIChat}><Mic size={16} /> AI bilan gaplashish</button>
