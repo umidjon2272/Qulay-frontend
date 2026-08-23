@@ -186,7 +186,8 @@
 
 @media (max-width: 700px) {
   .chat-input-area {
-    padding: 9px 11px calc(10px + env(safe-area-inset-bottom));
+    flex: 0 0 auto;
+    padding: 8px 11px max(8px, env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
   }
 

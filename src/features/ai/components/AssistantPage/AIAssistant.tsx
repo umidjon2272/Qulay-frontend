@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -55,27 +55,6 @@ const AIAssistant = () => {
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
   const navigate = useNavigate();
   const hasConversation = messages.length > 1;
-
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return undefined;
-
-    const syncViewportHeight = () => {
-      const keyboardInset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      document.documentElement.style.setProperty("--visual-viewport-height", `${viewport.height}px`);
-      document.documentElement.style.setProperty("--keyboard-inset", `${keyboardInset}px`);
-    };
-
-    syncViewportHeight();
-    viewport.addEventListener("resize", syncViewportHeight);
-    viewport.addEventListener("scroll", syncViewportHeight);
-    return () => {
-      viewport.removeEventListener("resize", syncViewportHeight);
-      viewport.removeEventListener("scroll", syncViewportHeight);
-      document.documentElement.style.removeProperty("--visual-viewport-height");
-      document.documentElement.style.removeProperty("--keyboard-inset");
-    };
-  }, []);
 
   const handleSend = () => {
     if (!input.trim()) return;

@@ -42,7 +42,7 @@ export const integrationCatalog: IntegrationDefinition[] = [
   },
   {
     id: "google-drive",
-    name: "Google Drive",
+    name: "Google Drive / Documents",
     description: "Hujjat va fayllaringiz",
     icon: HardDrive,
     color: "green",

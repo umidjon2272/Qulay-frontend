@@ -1,204 +1,170 @@
-import { useEffect, useRef, useState } from "react";
-import type { ChangeEvent, ComponentType } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type ComponentType } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
-  SlidersHorizontal,
-  User,
-  Palette,
-  Bell,
-  Sparkles,
-  Link2,
-  Lock,
-  ShieldCheck,
-  Check,
-  Moon,
-  Sun,
-  Save,
-  Camera,
-  Download,
-  Trash2,
-  KeyRound,
-  LogOut,
   ArrowLeft,
+  Bell,
+  Camera,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  KeyRound,
+  Languages,
+  Link2,
+  LogOut,
+  Moon,
+  Palette,
+  Save,
+  Sparkles,
+  Sun,
+  User,
 } from "lucide-react";
 
 import { useToast } from "../../hooks/useToast";
 import { useProfile } from "../../hooks/useProfile";
-import { useAIChat } from "../../features/ai/hooks/useAIChat";
 import { useIntegrations } from "../../hooks/useIntegrations";
 import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
-import { STORAGE_KEYS } from "../../constants/storageKeys";
-import { readStorageString, removeStorage, writeStorage } from "../../services/storage";
-import { defaultSettings, getSettings, updateSettings } from "../../services/settingsService";
+import { getSettings, updateSettings } from "../../services/settingsService";
 import { clearMockSession } from "../../services/authService";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
-import { subscribeToWorkspaceData, notifyWorkspaceDataChanged } from "../../services/workspaceEvents";
 
 import "./Settings.scss";
 
-type SectionId =
-  | "general"
-  | "profile"
-  | "appearance"
-  | "notifications"
-  | "ai"
-  | "integrations"
-  | "privacy"
-  | "security";
+type SectionId = "profile" | "appearance" | "notifications" | "language" | "integrations";
 
-type Section = {
+type SettingsSection = {
   id: SectionId;
   label: string;
+  description: string;
   icon: ComponentType<{ size?: number }>;
 };
 
-const sections: Section[] = [
-  { id: "general", label: "Umumiy", icon: SlidersHorizontal },
-  { id: "profile", label: "Profil", icon: User },
-  { id: "appearance", label: "Ko'rinish", icon: Palette },
-  { id: "notifications", label: "Bildirishnomalar", icon: Bell },
-  { id: "ai", label: "AI sozlamalari", icon: Sparkles },
-  { id: "integrations", label: "Integratsiyalar", icon: Link2 },
-  { id: "privacy", label: "Maxfiylik", icon: Lock },
-  { id: "security", label: "Xavfsizlik", icon: ShieldCheck },
+const sections: SettingsSection[] = [
+  { id: "appearance", label: "Ko'rinish", description: "Yorug' yoki qorong'i rejim", icon: Palette },
+  { id: "notifications", label: "Bildirishnomalar", description: "Vazifalar, eslatmalar va AI", icon: Bell },
+  { id: "language", label: "Til", description: "O'zbek, rus yoki ingliz tili", icon: Languages },
+  { id: "integrations", label: "Integratsiyalar", description: "Telegram, Calendar va Drive", icon: Link2 },
 ];
 
 const isSectionId = (value: string | null): value is SectionId =>
-  Boolean(value) && sections.some((section) => section.id === value);
+  Boolean(value) && (value === "profile" || sections.some((section) => section.id === value));
 
-const languages = ["O'zbekcha", "Русский", "English"];
-const timezones = ["Toshkent (GMT+5)", "Moskva (GMT+3)", "London (GMT+0)"];
-const dateFormats = ["12 Avgust 2026", "12.08.2026", "2026-08-12"];
-const defaultPages = ["Bosh sahifa", "AI yordamchi", "Vazifalar"];
+type NotificationKey = "newTasks" | "reminders" | "meetingReminders" | "aiReplies";
 
-const replyStyles = ["Professional", "Do'stona", "Qisqa", "Batafsil"];
-const replyLengths = ["Qisqa", "O'rta", "Batafsil"];
-type MobileSettingsHomeProps = {
-  active: SectionId;
-  theme: "light" | "dark" | "system";
-  onThemeChange: (theme: "light" | "dark") => void;
+const notificationItems: Array<{
+  key: NotificationKey;
+  label: string;
+  hint: string;
+  icon: ComponentType<{ size?: number }>;
+}> = [
+  { key: "newTasks", label: "Vazifalar", hint: "Vazifa yangilanganda xabar berish", icon: Check },
+  { key: "reminders", label: "Eslatmalar", hint: "Eslatma vaqti yaqinlashganda xabar berish", icon: Bell },
+  { key: "meetingReminders", label: "Uchrashuvlar", hint: "Uchrashuvdan oldin eslatish", icon: CalendarDays },
+  { key: "aiReplies", label: "AI tavsiyalari", hint: "Qulay AI tavsiyalari haqida xabar berish", icon: Sparkles },
+];
+
+const languageOptions = [
+  { value: "O'zbekcha", label: "O'zbek" },
+  { value: "Русский", label: "Русский" },
+  { value: "English", label: "English" },
+];
+
+const splitName = (value: string) => {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  return { firstName: parts[0] ?? "", lastName: parts.slice(1).join(" ") };
+};
+
+type SettingsRootProps = {
   onSelect: (section: SectionId) => void;
   onLogout: () => void;
 };
 
-const MobileSettingsHome = ({ active, theme, onThemeChange, onSelect, onLogout }: MobileSettingsHomeProps) => {
-  if (active !== "general") return null;
-
-  return (
-    <section className="settings-mobile-home" aria-label="Sozlamalar">
-      <header className="settings-mobile-home__header">
+const SettingsRoot = ({ onSelect, onLogout }: SettingsRootProps) => (
+  <section className="settings-root" aria-label="Sozlamalar">
+    <header className="settings-root__header">
+      <div>
+        <span className="settings-root__eyebrow">QULAY AI</span>
         <h1>Sozlamalar</h1>
-        <span>Qulay AI</span>
-      </header>
-
-      <div className="settings-mobile-home__group">
-        <span className="settings-mobile-home__label">Akkaunt</span>
-        <button type="button" onClick={() => onSelect("profile")}><User size={18} /><span>Profil</span><b>›</b></button>
-        <button type="button" className="is-disabled" disabled><KeyRound size={18} /><span>Parolni o‘zgartirish</span><small>Tez orada</small><b>›</b></button>
       </div>
+    </header>
 
-      <div className="settings-mobile-home__group">
-        <span className="settings-mobile-home__label">Ilova</span>
-        <button type="button" onClick={() => onSelect("general")}><SlidersHorizontal size={18} /><span>Umumiy</span><b>›</b></button>
-        <button type="button" onClick={() => onSelect("appearance")}><Palette size={18} /><span>Ko‘rinish</span><b>›</b></button>
-        <button type="button" onClick={() => onSelect("notifications")}><Bell size={18} /><span>Bildirishnomalar</span><b>›</b></button>
-        <button type="button" onClick={() => onSelect("ai")}><Sparkles size={18} /><span>AI sozlamalari</span><b>›</b></button>
-        <div className="settings-mobile-home__theme" role="group" aria-label="Mavzu">
-          <button type="button" className={theme === "light" ? "is-active" : ""} onClick={() => onThemeChange("light")}><Sun size={15} /> Yorug‘</button>
-          <button type="button" className={theme === "dark" ? "is-active" : ""} onClick={() => onThemeChange("dark")}><Moon size={15} /> Qorong‘i</button>
-        </div>
-      </div>
+    <div className="settings-root__group">
+      <span className="settings-root__label">Akkaunt</span>
+      <button type="button" onClick={() => onSelect("profile")}>
+        <User size={18} /><span>Profil</span><ChevronRight size={18} />
+      </button>
+      <button type="button" className="is-disabled" disabled>
+        <KeyRound size={18} /><span>Parolni o'zgartirish</span><small>Tez orada</small>
+      </button>
+      <button type="button" className="is-danger" onClick={onLogout}>
+        <LogOut size={18} /><span>Chiqish</span><ChevronRight size={18} />
+      </button>
+    </div>
 
-      <div className="settings-mobile-home__group">
-        <span className="settings-mobile-home__label">Ulanish va ma’lumotlar</span>
-        <button type="button" onClick={() => onSelect("integrations")}><Link2 size={18} /><span>Integratsiyalar</span><b>›</b></button>
-        <button type="button" onClick={() => onSelect("privacy")}><Lock size={18} /><span>Maxfiylik</span><b>›</b></button>
-        <button type="button" onClick={() => onSelect("security")}><ShieldCheck size={18} /><span>Xavfsizlik</span><b>›</b></button>
-      </div>
-
-      <div className="settings-mobile-home__group">
-        <span className="settings-mobile-home__label">Akkaunt</span>
-        <button type="button" className="is-danger" onClick={onLogout}><LogOut size={18} /><span>Akkauntdan chiqish</span><b>›</b></button>
-      </div>
-    </section>
-  );
-};
+    <div className="settings-root__group">
+      {sections.map((section) => {
+        const Icon = section.icon;
+        return (
+          <button type="button" key={section.id} onClick={() => onSelect(section.id)}>
+            <Icon size={18} />
+            <span><strong>{section.label}</strong><small>{section.description}</small></span>
+            <ChevronRight size={18} />
+          </button>
+        );
+      })}
+    </div>
+  </section>
+);
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const activeParam = searchParams.get("tab");
-  const active: SectionId = isSectionId(activeParam) ? activeParam : "general";
-
-  const setActive = (id: SectionId) => {
-    setSearchParams({ tab: id });
-  };
+  const active: SectionId | null = isSectionId(activeParam) ? activeParam : null;
+  const setActive = (section: SectionId) => setSearchParams({ tab: section });
+  const goToRoot = () => setSearchParams({});
 
   const { showToast } = useToast();
-  const { name, email, bio, avatar, setName, setEmail, setBio, setAvatar } = useProfile();
-  const { clearChat } = useAIChat();
-  const { integrations, connectedCount } = useIntegrations();
+  const { name, email, bio, avatar, setName, setBio, setAvatar } = useProfile();
+  const { integrations } = useIntegrations();
   const { logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => getSettings().theme === "dark" ? "dark" : "light");
-
   const [language, setLanguage] = useState(() => getSettings().language);
-  const [timezone, setTimezone] = useState(() => getSettings().timezone);
-  const [dateFormat, setDateFormat] = useState(() => getSettings().dateFormat);
-  const [defaultPage, setDefaultPage] = useState(() => getSettings().defaultPage);
-
   const [notifications, setNotifications] = useState(() => getSettings().notifications);
-
-  const [replyStyle, setReplyStyle] = useState(() => getSettings().replyStyle);
-  const [replyLength, setReplyLength] = useState(() => getSettings().replyLength);
-
-  const [ai, setAi] = useState(() => getSettings().ai);
-
-  const [twoFactor, setTwoFactor] = useState(() => getSettings().twoFactor);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [firstName, setFirstName] = useState(() => splitName(name).firstName);
+  const [lastName, setLastName] = useState(() => splitName(name).lastName);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
 
-  const toggleNotification = (key: keyof typeof notifications) => {
-    setNotifications((current) => ({ ...current, [key]: !current[key] }));
-  };
-
-  const toggleAi = (key: keyof typeof ai) => {
-    setAi((current) => ({ ...current, [key]: !current[key] }));
-  };
+  useEffect(() => {
+    const parts = splitName(name);
+    setFirstName(parts.firstName);
+    setLastName(parts.lastName);
+  }, [name]);
 
   useEffect(() => {
-    updateSettings({ theme, language, timezone, dateFormat, defaultPage, notifications, replyStyle, replyLength, ai, twoFactor });
-  }, [theme, language, timezone, dateFormat, defaultPage, notifications, replyStyle, replyLength, ai, twoFactor]);
+    updateSettings({ theme, notifications });
+  }, [theme, notifications]);
 
   useEffect(() => {
     const backendLanguage = language === "O'zbekcha" ? "uz" : language === "English" ? "en" : "ru";
-    const backendTimezone = timezone.startsWith("Toshkent") ? "Asia/Tashkent" : timezone.startsWith("Moskva") ? "Europe/Moscow" : "Europe/London";
-    void updateProfile({ language: backendLanguage, timezone: backendTimezone }).catch(() => undefined);
-  }, [language, timezone]);
+    updateSettings({ language });
+    void updateProfile({ language: backendLanguage }).catch(() => undefined);
+  }, [language]);
 
-  useEffect(() => subscribeToWorkspaceData("settings", () => {
-    setTheme(getSettings().theme === "dark" ? "dark" : "light");
-  }), []);
-
-  const handleSave = async () => {
-    if (name.trim().length < 2) {
+  const handleProfileSave = async () => {
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+    if (fullName.length < 2) {
       showToast("Ism kamida 2 ta belgidan iborat bo'lsin", "error");
       return;
     }
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      showToast("To'g'ri email manzilini kiriting", "error");
-      return;
-    }
 
-    updateSettings({ theme, language, timezone, dateFormat, defaultPage, notifications, replyStyle, replyLength, ai, twoFactor });
-    const backendLanguage = language === "O'zbekcha" ? "uz" : language === "English" ? "en" : "ru";
-    const backendTimezone = timezone.startsWith("Toshkent") ? "Asia/Tashkent" : timezone.startsWith("Moskva") ? "Europe/Moscow" : "Europe/London";
+    setName(fullName);
     try {
-      await updateProfile({ name, bio, avatar, language: backendLanguage, timezone: backendTimezone });
-      showToast("Sozlamalar saqlandi", "success");
+      await updateProfile({ name: fullName, bio, avatar });
+      showToast("Profil saqlandi", "success");
     } catch {
       showToast("Profilni serverda saqlab bo'lmadi", "error");
     }
@@ -217,651 +183,142 @@ const Settings = () => {
     }
 
     const reader = new FileReader();
-
     reader.onload = () => {
       if (typeof reader.result === "string") {
         setAvatar(reader.result);
         showToast("Avatar yangilandi", "success");
       }
     };
-
     reader.readAsDataURL(file);
     event.target.value = "";
   };
 
-  const handleExportData = () => {
-    const data = {
-      profile: { name, email, bio },
-      integrations: integrations
-        .filter((item) => item.connected)
-        .map((item) => ({ id: item.id, name: item.name, username: item.username })),
-      settings: readStorageString(STORAGE_KEYS.settings) || null,
-      tasks: readStorageString(STORAGE_KEYS.tasks) || null,
-      reminders: readStorageString(STORAGE_KEYS.reminders) || null,
-      calendarEvents: readStorageString(STORAGE_KEYS.calendarEvents) || null,
-      notes: readStorageString(STORAGE_KEYS.notes) || null,
-      files: readStorageString(STORAGE_KEYS.files) || null,
-      chatHistory: readStorageString(STORAGE_KEYS.aiChatHistory) || null,
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "yechim-ai-malumotlari.json";
-    link.click();
-
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    showToast("Ma'lumotlar eksport qilindi", "success");
-  };
-
-  const handleClearHistory = () => {
-    clearChat();
-    showToast("Chat tarixi tozalandi", "success");
-  };
-
-  const handleDeleteAccount = () => {
-    if (!confirmingDelete) {
-      setConfirmingDelete(true);
-      return;
-    }
-
-    setName("Yechim foydalanuvchi");
-    setEmail("user@yechim.ai");
-    setBio("Qulay AI foydalanuvchisi");
-    setAvatar(null);
-    clearChat();
+  const handleLogout = async () => {
+    setConfirmingLogout(false);
     clearMockSession();
-    [
-      STORAGE_KEYS.files,
-      STORAGE_KEYS.integrations,
-      STORAGE_KEYS.settings,
-      STORAGE_KEYS.aiChatHistory,
-    ].forEach(removeStorage);
-
-    writeStorage(STORAGE_KEYS.files, []);
-    writeStorage(STORAGE_KEYS.integrations, {});
-    updateSettings(defaultSettings);
-    notifyWorkspaceDataChanged("files");
-    notifyWorkspaceDataChanged("integrations");
-
-    setConfirmingDelete(false);
-    showToast("Hisob ma'lumotlari o'chirildi", "success");
+    await logout();
     navigate("/login", { replace: true });
   };
 
+  const title = active === "profile" ? "Profil" : sections.find((section) => section.id === active)?.label ?? "Sozlamalar";
+
   return (
-    <main className={`settings-page settings-page--${active}`}>
-      <div className="settings-desktop-shell">
-      <header className="settings-header">
-        <button type="button" className="settings-header__back" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={18} /></button>
-        <div>
-          <span className="settings-header__eyebrow">ISH MAYDONI</span>
-          <h1>Sozlamalar</h1>
-          <p>Profil, ko'rinish va AI afzalliklaringizni boshqaring.</p>
-        </div>
-
-        <button type="button" className="settings-header__save" onClick={handleSave}>
-          <Save size={15} />
-          Saqlash
-        </button>
-      </header>
-
-      <div className="settings-layout">
-        <nav className="settings-nav">
-          {sections.map((section) => {
-            const Icon = section.icon;
-            const isActive = active === section.id;
-
-            return (
-              <button
-                type="button"
-                key={section.id}
-                className={`settings-nav__item ${isActive ? "is-active" : ""}`}
-                onClick={() => setActive(section.id)}
-              >
-                <Icon size={17} />
-                <span>{section.label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <section className="settings-panel">
-          {active === "general" && (
-            <div className="settings-card">
-              <h2>Umumiy sozlamalar</h2>
-              <p>Ish maydoningiz uchun asosiy afzalliklar.</p>
-
-              <div className="settings-row-list">
-                <div className="settings-row">
-                  <div>
-                    <strong>Til</strong>
-                    <span>Interfeys tilini tanlang</span>
-                  </div>
-
-                  <div className="settings-chips">
-                    {languages.map((item) => (
-                      <button
-                        type="button"
-                        key={item}
-                        className={language === item ? "is-active" : ""}
-                        onClick={() => {
-                          setLanguage(item);
-                          showToast(`Til: ${item}`, "success");
-                        }}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="settings-row">
-                  <div>
-                    <strong>Vaqt zonasi</strong>
-                    <span>Sana va vaqtlar shu zonada ko'rsatiladi</span>
-                  </div>
-
-                  <div className="settings-chips">
-                    {timezones.map((item) => (
-                      <button
-                        type="button"
-                        key={item}
-                        className={timezone === item ? "is-active" : ""}
-                        onClick={() => {
-                          setTimezone(item);
-                          showToast("Vaqt zonasi yangilandi", "success");
-                        }}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="settings-row">
-                  <div>
-                    <strong>Sana formati</strong>
-                    <span>Masalan: {dateFormat}</span>
-                  </div>
-
-                  <div className="settings-chips">
-                    {dateFormats.map((item) => (
-                      <button
-                        type="button"
-                        key={item}
-                        className={dateFormat === item ? "is-active" : ""}
-                        onClick={() => {
-                          setDateFormat(item);
-                          showToast("Sana formati yangilandi", "success");
-                        }}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="settings-row">
-                  <div>
-                    <strong>Standart sahifa</strong>
-                    <span>Kirganingizda ochiladigan sahifa</span>
-                  </div>
-
-                  <div className="settings-chips">
-                    {defaultPages.map((item) => (
-                      <button
-                        type="button"
-                        key={item}
-                        className={defaultPage === item ? "is-active" : ""}
-                        onClick={() => {
-                          setDefaultPage(item);
-                          showToast("Standart sahifa yangilandi", "success");
-                        }}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+    <main className={`settings-page settings-page--${active ?? "root"}`}>
+      {!active ? (
+        <SettingsRoot onSelect={setActive} onLogout={() => setConfirmingLogout(true)} />
+      ) : (
+        <section className="settings-subpage">
+          <header className="settings-header">
+            <button type="button" className="settings-header__back" onClick={goToRoot} aria-label="Sozlamalarga qaytish">
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <span className="settings-header__eyebrow">SOZLAMALAR</span>
+              <h1>{title}</h1>
+              <p>Qulay AI afzalliklaringizni boshqaring.</p>
             </div>
-          )}
+            {active === "profile" ? (
+              <button type="button" className="settings-header__save" onClick={() => void handleProfileSave()}>
+                <Save size={15} /> Saqlash
+              </button>
+            ) : <span className="settings-header__placeholder" aria-hidden="true" />}
+          </header>
 
-          {active === "profile" && (
-            <div className="settings-card">
-              <h2>Profil ma'lumotlari</h2>
-              <p>Ismingiz, email va profil rasmingizni yangilang.</p>
+          <section className="settings-panel">
+            {active === "profile" && (
+              <div className="settings-card">
+                <h2>Profil ma'lumotlari</h2>
+                <p>Avatar, ism va bio ma'lumotlaringizni yangilang.</p>
 
-              <div className="settings-avatar">
-                <div className="settings-avatar__preview">
-                  {avatar ? (
-                    <img src={avatar} alt={`${name} avatari`} />
-                  ) : (
-                    <span>{name.charAt(0).toUpperCase()}</span>
-                  )}
-                </div>
-
-                <div className="settings-avatar__actions">
-                  <button
-                    type="button"
-                    className="settings-avatar__upload"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Camera size={14} />
-                    Rasmni almashtirish
-                  </button>
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    hidden
-                    onChange={handleAvatarChange}
-                  />
-
-                  {avatar && (
-                    <button
-                      type="button"
-                      className="settings-avatar__remove"
-                      onClick={() => {
-                        setAvatar(null);
-                        showToast("Avatar o'chirildi", "success");
-                      }}
-                    >
-                      O'chirish
+                <div className="settings-avatar">
+                  <div className="settings-avatar__preview">
+                    {avatar ? <img src={avatar} alt={`${name} avatari`} /> : <span>{name.charAt(0).toUpperCase()}</span>}
+                  </div>
+                  <div className="settings-avatar__actions">
+                    <button type="button" className="settings-avatar__upload" onClick={() => fileInputRef.current?.click()}>
+                      <Camera size={14} /> Rasmni almashtirish
                     </button>
-                  )}
+                    <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleAvatarChange} />
+                    {avatar && <button type="button" className="settings-avatar__remove" onClick={() => setAvatar(null)}>O'chirish</button>}
+                  </div>
+                </div>
+
+                <label>Ism<input value={firstName} onChange={(event) => setFirstName(event.target.value)} /></label>
+                <label>Familiya<input value={lastName} onChange={(event) => setLastName(event.target.value)} /></label>
+                <label>Email<input type="email" value={email} readOnly aria-readonly="true" /></label>
+                <label>Bio<textarea rows={3} value={bio} onChange={(event) => setBio(event.target.value)} /></label>
+
+                <div className="settings-profile-actions">
+                  <button type="button" className="settings-card__submit" onClick={() => void handleProfileSave()}>
+                    <Check size={14} /> Saqlash
+                  </button>
+                  <button type="button" className="settings-danger-btn" onClick={() => setConfirmingLogout(true)}>
+                    <LogOut size={14} /> Akkauntdan chiqish
+                  </button>
                 </div>
               </div>
+            )}
 
-              <label>
-                Ism
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              </label>
+            {active === "appearance" && (
+              <div className="settings-card">
+                <h2>Ko'rinish</h2>
+                <p>Interfeys mavzusini tanlang.</p>
+                <div className="settings-theme settings-theme--compact" role="group" aria-label="Mavzu">
+                  <button type="button" className={theme === "light" ? "is-active" : ""} onClick={() => setTheme("light")}>
+                    <Sun size={17} /><strong>Yorug'</strong>{theme === "light" && <Check size={14} />}
+                  </button>
+                  <button type="button" className={theme === "dark" ? "is-active" : ""} onClick={() => setTheme("dark")}>
+                    <Moon size={17} /><strong>Qorong'i</strong>{theme === "dark" && <Check size={14} />}
+                  </button>
+                </div>
+              </div>
+            )}
 
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={email}
-                  disabled
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </label>
+            {active === "language" && (
+              <div className="settings-card">
+                <h2>Til</h2>
+                <p>Qulay AI interfeysi uchun tilni tanlang.</p>
+                <div className="settings-language-list" role="radiogroup" aria-label="Til">
+                  {languageOptions.map((option) => (
+                    <button type="button" key={option.value} className={language === option.value ? "is-active" : ""} onClick={() => setLanguage(option.value)} role="radio" aria-checked={language === option.value}>
+                      <Languages size={17} /><span>{option.label}</span>{language === option.value && <Check size={15} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-              <label>
-                Bio
-                <textarea
-                  rows={3}
-                  value={bio}
-                  onChange={(event) => setBio(event.target.value)}
-                />
-              </label>
-
-              <button
-                type="button"
-                className="settings-card__submit"
-                onClick={() => showToast("Profil saqlandi", "success")}
-              >
-                <Check size={14} />
-                Saqlash
-              </button>
-            </div>
-          )}
-
-          {active === "appearance" && (
-            <div className="settings-card">
-              <h2>Ko'rinish</h2>
-              <p>Interfeys mavzusini tanlang.</p>
-
-              <div className="settings-theme">
-                {[
-                  { id: "light" as const, label: "Yorug'", hint: "Tavsiya etiladi", icon: Sun },
-                  { id: "dark" as const, label: "Qorong'i", hint: "Ko'zga yumshoq", icon: Moon },
-                ].map((option) => {
-                  const Icon = option.icon;
-                  const isActive = theme === option.id;
-
-                  return (
-                    <button
-                      type="button"
-                      key={option.id}
-                      className={`settings-theme__item ${isActive ? "is-active" : ""}`}
-                      onClick={() => {
-                        setTheme(option.id);
-                        showToast(`${option.label} tema tanlandi`, "success");
-                      }}
-                    >
-                      <div
-                        className={`settings-theme__preview settings-theme__preview--${option.id}`}
-                      >
-                        <Icon size={16} />
+            {active === "notifications" && (
+              <div className="settings-card">
+                <h2>Bildirishnomalar</h2>
+                <p>Qaysi xabarlarni olishni xohlaysiz.</p>
+                <div className="settings-toggle-list">
+                  {notificationItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div className="settings-toggle-row" key={item.key}>
+                        <div className="settings-toggle-row__icon"><Icon size={16} /></div>
+                        <div><strong>{item.label}</strong><span>{item.hint}</span></div>
+                        <button type="button" className={`settings-switch ${notifications[item.key] ? "is-on" : ""}`} onClick={() => setNotifications((current) => ({ ...current, [item.key]: !current[item.key] }))} role="switch" aria-checked={notifications[item.key]} aria-label={item.label}><i /></button>
                       </div>
-
-                      <strong>{option.label}</strong>
-                      <span>{option.hint}</span>
-
-                      {isActive && <Check size={14} className="settings-theme__check" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {active === "notifications" && (
-            <div className="settings-card">
-              <h2>Bildirishnomalar</h2>
-              <p>Qanday bildirishnomalar olishni xohlaysiz.</p>
-
-              <div className="settings-toggle-list">
-                {(
-                  [
-                    { key: "newTasks" as const, label: "Vazifalar", hint: "Vazifa yangilanganda xabar berish" },
-                    { key: "reminders" as const, label: "Eslatmalar", hint: "Eslatma vaqti yaqinlashganda xabar berish" },
-                    { key: "meetingReminders" as const, label: "Uchrashuvlar", hint: "Uchrashuvdan oldin eslatish" },
-                    { key: "aiReplies" as const, label: "AI tavsiyalar", hint: "Qulay AI tavsiyalari haqida xabar berish" },
-                  ]
-                ).map((item) => (
-                  <div className="settings-toggle-row" key={item.key}>
-                    <div>
-                      <strong>{item.label}</strong>
-                      <span>{item.hint}</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      className={`settings-switch ${notifications[item.key] ? "is-on" : ""}`}
-                      onClick={() => toggleNotification(item.key)}
-                      role="switch"
-                      aria-checked={notifications[item.key]}
-                      aria-label={item.label}
-                    >
-                      <i />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {active === "ai" && (
-            <div className="settings-card">
-              <h2>AI sozlamalari</h2>
-              <p>Qulay AI qanday ishlashini sozlang.</p>
-
-              <div className="settings-row-list">
-                <div className="settings-row">
-                  <div>
-                    <strong>AI javob uslubi</strong>
-                    <span>Javoblar qanday ohangda bo'lsin</span>
-                  </div>
-
-                  <div className="settings-chips">
-                    {replyStyles.map((item) => (
-                      <button
-                        type="button"
-                        key={item}
-                        className={replyStyle === item ? "is-active" : ""}
-                        onClick={() => {
-                          setReplyStyle(item);
-                          showToast("AI javob uslubi yangilandi", "success");
-                        }}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="settings-row">
-                  <div>
-                    <strong>AI javob uzunligi</strong>
-                    <span>Javoblar qancha batafsil bo'lsin</span>
-                  </div>
-
-                  <div className="settings-chips">
-                    {replyLengths.map((item) => (
-                      <button
-                        type="button"
-                        key={item}
-                        className={replyLength === item ? "is-active" : ""}
-                        onClick={() => {
-                          setReplyLength(item);
-                          showToast("AI javob uzunligi yangilandi", "success");
-                        }}
-                      >
-                        {item}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="settings-row">
-                  <div>
-                    <strong>Ovoz tili</strong>
-                    <span>Ovozli kiritish va javob tili</span>
-                  </div>
-
-                  <div className="settings-chips">
-                    <button type="button" className="is-active">
-                      O'zbekcha
-                    </button>
-                  </div>
-                </div>
-
-                <div className="settings-row">
-                  <div>
-                    <strong>Mikrofon</strong>
-                    <span>Ovozli xabar yozish uchun ruxsat</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="settings-outline-btn"
-                    onClick={async () => {
-                      if (!navigator.mediaDevices?.getUserMedia) {
-                        showToast("Bu brauzer mikrofon ruxsatini qo'llab-quvvatlamaydi", "error");
-                        return;
-                      }
-
-                      try {
-                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        stream.getTracks().forEach((track) => track.stop());
-                        showToast("Mikrofonga ruxsat berildi", "success");
-                      } catch {
-                        showToast("Mikrofonga ruxsat berilmadi", "error");
-                      }
-                    }}
-                  >
-                    Ruxsat berish
-                  </button>
+                    );
+                  })}
                 </div>
               </div>
+            )}
 
-              <div className="settings-toggle-list settings-toggle-list--spaced">
-                {(
-                  [
-                    { key: "voiceReply" as const, label: "Ovozli javob", hint: "AI javobini ovozda o'qish imkoniyati" },
-                    { key: "autoSpeak" as const, label: "Avtomatik ovoz", hint: "AI javob berganda avtomatik o'qiladi" },
-                    { key: "saveHistory" as const, label: "AI suhbat tarixini saqlash", hint: "Suhbatlar shu qurilmada saqlanadi" },
-                  ]
-                ).map((item) => (
-                  <div className="settings-toggle-row" key={item.key}>
-                    <div>
-                      <strong>{item.label}</strong>
-                      <span>{item.hint}</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      className={`settings-switch ${ai[item.key] ? "is-on" : ""}`}
-                      onClick={() => toggleAi(item.key)}
-                      role="switch"
-                      aria-checked={ai[item.key]}
-                      aria-label={item.label}
-                    >
-                      <i />
-                    </button>
-                  </div>
-                ))}
+            {active === "integrations" && (
+              <div className="settings-card settings-card--wide">
+                <div className="settings-integrations__header">
+                  <div><h2>Integratsiyalar</h2><p>Telegram, Google Calendar va Google Drive.</p></div>
+                  <span className="settings-integrations__stats">{integrations.filter((item) => item.connected).length} ta ulangan</span>
+                </div>
+                <IntegrationHub columns={1} />
               </div>
-            </div>
-          )}
-
-          {active === "integrations" && (
-            <div className="settings-card settings-card--wide">
-              <div className="settings-integrations__header">
-                <div>
-                  <h2>Integratsiyalar</h2>
-                  <p>Qulay AI'ni kundalik xizmatlaringiz bilan bog'lang.</p>
-                </div>
-
-                <div className="settings-integrations__stats">
-                  <strong>{connectedCount}</strong> ta ulangan ·{" "}
-                  <strong>{integrations.length - connectedCount}</strong> ta mavjud
-                </div>
-              </div>
-
-              <IntegrationHub columns={3} />
-            </div>
-          )}
-
-          {active === "privacy" && (
-            <div className="settings-card">
-              <h2>Maxfiylik</h2>
-              <p>Ma'lumotlaringiz qanday saqlanishini boshqaring.</p>
-
-              <div className="settings-info-list">
-                <div className="settings-info-row">
-                  <strong>Chat tarixini saqlash</strong>
-                  <span>AI suhbatlari shu brauzerda lokal ravishda saqlanadi.</span>
-                </div>
-
-                <div className="settings-info-row">
-                  <strong>Faoliyat ma'lumotlari</strong>
-                  <span>AI xizmatlarini yaxshilash uchun ishlatiladi.</span>
-                </div>
-
-                <div className="settings-info-row">
-                  <strong>Shaxsiy ma'lumotlar</strong>
-                  <span>Profil ma'lumotlaringizni istalgan vaqtda boshqarishingiz mumkin.</span>
-                </div>
-              </div>
-
-              <div className="settings-actions">
-                <button type="button" className="settings-outline-btn" onClick={handleExportData}>
-                  <Download size={14} />
-                  Ma'lumotlarni eksport qilish
-                </button>
-
-                <button type="button" className="settings-outline-btn" onClick={handleClearHistory}>
-                  <Trash2 size={14} />
-                  Chat tarixini tozalash
-                </button>
-
-                <button
-                  type="button"
-                  className="settings-danger-btn"
-                  onClick={handleDeleteAccount}
-                  onBlur={() => setConfirmingDelete(false)}
-                >
-                  <Trash2 size={14} />
-                  {confirmingDelete ? "Tasdiqlash uchun qayta bosing" : "Hisob ma'lumotlarini o'chirish"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {active === "security" && (
-            <div className="settings-card">
-              <h2>Xavfsizlik</h2>
-              <p>Hisobingiz xavfsizligini boshqaring.</p>
-
-              <div className="settings-toggle-list">
-                <div className="settings-toggle-row">
-                  <div>
-                    <strong>Parol</strong>
-                    <span>Bu funksiya keyingi backend yangilanishida ulanadi</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="settings-outline-btn"
-                    disabled
-                    aria-disabled="true"
-                  >
-                    <KeyRound size={14} />
-                    Parolni o'zgartirish
-                  </button>
-                </div>
-
-                <div className="settings-toggle-row">
-                  <div>
-                    <strong>Ikki bosqichli himoya</strong>
-                    <span>Qo'shimcha xavfsizlik qatlami</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className={`settings-switch ${twoFactor ? "is-on" : ""}`}
-                    onClick={() => {
-                      setTwoFactor((value) => !value);
-                      showToast(twoFactor ? "Ikki bosqichli himoya o'chirildi" : "Ikki bosqichli himoya yoqildi", "success");
-                    }}
-                    role="switch"
-                    aria-checked={twoFactor}
-                    aria-label="Ikki bosqichli himoya"
-                  >
-                    <i />
-                  </button>
-                </div>
-
-                <div className="settings-toggle-row">
-                  <div>
-                    <strong>Faol sessiyalar</strong>
-                    <span>2 ta faol sessiya</span>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="settings-outline-btn"
-                    onClick={() => {
-                      clearMockSession();
-                      showToast("Sessiya yakunlandi", "success");
-                      navigate("/login");
-                    }}
-                  >
-                    <LogOut size={14} />
-                    Chiqish
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+            )}
+          </section>
         </section>
-      </div>
-
-      </div>
-
-      <MobileSettingsHome
-        active={active}
-        theme={theme}
-        onThemeChange={setTheme}
-        onSelect={setActive}
-        onLogout={() => setConfirmingLogout(true)}
-      />
-
-      <button type="button" className="settings-mobile-logout" onClick={() => setConfirmingLogout(true)}>
-        <LogOut size={16} /> Akkauntdan chiqish
-      </button>
+      )}
 
       {confirmingLogout && (
         <ConfirmDialog
@@ -869,7 +326,7 @@ const Settings = () => {
           description="Sessiyangiz va qurilmadagi tokenlar tozalanadi."
           confirmLabel="Chiqish"
           onCancel={() => setConfirmingLogout(false)}
-          onConfirm={async () => { setConfirmingLogout(false); await logout(); navigate("/login", { replace: true }); }}
+          onConfirm={() => void handleLogout()}
         />
       )}
     </main>
