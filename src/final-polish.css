@@ -273,13 +273,10 @@ a:active { transform: scale(0.97); }
   .settings-theme__item strong { font-size: 12px; }
   .settings-mobile-logout { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px; margin-top: 12px; border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent); border-radius: 15px; background: color-mix(in srgb, var(--danger) 8%, transparent); color: var(--danger); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; }
   .settings-page--general .settings-mobile-logout { display: none; }
-  .settings-page--profile .settings-card label:nth-of-type(3) { display: none; }
   .settings-mobile-home__group { animation: settingsMobileGroupIn 180ms ease both; }
   .settings-mobile-home__group:nth-child(3) { animation-delay: 30ms; }
   .settings-mobile-home__group:nth-child(4) { animation-delay: 60ms; }
   .settings-mobile-home__group:nth-child(5) { animation-delay: 90ms; }
-  .settings-mobile-home__group:nth-child(4) > button:nth-of-type(2) { display: none; }
-
   .settings-page--integrations .integration-hub__grid,
   .integrations .integration-hub__grid { grid-template-columns: minmax(0, 1fr) !important; gap: 8px; }
   .settings-page--integrations .integration-card,

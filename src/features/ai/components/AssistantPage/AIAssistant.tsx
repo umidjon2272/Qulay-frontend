@@ -61,7 +61,9 @@ const AIAssistant = () => {
     if (!viewport) return undefined;
 
     const syncViewportHeight = () => {
+      const keyboardInset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
       document.documentElement.style.setProperty("--visual-viewport-height", `${viewport.height}px`);
+      document.documentElement.style.setProperty("--keyboard-inset", `${keyboardInset}px`);
     };
 
     syncViewportHeight();
@@ -71,6 +73,7 @@ const AIAssistant = () => {
       viewport.removeEventListener("resize", syncViewportHeight);
       viewport.removeEventListener("scroll", syncViewportHeight);
       document.documentElement.style.removeProperty("--visual-viewport-height");
+      document.documentElement.style.removeProperty("--keyboard-inset");
     };
   }, []);
 

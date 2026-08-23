@@ -96,12 +96,15 @@ const MobileSettingsHome = ({ active, theme, onThemeChange, onSelect, onLogout }
       <div className="settings-mobile-home__group">
         <span className="settings-mobile-home__label">Akkaunt</span>
         <button type="button" onClick={() => onSelect("profile")}><User size={18} /><span>Profil</span><b>›</b></button>
-        <button type="button" className="is-disabled" disabled><KeyRound size={18} /><span>Parolni o‘zgartirish</span><small>Soon</small><b>›</b></button>
-        <button type="button" className="is-danger" onClick={onLogout}><LogOut size={18} /><span>Akkauntdan chiqish</span><b>›</b></button>
+        <button type="button" className="is-disabled" disabled><KeyRound size={18} /><span>Parolni o‘zgartirish</span><small>Tez orada</small><b>›</b></button>
       </div>
 
       <div className="settings-mobile-home__group">
-        <span className="settings-mobile-home__label">Ko‘rinish</span>
+        <span className="settings-mobile-home__label">Ilova</span>
+        <button type="button" onClick={() => onSelect("general")}><SlidersHorizontal size={18} /><span>Umumiy</span><b>›</b></button>
+        <button type="button" onClick={() => onSelect("appearance")}><Palette size={18} /><span>Ko‘rinish</span><b>›</b></button>
+        <button type="button" onClick={() => onSelect("notifications")}><Bell size={18} /><span>Bildirishnomalar</span><b>›</b></button>
+        <button type="button" onClick={() => onSelect("ai")}><Sparkles size={18} /><span>AI sozlamalari</span><b>›</b></button>
         <div className="settings-mobile-home__theme" role="group" aria-label="Mavzu">
           <button type="button" className={theme === "light" ? "is-active" : ""} onClick={() => onThemeChange("light")}><Sun size={15} /> Yorug‘</button>
           <button type="button" className={theme === "dark" ? "is-active" : ""} onClick={() => onThemeChange("dark")}><Moon size={15} /> Qorong‘i</button>
@@ -109,14 +112,15 @@ const MobileSettingsHome = ({ active, theme, onThemeChange, onSelect, onLogout }
       </div>
 
       <div className="settings-mobile-home__group">
-        <span className="settings-mobile-home__label">Bildirishnomalar</span>
-        <button type="button" onClick={() => onSelect("notifications")}><Bell size={18} /><span>Bildirishnomalar</span><b>›</b></button>
+        <span className="settings-mobile-home__label">Ulanish va ma’lumotlar</span>
         <button type="button" onClick={() => onSelect("integrations")}><Link2 size={18} /><span>Integratsiyalar</span><b>›</b></button>
+        <button type="button" onClick={() => onSelect("privacy")}><Lock size={18} /><span>Maxfiylik</span><b>›</b></button>
+        <button type="button" onClick={() => onSelect("security")}><ShieldCheck size={18} /><span>Xavfsizlik</span><b>›</b></button>
       </div>
 
       <div className="settings-mobile-home__group">
-        <span className="settings-mobile-home__label">Integratsiyalar</span>
-        <button type="button" onClick={() => onSelect("integrations")}><Link2 size={18} /><span>Integratsiyalar</span><b aria-hidden="true">›</b></button>
+        <span className="settings-mobile-home__label">Akkaunt</span>
+        <button type="button" className="is-danger" onClick={onLogout}><LogOut size={18} /><span>Akkauntdan chiqish</span><b>›</b></button>
       </div>
     </section>
   );
