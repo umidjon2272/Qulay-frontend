@@ -91,3 +91,14 @@
     gap: 12px;
   }
 }
+
+@media (max-width: 700px) {
+  .dashboard__main > .dashboard-mobile-home { display: block; }
+  .dashboard__main > .hero,
+  .dashboard__main > .stats,
+  .dashboard__main > .quick-actions,
+  .dashboard__main > .mobile-home-details,
+  .dashboard__main > .integrations,
+  .dashboard__main > .recent-files,
+  .dashboard__main > .recent-activity { display: none; }
+}
