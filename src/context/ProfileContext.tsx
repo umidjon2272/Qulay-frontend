@@ -14,16 +14,23 @@ import { useAuth } from "../hooks/useAuth";
 const initialProfile = getProfile();
 
 export const ProfileProvider = ({ children }: { children: ReactNode }) => {
-  const { status } = useAuth();
-  const [name, setNameState] = useState(initialProfile.name);
-  const [email, setEmailState] = useState(initialProfile.email);
+  const { status, user } = useAuth();
+  const fallbackName = user ? [user.firstName, user.lastName].filter(Boolean).join(" ") : "";
+  const [name, setNameState] = useState(initialProfile.name || fallbackName);
+  const [email, setEmailState] = useState(initialProfile.email || user?.email || "");
   const [bio, setBioState] = useState(initialProfile.bio);
   const [avatar, setAvatarState] = useState<string | null>(initialProfile.avatar);
 
   useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status !== "authenticated" || !user) return;
+
+    // The cached /auth/me user makes the shell useful before the profile API
+    // wakes up. The richer profile is still revalidated in the background.
+    const current = getProfile();
+    if (!current.name) setNameState(fallbackName);
+    if (!current.email) setEmailState(user.email);
     void loadProfile().catch(() => undefined);
-  }, [status]);
+  }, [fallbackName, status, user]);
 
   useEffect(() => subscribeToWorkspaceData("profile", () => {
     const next = getProfile();

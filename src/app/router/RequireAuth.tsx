@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { AuthBootstrapShell, AuthRecoveryShell } from "./AuthShell";
 
 type RequireAuthProps = {
   children: ReactNode;
@@ -8,9 +9,10 @@ type RequireAuthProps = {
 
 const RequireAuth = ({ children }: RequireAuthProps) => {
   const location = useLocation();
-  const { user, status } = useAuth();
+  const { user, status, authError } = useAuth();
 
-  if (status === "loading") return <div className="app-auth-loading" role="status">Sessiya tekshirilmoqda...</div>;
+  if (status === "loading" && !user) return <AuthBootstrapShell />;
+  if (status === "unauthenticated" && !user && authError) return <AuthRecoveryShell />;
 
   if (!user) {
     return (

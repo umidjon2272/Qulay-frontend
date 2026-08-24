@@ -17,6 +17,8 @@ const notifyAuthChanged = () => {
 export const getAuthSession = (): AuthSession | null => getStoredUser();
 export const getAuthTokens = (): AuthTokens | null => getTokens();
 
+let restorePromise: Promise<User | null> | null = null;
+
 export const signIn = async (email: string, password: string, remember = true): Promise<User> => {
   const response = await authApi.login(email.trim().toLowerCase(), password);
   saveAuth({ accessToken: response.accessToken, refreshToken: response.refreshToken }, response.user, remember);
@@ -31,7 +33,7 @@ export const signUp = async (input: { email: string; password: string; firstName
   return response.user;
 };
 
-export const restoreSession = async (): Promise<User | null> => {
+const restoreSessionOnce = async (): Promise<User | null> => {
   const storedUser = getAuthSession();
   if (!getTokens()) return null;
   try {
@@ -41,7 +43,6 @@ export const restoreSession = async (): Promise<User | null> => {
       const remember = typeof window !== "undefined" && Boolean(window.localStorage.getItem("yechim_ai_auth_tokens"));
       saveAuth(current, user, remember);
     }
-    notifyAuthChanged();
     return user;
   } catch (error) {
     // Keep the shell available during a temporary network outage. Only a
@@ -49,10 +50,23 @@ export const restoreSession = async (): Promise<User | null> => {
     if (storedUser && (!(error instanceof ApiError) || error.status !== 401)) {
       return storedUser;
     }
-    clearAuth();
-    notifyAuthChanged();
-    return null;
+
+    if (error instanceof ApiError && error.status === 401) {
+      clearAuth();
+      notifyAuthChanged();
+      return null;
+    }
+
+    throw error;
   }
+};
+
+/** Bootstrap/revalidation is single-flight too, so StrictMode and retries cannot duplicate /auth/me. */
+export const restoreSession = (): Promise<User | null> => {
+  if (!restorePromise) {
+    restorePromise = restoreSessionOnce().finally(() => { restorePromise = null; });
+  }
+  return restorePromise;
 };
 
 export const logout = async (): Promise<void> => {

@@ -3,11 +3,28 @@ import { notifyWorkspaceDataChanged } from "./workspaceEvents";
 import type { CalendarEvent } from "../types/workspace";
 
 let cache: CalendarEvent[] = [];
-export const clearMeetingCache = () => { cache = []; };
+let loadedAt = 0;
+let loadedKey = "";
+const inFlight = new Map<string, Promise<CalendarEvent[]>>();
+const CACHE_TTL_MS = 30_000;
+export const clearMeetingCache = () => { cache = []; loadedAt = 0; loadedKey = ""; inFlight.clear(); };
 export type CreateMeetingInput = Omit<CalendarEvent, "id" | "type"> & { type?: CalendarEvent["type"] };
 export const getCalendarEvents = (): CalendarEvent[] => cache;
-export const loadCalendarEvents = async (query?: Parameters<typeof meetingApi.listMeetings>[0]): Promise<CalendarEvent[]> => {
-  cache = await meetingApi.listMeetings(query); notifyWorkspaceDataChanged("calendarEvents"); return cache;
+export const loadCalendarEvents = (query?: Parameters<typeof meetingApi.listMeetings>[0]): Promise<CalendarEvent[]> => {
+  const key = JSON.stringify(query ?? null);
+  if (loadedKey === key && loadedAt > 0 && Date.now() - loadedAt < CACHE_TTL_MS) return Promise.resolve(cache);
+  const existing = inFlight.get(key);
+  if (existing) return existing;
+
+  const request = meetingApi.listMeetings(query).then((next) => {
+    cache = next;
+    loadedAt = Date.now();
+    loadedKey = key;
+    notifyWorkspaceDataChanged("calendarEvents");
+    return cache;
+  }).finally(() => { inFlight.delete(key); });
+  inFlight.set(key, request);
+  return request;
 };
 export const createMeeting = async (input: CreateMeetingInput): Promise<CalendarEvent> => {
   const event = await meetingApi.createMeeting(input); cache = [event, ...cache]; notifyWorkspaceDataChanged("calendarEvents"); return event;

@@ -1,0 +1,86 @@
+.auth-shell,
+.auth-recovery {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.auth-shell {
+  gap: 12px;
+  align-content: center;
+}
+
+.auth-shell__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 16px;
+  letter-spacing: -0.25px;
+}
+
+.auth-shell__brand span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), #a78bfa);
+  font-weight: 800;
+}
+
+.auth-shell__spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: authShellSpin 0.7s linear infinite;
+}
+
+.auth-recovery__card {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  width: min(92vw, 360px);
+  padding: 28px 24px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface-elevated);
+  box-shadow: var(--shadow-soft);
+  text-align: center;
+}
+
+.auth-recovery__card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.auth-recovery__actions {
+  display: flex;
+  gap: 9px;
+}
+
+.auth-recovery__actions button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 11px;
+  color: #fff;
+  background: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.auth-recovery__actions .auth-recovery__secondary {
+  color: var(--text-secondary);
+  background: var(--surface-soft);
+}
+
+@keyframes authShellSpin {
+  to { transform: rotate(360deg); }
+}

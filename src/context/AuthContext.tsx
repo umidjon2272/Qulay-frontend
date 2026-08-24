@@ -1,27 +1,58 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
-import { AUTH_SESSION_CHANGED, logout as logoutSession, restoreSession } from "../services/authService";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { AUTH_SESSION_CHANGED, getAuthSession, getAuthTokens, logout as logoutSession, restoreSession } from "../services/authService";
 import type { User } from "../services/api/types";
 import { AuthContext } from "./AuthContextValue";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading");
+  const hasCachedSession = Boolean(getAuthSession() && getAuthTokens());
+  const [user, setUser] = useState<User | null>(() => getAuthSession());
+  const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">(() => hasCachedSession ? "authenticated" : "loading");
+  const [authInitialized, setAuthInitialized] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const initializationStartedRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    setStatus("loading");
-    const restored = await restoreSession();
-    setUser(restored);
-    setStatus(restored ? "authenticated" : "unauthenticated");
+    try {
+      const restored = await restoreSession();
+      setUser(restored);
+      setStatus(restored ? "authenticated" : "unauthenticated");
+      setAuthError(null);
+    } catch {
+      // Keep a cached user interactive while Render wakes up. With no cached
+      // identity, expose a recoverable state instead of an infinite loader.
+      if (getAuthSession() && getAuthTokens()) {
+        setStatus("authenticated");
+        setAuthError("Server uyg'onmoqda. Ma'lumotlar keyinroq yangilanadi.");
+      } else {
+        setUser(null);
+        setStatus("unauthenticated");
+        setAuthError("Serverga ulanib bo'lmadi.");
+      }
+    } finally {
+      setAuthInitialized(true);
+    }
   }, []);
 
-  useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
-    const sync = () => { void refresh(); };
+    if (initializationStartedRef.current) return;
+    initializationStartedRef.current = true;
+    void refresh();
+  }, [refresh]);
+  useEffect(() => {
+    // Login/logout and a failed refresh update storage. They must not trigger
+    // another /auth/me bootstrap or reset the authenticated route to loading.
+    const sync = () => {
+      const nextUser = getAuthSession();
+      const nextStatus = nextUser && getAuthTokens() ? "authenticated" : "unauthenticated";
+      setUser(nextUser);
+      setStatus(nextStatus);
+      setAuthError(null);
+    };
     window.addEventListener(AUTH_SESSION_CHANGED, sync);
     return () => window.removeEventListener(AUTH_SESSION_CHANGED, sync);
-  }, [refresh]);
+  }, []);
 
-  const logout = useCallback(async () => { await logoutSession(); setUser(null); setStatus("unauthenticated"); }, []);
-  const value = useMemo(() => ({ user, status, refresh, logout }), [user, status, refresh, logout]);
+  const logout = useCallback(async () => { await logoutSession(); setUser(null); setStatus("unauthenticated"); setAuthError(null); }, []);
+  const value = useMemo(() => ({ user, status, authInitialized, authError, refresh, logout }), [user, status, authInitialized, authError, refresh, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

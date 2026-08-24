@@ -54,6 +54,30 @@
 
 .ai-page__mobile-bar { display: none; }
 
+.ai-voice-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  gap: 9px;
+  align-content: center;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+  font-size: 13px;
+}
+
+.ai-voice-loading span {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: aiVoiceSpin 0.7s linear infinite;
+}
+
+@keyframes aiVoiceSpin { to { transform: rotate(360deg); } }
+
 @keyframes aiWelcomeRing { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 0.12; transform: scale(1.06); } }
 
 @media (max-width: 900px) and (min-width: 701px) {
@@ -64,6 +88,7 @@
 }
 
 @media (max-width: 700px) {
+  .ai-page__ambient { display: none; }
   .ai-page {
     height: 100svh;
     height: 100dvh;

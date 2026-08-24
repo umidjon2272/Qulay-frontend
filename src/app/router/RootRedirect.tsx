@@ -2,6 +2,7 @@ import { Navigate } from "react-router-dom";
 
 import { useAuth } from "../../hooks/useAuth";
 import { getSettings } from "../../services/settingsService";
+import { AuthBootstrapShell, AuthRecoveryShell } from "./AuthShell";
 
 const getDefaultPath = () => {
   const page = getSettings().defaultPage;
@@ -12,8 +13,9 @@ const getDefaultPath = () => {
 };
 
 const RootRedirect = () => {
-  const { user, status } = useAuth();
-  if (status === "loading") return <div className="app-auth-loading" role="status">Sessiya tekshirilmoqda...</div>;
+  const { user, status, authError } = useAuth();
+  if (status === "loading" && !user) return <AuthBootstrapShell />;
+  if (!user && authError) return <AuthRecoveryShell />;
   return <Navigate to={user ? getDefaultPath() : "/register"} replace />;
 };
 

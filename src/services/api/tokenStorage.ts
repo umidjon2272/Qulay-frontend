@@ -3,6 +3,25 @@ import type { User } from "./types";
 
 export type AuthTokens = { accessToken: string; refreshToken: string };
 
+const decodeJwtPayload = (token: string): { exp?: unknown } | null => {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const decoded = atob(normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "="));
+    return JSON.parse(decoded) as { exp?: unknown };
+  } catch {
+    // Opaque tokens are still sent to the backend and remain fully secured there.
+    return null;
+  }
+};
+
+export const isAccessTokenExpiringSoon = (token: string, leewaySeconds = 30): boolean => {
+  const exp = decodeJwtPayload(token)?.exp;
+  return typeof exp === "number" && exp * 1000 <= Date.now() + leewaySeconds * 1000;
+};
+
 const tokenKey = "yechim_ai_auth_tokens";
 const userKey = "yechim_ai_auth_user";
 

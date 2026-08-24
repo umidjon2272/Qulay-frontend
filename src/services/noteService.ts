@@ -3,11 +3,28 @@ import { notifyWorkspaceDataChanged } from "./workspaceEvents";
 import type { Note } from "../types/workspace";
 
 let cache: Note[] = [];
-export const clearNoteCache = () => { cache = []; };
+let loadedAt = 0;
+let loadedKey = "";
+const inFlight = new Map<string, Promise<Note[]>>();
+const CACHE_TTL_MS = 30_000;
+export const clearNoteCache = () => { cache = []; loadedAt = 0; loadedKey = ""; inFlight.clear(); };
 export type CreateNoteInput = Omit<Note, "id" | "createdAt">;
 export const getNotes = (): Note[] => cache;
-export const loadNotes = async (search?: string): Promise<Note[]> => {
-  cache = await noteApi.listNotes(search); notifyWorkspaceDataChanged("notes"); return cache;
+export const loadNotes = (search?: string): Promise<Note[]> => {
+  const key = JSON.stringify(search ?? null);
+  if (loadedKey === key && loadedAt > 0 && Date.now() - loadedAt < CACHE_TTL_MS) return Promise.resolve(cache);
+  const existing = inFlight.get(key);
+  if (existing) return existing;
+
+  const request = noteApi.listNotes(search).then((next) => {
+    cache = next;
+    loadedAt = Date.now();
+    loadedKey = key;
+    notifyWorkspaceDataChanged("notes");
+    return cache;
+  }).finally(() => { inFlight.delete(key); });
+  inFlight.set(key, request);
+  return request;
 };
 export const createNote = async (input: CreateNoteInput): Promise<Note> => {
   const note = await noteApi.createNote(input); cache = [note, ...cache]; notifyWorkspaceDataChanged("notes"); return note;

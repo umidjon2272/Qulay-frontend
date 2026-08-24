@@ -1,4 +1,4 @@
-import { clearAuth, getTokens, updateTokens, type AuthTokens } from "./tokenStorage";
+import { clearAuth, getTokens, isAccessTokenExpiringSoon, updateTokens, type AuthTokens } from "./tokenStorage";
 import type { AuthResponse } from "./types";
 
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
@@ -29,6 +29,8 @@ export const getApiErrorMessage = (error: unknown, fallback = "Server bilan bog'
 
 let refreshPromise: Promise<AuthTokens> | null = null;
 
+const isAuthEndpoint = (path: string) => ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"].includes(path);
+
 const rawRequest = async <T>(path: string, options: RequestInit = {}, token?: string): Promise<T> => {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -58,7 +60,7 @@ const rawRequest = async <T>(path: string, options: RequestInit = {}, token?: st
   }
 };
 
-const refreshAccessToken = async (): Promise<AuthTokens> => {
+export const refreshAccessToken = async (): Promise<AuthTokens> => {
   if (!refreshPromise) {
     const current = getTokens();
     if (!current?.refreshToken) return Promise.reject(new ApiError(401, "No refresh token"));
@@ -75,11 +77,25 @@ const refreshAccessToken = async (): Promise<AuthTokens> => {
 };
 
 export const request = async <T>(path: string, options: RequestInit = {}, retry = true): Promise<T> => {
-  const tokens = getTokens();
+  let accessToken = getTokens()?.accessToken;
+
+  // Refresh just before expiry so a burst of page data requests does not all
+  // discover the expiry at once. The backend remains the source of truth.
+  if (retry && accessToken && !isAuthEndpoint(path) && isAccessTokenExpiringSoon(accessToken)) {
+    try {
+      const next = await refreshAccessToken();
+      accessToken = next.accessToken;
+    } catch (refreshError) {
+      clearAuth();
+      if (typeof window !== "undefined") window.dispatchEvent(new Event("yechim_ai_auth_session_changed"));
+      throw refreshError;
+    }
+  }
+
   try {
-    return await rawRequest<T>(path, options, tokens?.accessToken);
+    return await rawRequest<T>(path, options, accessToken);
   } catch (error) {
-    const noRefreshEndpoint = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"].some((endpoint) => path === endpoint);
+    const noRefreshEndpoint = isAuthEndpoint(path);
     if (!(error instanceof ApiError) || error.status !== 401 || !retry || noRefreshEndpoint) throw error;
     try {
       const next = await refreshAccessToken();

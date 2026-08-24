@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createBrowserRouter } from "react-router-dom";
 
 import Register from "../pages/Register/Register";
@@ -5,7 +6,8 @@ import Login from "../pages/Login/Login";
 import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
 import Dashboard from "../pages/Dashboard/Dashboard";
 
-import AIAssistant from "../features/ai/components/AssistantPage/AIAssistant";
+import AIAssistantShell from "../features/ai/components/AssistantPage/AIAssistantShell";
+import { AIAssistantRoute } from "../features/ai/routes/aiRoute";
 import Calendar from "../pages/Calendar/Calendar";
 import Tasks from "../pages/Tasks/Tasks";
 import Reminders from "../pages/Reminders/Reminders";
@@ -53,7 +55,11 @@ export const router = createBrowserRouter([
 
       {
         path: "/ai-assistant",
-        element: <AIAssistant />,
+        element: (
+          <Suspense fallback={<AIAssistantShell />}>
+            <AIAssistantRoute />
+          </Suspense>
+        ),
       },
 
       {

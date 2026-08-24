@@ -1,13 +1,13 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { Mic, Paperclip, Send, Square } from "lucide-react";
 
 import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
 import { useToast } from "../../../../hooks/useToast";
 
-import VoiceInput from "../VoiceInput/VoiceInput";
-
 import "./ChatInput.scss";
+
+const VoiceInput = lazy(() => import("../VoiceInput/VoiceInput"));
 
 type ChatInputProps = {
   value: string;
@@ -72,7 +72,11 @@ const ChatInput = ({ value, onChange, onSend, disabled, autoFocus = true }: Chat
 
   return (
     <form className="chat-input-area" onSubmit={handleSubmit}>
-      {isListening && <VoiceInput interimText={interimTranscript} />}
+      {isListening && (
+        <Suspense fallback={null}>
+          <VoiceInput interimText={interimTranscript} />
+        </Suspense>
+      )}
 
       <div className="chat-input">
         <button

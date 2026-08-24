@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -17,7 +17,8 @@ import { useAIChat } from "../../hooks/useAIChat";
 import ChatHeader from "../ChatHeader/ChatHeader";
 import ChatInput from "../ChatInput/ChatInput";
 import MessageList from "../MessageList/MessageList";
-import VoiceMode from "../VoiceMode/VoiceMode";
+
+const VoiceMode = lazy(() => import("../VoiceMode/VoiceMode"));
 
 import "./AIAssistant.scss";
 
@@ -180,11 +181,13 @@ const AIAssistant = () => {
       </header>
 
       {isVoiceModeOpen && (
-        <VoiceMode
-          open={isVoiceModeOpen}
-          onClose={closeVoiceMode}
-          onKeyboard={focusTextComposer}
-        />
+        <Suspense fallback={<div className="ai-voice-loading" role="status"><span />Voice Mode</div>}>
+          <VoiceMode
+            open={isVoiceModeOpen}
+            onClose={closeVoiceMode}
+            onKeyboard={focusTextComposer}
+          />
+        </Suspense>
       )}
     </main>
   );

@@ -5,6 +5,9 @@ import { STORAGE_KEYS } from "../constants/storageKeys";
 
 export type Profile = { name: string; email: string; bio: string; avatar: string | null; timezone: string; language: string };
 let cache: Profile = { name: "", email: "", bio: readStorageString(STORAGE_KEYS.profileBio), avatar: null, timezone: "UTC", language: "en" };
+let loadPromise: Promise<Profile> | null = null;
+let loadedAt = 0;
+const PROFILE_CACHE_TTL_MS = 30_000;
 
 const toProfile = (user: Awaited<ReturnType<typeof profileApi.getProfile>>): Profile => ({
   name: [user.firstName, user.lastName].filter(Boolean).join(" "),
@@ -17,14 +20,23 @@ const toProfile = (user: Awaited<ReturnType<typeof profileApi.getProfile>>): Pro
 
 export const getProfile = (): Profile => cache;
 export const clearProfileCache = () => {
+  loadPromise = null;
+  loadedAt = 0;
   cache = { name: "", email: "", bio: "", avatar: null, timezone: "UTC", language: "en" };
   removeStorage(STORAGE_KEYS.profileBio);
   notifyWorkspaceDataChanged("profile");
 };
-export const loadProfile = async (): Promise<Profile> => {
-  cache = toProfile(await profileApi.getProfile());
-  notifyWorkspaceDataChanged("profile");
-  return cache;
+export const loadProfile = (): Promise<Profile> => {
+  if (loadPromise) return loadPromise;
+  if (loadedAt > 0 && Date.now() - loadedAt < PROFILE_CACHE_TTL_MS) return Promise.resolve(cache);
+
+  loadPromise = profileApi.getProfile().then((user) => {
+    cache = toProfile(user);
+    loadedAt = Date.now();
+    notifyWorkspaceDataChanged("profile");
+    return cache;
+  }).finally(() => { loadPromise = null; });
+  return loadPromise;
 };
 
 const nameParts = (name: string) => {
