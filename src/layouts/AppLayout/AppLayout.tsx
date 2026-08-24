@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 
 import Sidebar from "../../components/Sidebar/Sidebar";
-import ThemeToggle from "../../components/ThemeToggle/ThemeToggle";
+import TopBar from "../../components/TopBar/TopBar";
 import AIChatDrawer from "../../features/ai/components/AIChatDrawer/AIChatDrawer";
 import { prefetchAIAssistant } from "../../features/ai/routes/aiLoader";
 
@@ -35,9 +35,9 @@ const AppLayout = () => {
   return (
     <div className={`app-layout ${isAIWorkspace ? "app-layout--ai" : ""}`}>
       <Sidebar />
-      <ThemeToggle />
 
-        <main className={`app-layout__content ${isAIWorkspace ? "app-layout__content--ai" : ""}`}>
+      <main className={`app-layout__content ${isAIWorkspace ? "app-layout__content--ai" : ""}`}>
+        {!isAIWorkspace && <TopBar />}
         <Outlet />
       </main>
 

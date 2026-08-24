@@ -6,10 +6,7 @@ import { router } from "./app/router";
 import { Providers } from "./app/providers/Providers";
 import { registerServiceWorker } from "./pwa/registerServiceWorker";
 import "./index.css";
-import "./mobile-design.css";
-import "./dark-mode.css";
-import "./layout-overrides.css";
-import "./final-polish.css";
+import "./premium-overrides.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
