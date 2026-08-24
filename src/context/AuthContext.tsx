@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AUTH_SESSION_CHANGED, getAuthSession, getAuthTokens, logout as logoutSession, restoreSession } from "../services/authService";
 import type { User } from "../services/api/types";
+import { clearWorkspaceCache } from "../services/workspaceCache";
+import { clearProfileCache } from "../services/profileService";
+import { STORAGE_KEYS } from "../constants/storageKeys";
+import { removeStorage } from "../services/storage";
 import { AuthContext } from "./AuthContextValue";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -44,12 +48,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const sync = () => {
       const nextUser = getAuthSession();
       const nextStatus = nextUser && getAuthTokens() ? "authenticated" : "unauthenticated";
+      if (!nextUser || !getAuthTokens()) {
+        clearWorkspaceCache();
+        clearProfileCache();
+        removeStorage(STORAGE_KEYS.aiChatHistory);
+      }
       setUser(nextUser);
       setStatus(nextStatus);
       setAuthError(null);
     };
+    const syncStorage = (event: StorageEvent) => {
+      if (event.key !== "yechim_ai_auth_tokens" && event.key !== "yechim_ai_auth_user") return;
+      sync();
+    };
     window.addEventListener(AUTH_SESSION_CHANGED, sync);
-    return () => window.removeEventListener(AUTH_SESSION_CHANGED, sync);
+    window.addEventListener("storage", syncStorage);
+    return () => {
+      window.removeEventListener(AUTH_SESSION_CHANGED, sync);
+      window.removeEventListener("storage", syncStorage);
+    };
   }, []);
 
   const logout = useCallback(async () => { await logoutSession(); setUser(null); setStatus("unauthenticated"); setAuthError(null); }, []);

@@ -24,6 +24,9 @@ export const clearProfileCache = () => {
   loadedAt = 0;
   cache = { name: "", email: "", bio: "", avatar: null, timezone: "UTC", language: "en" };
   removeStorage(STORAGE_KEYS.profileBio);
+  removeStorage(STORAGE_KEYS.profileName);
+  removeStorage(STORAGE_KEYS.profileEmail);
+  removeStorage(STORAGE_KEYS.profileAvatar);
   notifyWorkspaceDataChanged("profile");
 };
 export const loadProfile = (): Promise<Profile> => {

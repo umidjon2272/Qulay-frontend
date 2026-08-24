@@ -48,9 +48,7 @@ const Register = () => {
     setLoading(true);
     try {
       await signUp({ email: normalizedEmail, password, firstName: firstName.trim(), lastName: lastName.trim() });
-      setLoading(false);
-      setSuccess("Hisob yaratildi. Yuborilmoqda...");
-      window.setTimeout(goToDefaultPage, 450);
+      goToDefaultPage();
     } catch (reason) {
       setLoading(false);
       setError(getApiErrorMessage(reason));

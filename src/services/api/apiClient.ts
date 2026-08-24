@@ -2,7 +2,8 @@ import { clearAuth, getTokens, isAccessTokenExpiringSoon, updateTokens, type Aut
 import type { AuthResponse } from "./types";
 
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
-const REQUEST_TIMEOUT_MS = 60_000;
+const REQUEST_TIMEOUT_MS = 30_000;
+const AUTH_REQUEST_TIMEOUT_MS = 20_000;
 
 export class ApiError extends Error {
   status: number;
@@ -31,9 +32,23 @@ let refreshPromise: Promise<AuthTokens> | null = null;
 
 const isAuthEndpoint = (path: string) => ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"].includes(path);
 
+const isAuthInvalidationError = (error: unknown): boolean =>
+  error instanceof ApiError && (error.status === 401 || error.status === 403);
+
+const invalidateSession = (error: unknown): void => {
+  // Timeouts, DNS/CORS failures and 5xx responses are not proof that the
+  // refresh token is invalid. Preserve the cached session in those cases.
+  if (!isAuthInvalidationError(error)) return;
+  clearAuth();
+  if (typeof window !== "undefined") window.dispatchEvent(new Event("yechim_ai_auth_session_changed"));
+};
+
 const rawRequest = async <T>(path: string, options: RequestInit = {}, token?: string): Promise<T> => {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = window.setTimeout(
+    () => controller.abort(),
+    isAuthEndpoint(path) ? AUTH_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+  );
   const headers = new Headers(options.headers);
   if (!headers.has("Content-Type") && options.body) headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -86,8 +101,7 @@ export const request = async <T>(path: string, options: RequestInit = {}, retry 
       const next = await refreshAccessToken();
       accessToken = next.accessToken;
     } catch (refreshError) {
-      clearAuth();
-      if (typeof window !== "undefined") window.dispatchEvent(new Event("yechim_ai_auth_session_changed"));
+      invalidateSession(refreshError);
       throw refreshError;
     }
   }
@@ -97,14 +111,24 @@ export const request = async <T>(path: string, options: RequestInit = {}, retry 
   } catch (error) {
     const noRefreshEndpoint = isAuthEndpoint(path);
     if (!(error instanceof ApiError) || error.status !== 401 || !retry || noRefreshEndpoint) throw error;
+
+    // Another request may have completed the single-flight rotation between
+    // this request's first attempt and its 401 response. Reuse that token
+    // before rotating the refresh token again.
+    const latestToken = getTokens()?.accessToken;
+    if (latestToken && latestToken !== accessToken) {
+      try {
+        return await rawRequest<T>(path, options, latestToken);
+      } catch (latestError) {
+        if (!(latestError instanceof ApiError) || latestError.status !== 401) throw latestError;
+      }
+    }
+
     try {
       const next = await refreshAccessToken();
       return await rawRequest<T>(path, options, next.accessToken);
     } catch (refreshError) {
-      clearAuth();
-      // Let AuthProvider/RequireAuth own the redirect. A hard location change
-      // here caused a visible login flash during app bootstrap.
-      if (typeof window !== "undefined") window.dispatchEvent(new Event("yechim_ai_auth_session_changed"));
+      invalidateSession(refreshError);
       throw refreshError;
     }
   }

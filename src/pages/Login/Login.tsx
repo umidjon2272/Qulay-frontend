@@ -50,9 +50,7 @@ const Login = () => {
     setLoading(true);
     try {
       await signIn(normalizedEmail, password, remember);
-      setLoading(false);
-      setSuccess(remember ? "Muvaffaqiyatli kirdingiz. Sessiya saqlandi." : "Muvaffaqiyatli kirdingiz.");
-      window.setTimeout(goToDefaultPage, 450);
+      goToDefaultPage();
     } catch (reason) {
       setLoading(false);
       setError(getApiErrorMessage(reason));

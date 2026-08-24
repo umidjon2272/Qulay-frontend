@@ -71,14 +71,21 @@ export const restoreSession = (): Promise<User | null> => {
 
 export const logout = async (): Promise<void> => {
   const refreshToken = getTokens()?.refreshToken;
-  try {
-    if (refreshToken) await authApi.logout(refreshToken);
-  } catch { /* local cleanup must still happen if the server is asleep/unavailable */ }
+
+  // Local logout is intentionally first. A sleeping backend must never keep
+  // the user trapped in the app while the revoke request waits or times out.
   clearAuth();
   clearWorkspaceCache();
   clearProfileCache();
   removeStorage(STORAGE_KEYS.authSession);
+  removeStorage(STORAGE_KEYS.aiChatHistory);
   notifyAuthChanged();
+
+  // Revoke best-effort in the background. Local state is already cleared, so
+  // navigation never waits for a sleeping or unavailable backend.
+  if (refreshToken) {
+    void authApi.logout(refreshToken).catch(() => undefined);
+  }
 };
 
 /** Backwards-compatible name used by the settings screen. */

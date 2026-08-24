@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from "../constants/storageKeys";
-import { readStorage, writeStorage } from "./storage";
+import { readStorage, removeStorage, writeStorage } from "./storage";
 import { notifyWorkspaceDataChanged } from "./workspaceEvents";
 
 export type IntegrationConnection = { connected: boolean; username?: string };
@@ -21,6 +21,11 @@ const isIntegrationState = (value: unknown): value is IntegrationState => {
 
 export const getIntegrationState = (): IntegrationState =>
   readStorage(STORAGE_KEYS.integrations, {}, isIntegrationState);
+
+export const clearIntegrationState = () => {
+  removeStorage(STORAGE_KEYS.integrations);
+  notifyWorkspaceDataChanged("integrations");
+};
 
 export const connectIntegration = (id: string, username?: string) => {
   const next = { ...getIntegrationState(), [id]: { connected: true, username: username?.trim() || undefined } };

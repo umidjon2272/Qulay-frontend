@@ -11,6 +11,7 @@ import { STORAGE_KEYS } from "../../../constants/storageKeys";
 import { readStorage, removeStorage, writeStorage } from "../../../services/storage";
 import { getSettings } from "../../../services/settingsService";
 import { subscribeToWorkspaceData } from "../../../services/workspaceEvents";
+import { AUTH_SESSION_CHANGED, getAuthSession } from "../../../services/authService";
 import { executeAIAction, type AIActionExecutionResult } from "../actions/actionExecutor";
 import { isAIAction, type AIAction } from "../actions/actionTypes";
 import { getAIReply } from "../../../services/aiService";
@@ -132,6 +133,23 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         window.speechSynthesis?.cancel();
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const clearForSignedOutUser = () => {
+      if (getAuthSession()) return;
+      generationRef.current += 1;
+      for (const controller of pendingRequestsRef.current.values()) controller.abort();
+      pendingRequestsRef.current.clear();
+      executedActionsRef.current.clear();
+      executingActionsRef.current.clear();
+      setMessages([{ ...welcomeMessage, id: 0, time: formatTime() }]);
+      setIsTyping(false);
+      setSpeakingId(null);
+    };
+
+    window.addEventListener(AUTH_SESSION_CHANGED, clearForSignedOutUser);
+    return () => window.removeEventListener(AUTH_SESSION_CHANGED, clearForSignedOutUser);
   }, []);
 
   const nextMessageId = () => {

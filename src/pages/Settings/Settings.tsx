@@ -24,7 +24,6 @@ import { useProfile } from "../../hooks/useProfile";
 import { useIntegrations } from "../../hooks/useIntegrations";
 import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
 import { getSettings, updateSettings } from "../../services/settingsService";
-import { clearMockSession } from "../../services/authService";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
@@ -195,7 +194,6 @@ const Settings = () => {
 
   const handleLogout = async () => {
     setConfirmingLogout(false);
-    clearMockSession();
     await logout();
     navigate("/login", { replace: true });
   };

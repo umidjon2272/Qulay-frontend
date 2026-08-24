@@ -9,6 +9,11 @@ const planCache = new Map<string, { loadedAt: number; value: TodayPlanWithMeta }
 const inFlight = new Map<string, Promise<TodayPlanWithMeta>>();
 const TODAY_CACHE_TTL_MS = 15_000;
 
+export const clearTodayPlanCache = () => {
+  planCache.clear();
+  inFlight.clear();
+};
+
 export const getTodayPlan = (dateKey = getDateKey()): Promise<TodayPlanWithMeta> => {
   const cached = planCache.get(dateKey);
   if (cached && Date.now() - cached.loadedAt < TODAY_CACHE_TTL_MS) return Promise.resolve(cached.value);
