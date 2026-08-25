@@ -55,7 +55,11 @@ const ThemeToggle = ({ variant = "floating" }: ThemeToggleProps) => {
       aria-pressed={activeTheme === "dark"}
       title={label}
     >
-      <Icon size={variant === "menu" ? 17 : 16} />
+      <Icon
+        key={activeTheme}
+        className="theme-toggle__icon"
+        size={variant === "menu" ? 21 : 18}
+      />
       {variant === "menu" && <span>{activeTheme === "dark" ? "Yorug' rejim" : "Qorong'i rejim"}</span>}
     </button>
   );

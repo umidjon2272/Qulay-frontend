@@ -1,15 +1,33 @@
-import { Bell, Globe2, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bell, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { useProfile } from "../../hooks/useProfile";
+import { getSettings, updateSettings } from "../../services/settingsService";
+import { subscribeToWorkspaceData } from "../../services/workspaceEvents";
 import ThemeToggle from "../ThemeToggle/ThemeToggle";
 
 import "./TopBar.scss";
+
+type LanguageCode = "UZ" | "RU";
+
+const getLanguageCode = (language: string): LanguageCode => (language === "Русский" ? "RU" : "UZ");
 
 const TopBar = () => {
   const navigate = useNavigate();
   const { name, avatar } = useProfile();
   const firstName = name.trim().split(/\s+/)[0] || "Profil";
+  const [language, setLanguage] = useState<LanguageCode>(() => getLanguageCode(getSettings().language));
+
+  useEffect(() => subscribeToWorkspaceData("settings", () => {
+    setLanguage(getLanguageCode(getSettings().language));
+  }), []);
+
+  const toggleLanguage = () => {
+    const nextLanguage: LanguageCode = language === "UZ" ? "RU" : "UZ";
+    setLanguage(nextLanguage);
+    updateSettings({ language: nextLanguage === "UZ" ? "O'zbekcha" : "Русский" });
+  };
 
   return (
     <header className="topbar">
@@ -24,9 +42,14 @@ const TopBar = () => {
           <Bell size={17} />
           <i />
         </button>
-        <button type="button" className="topbar__icon topbar__language" onClick={() => navigate("/settings?tab=language")} aria-label="Tilni tanlash">
-          <Globe2 size={17} />
-          <span>UZ</span>
+        <button
+          type="button"
+          className="topbar__icon topbar__language"
+          onClick={toggleLanguage}
+          aria-label={`Tilni ${language === "UZ" ? "Русский" : "O'zbekcha"} tiliga almashtirish`}
+          title={`Joriy til: ${language}`}
+        >
+          <span key={language}>{language}</span>
         </button>
         <ThemeToggle variant="menu" />
         <button type="button" className="topbar__profile" onClick={() => navigate("/settings?tab=profile")} aria-label={`${firstName} profilini ochish`}>
