@@ -16,11 +16,6 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.ai-conversation > .message-list {
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
 .message-list__inner {
   display: flex;
   flex-direction: column;

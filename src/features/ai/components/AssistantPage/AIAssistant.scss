@@ -35,8 +35,6 @@
 .ai-side-card__conversations button { display: block; min-height: auto; padding: 9px 10px; color: #787181; line-height: 1.35; }
 
 .ai-page__main { display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.82); border-radius: 22px; background: rgba(255, 255, 255, 0.48); box-shadow: 0 20px 55px rgba(54, 43, 80, 0.055), inset 0 1px 0 rgba(255, 255, 255, 0.95); backdrop-filter: blur(26px) saturate(130%); -webkit-backdrop-filter: blur(26px) saturate(130%); }
-.ai-conversation { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-
 .ai-welcome { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; min-height: 0; padding: 26px 28px 20px; text-align: center; }
 .ai-welcome__content { display: contents; }
 .ai-welcome__orb { position: relative; display: grid; place-items: center; width: 76px; height: 76px; margin-bottom: 15px; border-radius: 26px; color: white; background: radial-gradient(circle at 30% 22%, #c6b7ff, #8062e4 48%, #3975b6); box-shadow: 0 17px 38px rgba(105, 68, 209, 0.3); }
@@ -50,7 +48,6 @@
 .ai-prompt { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 13px; border: 1px solid rgba(210, 205, 220, 0.46); border-radius: 13px; background: rgba(255, 255, 255, 0.5); color: #5c5665; font: inherit; font-size: 12px; font-weight: 620; text-align: left; cursor: pointer; transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease; }
 .ai-prompt svg { flex-shrink: 0; color: #8a6de1; }
 .ai-prompt:hover { border-color: rgba(130, 91, 234, 0.3); background: rgba(238, 232, 255, 0.6); transform: translateY(-2px); }
-.ai-welcome__input { width: min(100%, 720px); margin-top: 22px; }
 .ai-welcome__voice { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; border: 0; background: transparent; color: #8267d9; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 
 .ai-page__mobile-bar { display: none; }
@@ -91,15 +88,13 @@
 @media (max-width: 700px) {
   .ai-page__ambient { display: none; }
   .ai-page {
-    height: var(--ai-visual-viewport-height, 100dvh);
-    max-height: var(--ai-visual-viewport-height, 100dvh);
+    height: var(--app-visible-height, 100dvh);
+    max-height: var(--app-visible-height, 100dvh);
     min-height: 0;
   }
   .ai-page__workspace { display: block; height: 100%; min-height: 0; }
   .ai-page__rail { display: none; }
   .ai-page__main { display: flex; height: 100%; min-height: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .ai-conversation { min-height: 0; }
-  .ai-conversation > .chat-input-area { position: static; bottom: auto; z-index: auto; }
   .ai-page__mobile-bar { position: absolute; top: max(8px, env(safe-area-inset-top)); right: 11px; left: 11px; z-index: 4; display: flex; align-items: center; gap: 9px; min-height: 44px; pointer-events: none; }
   .ai-page__mobile-bar button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 13px; background: color-mix(in srgb, var(--surface-solid) 84%, transparent); color: var(--text-primary); pointer-events: auto; cursor: pointer; }
   .ai-page__mobile-bar div { display: flex; flex-direction: column; gap: 1px; }
@@ -113,16 +108,16 @@
   .ai-welcome {
     justify-content: flex-start;
     padding: 12px 13px 8px;
-    overflow: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
   }
-  .ai-welcome__content { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; }
+  .ai-welcome__content { display: flex; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 0; }
   .ai-welcome__orb { width: 68px; height: 68px; border-radius: 23px; }
   .ai-welcome h1 { font-size: 27px; }
   .ai-welcome p { margin: 9px 0 17px; font-size: 13px; }
   .ai-prompts { display: flex; width: 100%; overflow-x: auto; scrollbar-width: none; }
   .ai-prompts::-webkit-scrollbar { display: none; }
   .ai-prompt { flex: 0 0 208px; min-height: 46px; }
-  .ai-welcome__input { flex: 0 0 auto; width: 100%; margin-top: auto; }
   .ai-welcome__voice { margin-bottom: 6px; }
 }
 
@@ -133,8 +128,8 @@
   body #root .ai-page,
   body #root .ai-page__workspace,
   body #root .ai-page__main {
-    height: var(--ai-visual-viewport-height, 100dvh);
-    max-height: var(--ai-visual-viewport-height, 100dvh);
+    height: var(--app-visible-height, 100dvh);
+    max-height: var(--app-visible-height, 100dvh);
     min-height: 0;
     overflow: hidden;
   }
@@ -154,7 +149,7 @@
   body #root .ai-page__workspace { display: flex; width: 100%; }
   body #root .ai-page__main { width: 100%; border: 0; border-radius: 0; }
   body #root .ai-page__main > .chat-header { flex: 0 0 auto; }
-  body #root .ai-conversation { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+  body #root .ai-page__main > .message-list { flex: 1 1 auto; min-height: 0; }
   body #root .message-list {
     flex: 1 1 auto;
     min-height: 0;
@@ -163,14 +158,13 @@
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
   }
+  body #root .ai-page__main > .chat-input-area,
   body #root .chat-input-area { flex: 0 0 auto; min-height: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
-  body #root .ai-welcome { flex: 1 1 auto; min-height: 0; overflow: hidden; }
-  body #root .ai-welcome__content { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  body #root .ai-welcome { flex: 1 1 auto; min-height: 0; }
 }
 
 @media (max-width: 700px) {
   html.ai-keyboard-open body #root .ai-welcome { padding-bottom: 0; }
-  html.ai-keyboard-open body #root .ai-welcome__input { margin-top: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -190,7 +184,6 @@ html[data-theme="dark"] body #root .ai-page__main {
   box-shadow: 0 20px 55px rgba(1,7,20,.28), inset 0 1px 0 rgba(255,255,255,.05);
 }
 
-html[data-theme="dark"] body #root .ai-conversation,
 html[data-theme="dark"] body #root .ai-welcome,
 html[data-theme="dark"] body #root .message-list {
   background: rgba(7, 18, 32, .16);

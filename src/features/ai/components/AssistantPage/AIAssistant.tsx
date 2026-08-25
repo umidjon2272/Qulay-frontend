@@ -153,25 +153,19 @@ const AIAssistant = () => {
                   Voice Mode'ni ochish
                 </button>
               </div>
-
-              <div className="ai-welcome__input">
-                <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isTyping} />
-              </div>
             </div>
           ) : (
-            <div className="ai-conversation">
-              <MessageList
-                messages={messages}
-                isTyping={isTyping}
-                speakingId={speakingId}
-                onSpeak={speak}
-                onStopSpeak={stopSpeaking}
-                onAction={executeAction}
-              />
-
-              <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isTyping} />
-            </div>
+            <MessageList
+              messages={messages}
+              isTyping={isTyping}
+              speakingId={speakingId}
+              onSpeak={speak}
+              onStopSpeak={stopSpeaking}
+              onAction={executeAction}
+            />
           )}
+
+          <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isTyping} />
         </section>
       </section>
 

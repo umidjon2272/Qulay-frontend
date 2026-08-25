@@ -46,9 +46,10 @@ const AppLayout = () => {
       htmlHeight: html.style.height,
       htmlOverflow: html.style.overflow,
       htmlOverscroll: html.style.overscrollBehavior,
-      aiViewportHeight: html.style.getPropertyValue("--ai-visual-viewport-height"),
+      appVisibleHeight: html.style.getPropertyValue("--app-visible-height"),
       aiKeyboardOpen: html.classList.contains("ai-keyboard-open"),
       rootHeight: root?.style.height ?? "",
+      rootOverflow: root?.style.overflow ?? "",
     };
     let viewportFrame: number | null = null;
 
@@ -58,13 +59,16 @@ const AppLayout = () => {
       html.style.height = previous.htmlHeight;
       html.style.overflow = previous.htmlOverflow;
       html.style.overscrollBehavior = previous.htmlOverscroll;
-      if (previous.aiViewportHeight) {
-        html.style.setProperty("--ai-visual-viewport-height", previous.aiViewportHeight);
+      if (previous.appVisibleHeight) {
+        html.style.setProperty("--app-visible-height", previous.appVisibleHeight);
       } else {
-        html.style.removeProperty("--ai-visual-viewport-height");
+        html.style.removeProperty("--app-visible-height");
       }
       html.classList.toggle("ai-keyboard-open", previous.aiKeyboardOpen);
-      if (root) root.style.height = previous.rootHeight;
+      if (root) {
+        root.style.height = previous.rootHeight;
+        root.style.overflow = previous.rootOverflow;
+      }
     };
 
     const syncViewport = () => {
@@ -84,9 +88,9 @@ const AppLayout = () => {
       );
 
       if (keyboardOpen) {
-        html.style.setProperty("--ai-visual-viewport-height", `${Math.round(viewportHeight)}px`);
+        html.style.setProperty("--app-visible-height", `${Math.round(viewportHeight)}px`);
       } else {
-        html.style.removeProperty("--ai-visual-viewport-height");
+        html.style.removeProperty("--app-visible-height");
       }
 
       html.classList.toggle("ai-keyboard-open", keyboardOpen);
@@ -110,7 +114,10 @@ const AppLayout = () => {
       html.style.height = "100%";
       html.style.overflow = "hidden";
       html.style.overscrollBehavior = "none";
-      if (root) root.style.height = "100%";
+      if (root) {
+        root.style.height = "100%";
+        root.style.overflow = "hidden";
+      }
 
       syncViewport();
     };

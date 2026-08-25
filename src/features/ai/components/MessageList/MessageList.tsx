@@ -25,14 +25,17 @@ const MessageList = ({
   onStopSpeak,
   onAction,
 }: MessageListProps) => {
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    const list = listRef.current;
+    if (!list) return;
+
+    list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
   }, [messages.length, isTyping]);
 
   return (
-    <div className="message-list">
+    <div ref={listRef} className="message-list">
       <div className="message-list__inner">
         {messages.map((message) => (
           <MessageBubble
@@ -59,7 +62,6 @@ const MessageList = ({
           </div>
         )}
 
-        <div ref={bottomRef} />
       </div>
     </div>
   );
