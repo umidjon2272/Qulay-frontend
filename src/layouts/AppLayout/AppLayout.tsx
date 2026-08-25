@@ -45,6 +45,8 @@ const AppLayout = () => {
       htmlHeight: html.style.height,
       htmlOverflow: html.style.overflow,
       htmlOverscroll: html.style.overscrollBehavior,
+      aiViewportHeight: html.style.getPropertyValue("--ai-visual-viewport-height"),
+      aiKeyboardOpen: html.classList.contains("ai-keyboard-open"),
       rootHeight: root?.style.height ?? "",
     };
 
@@ -54,7 +56,25 @@ const AppLayout = () => {
       html.style.height = previous.htmlHeight;
       html.style.overflow = previous.htmlOverflow;
       html.style.overscrollBehavior = previous.htmlOverscroll;
+      if (previous.aiViewportHeight) {
+        html.style.setProperty("--ai-visual-viewport-height", previous.aiViewportHeight);
+      } else {
+        html.style.removeProperty("--ai-visual-viewport-height");
+      }
+      html.classList.toggle("ai-keyboard-open", previous.aiKeyboardOpen);
       if (root) root.style.height = previous.rootHeight;
+    };
+
+    const syncViewport = () => {
+      if (!media.matches) return;
+
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      html.style.setProperty("--ai-visual-viewport-height", `${Math.round(viewportHeight)}px`);
+
+      const keyboardOpen = Boolean(
+        window.visualViewport && viewportHeight < window.innerHeight - 80,
+      );
+      html.classList.toggle("ai-keyboard-open", keyboardOpen);
     };
 
     const syncScrollLock = () => {
@@ -67,13 +87,21 @@ const AppLayout = () => {
       html.style.overflow = "hidden";
       html.style.overscrollBehavior = "none";
       if (root) root.style.height = "100%";
+
+      syncViewport();
     };
 
     syncScrollLock();
     media.addEventListener("change", syncScrollLock);
+    window.addEventListener("resize", syncViewport);
+    window.visualViewport?.addEventListener("resize", syncViewport);
+    window.visualViewport?.addEventListener("scroll", syncViewport);
 
     return () => {
       media.removeEventListener("change", syncScrollLock);
+      window.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("scroll", syncViewport);
       restore();
     };
   }, [isAIWorkspace]);

@@ -127,8 +127,8 @@
   body #root .ai-page,
   body #root .ai-page__workspace,
   body #root .ai-page__main {
-    height: 100dvh;
-    max-height: 100dvh;
+    height: var(--ai-visual-viewport-height, 100dvh);
+    max-height: var(--ai-visual-viewport-height, 100dvh);
     min-height: 0;
     overflow: hidden;
   }

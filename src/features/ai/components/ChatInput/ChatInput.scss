@@ -256,6 +256,22 @@ html[data-theme="dark"] .chat-input__send:hover:not(:disabled) { background: lin
   html[data-theme="dark"] .chat-input__send { width: 44px; height: 44px; border-radius: 13px; }
 }
 
+/* Mobile keyboard uses the visual-viewport height; the composer stays in flex flow. */
+@media (max-width: 700px) {
+  body #root .app-layout--ai .chat-input-area {
+    position: relative;
+    bottom: auto;
+    flex: 0 0 auto;
+    min-height: 0;
+    margin-bottom: 0;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  html.ai-keyboard-open body #root .app-layout--ai .chat-input-area {
+    padding-bottom: 6px;
+  }
+}
+
 /* Cascade guard against the older #root-scoped premium layer. */
 html[data-theme="dark"] body #root .chat-input { border-color: rgba(179,198,235,.2); border-radius: 18px; background: rgba(12,31,53,.88); }
 html[data-theme="dark"] body #root .chat-input input,
