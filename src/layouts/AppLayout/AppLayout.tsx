@@ -11,6 +11,7 @@ import "./AppLayout.scss";
 const AppLayout = () => {
   const location = useLocation();
   const isAIWorkspace = location.pathname === "/ai-assistant";
+  const isDashboard = location.pathname === "/dashboard";
 
   useEffect(() => {
     if (location.pathname !== "/dashboard") return undefined;
@@ -33,7 +34,7 @@ const AppLayout = () => {
   }, [location.pathname]);
 
   return (
-    <div className={`app-layout ${isAIWorkspace ? "app-layout--ai" : ""}`}>
+    <div className={`app-layout ${isAIWorkspace ? "app-layout--ai" : ""} ${isDashboard ? "app-layout--dashboard" : ""}`}>
       <Sidebar />
 
       <main className={`app-layout__content ${isAIWorkspace ? "app-layout__content--ai" : ""}`}>

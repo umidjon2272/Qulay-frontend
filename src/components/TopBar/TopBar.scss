@@ -112,3 +112,36 @@ body #root .topbar__actions .topbar__profile {
 @media (prefers-reduced-motion: reduce) {
   .topbar__language span { animation: none; }
 }
+
+@media (max-width: 700px) {
+  body #root .topbar {
+    min-height: 54px;
+    gap: 8px;
+    padding: 0;
+  }
+
+  body #root .topbar__search {
+    width: auto;
+    height: 42px;
+    min-width: 0;
+    flex: 1 1 auto;
+    border-radius: 16px;
+  }
+
+  body #root .topbar__actions { flex: 0 0 auto; gap: 6px; }
+  body #root .topbar__actions .topbar__icon,
+  body #root .topbar__actions .theme-toggle--menu,
+  body #root .topbar__actions .topbar__profile { width: 42px; min-width: 42px; height: 42px; min-height: 42px; border-radius: 14px; }
+  body #root .topbar__actions .topbar__profile { padding: 0; }
+  body #root .topbar__actions .topbar__profile-name { display: none; }
+  body #root .topbar__actions .topbar__icon svg { width: 20px; height: 20px; flex-basis: 20px; }
+  body #root .topbar__actions .topbar__language,
+  body #root .topbar__actions .theme-toggle--menu { display: none; }
+  body #root .topbar__avatar { width: 28px; height: 28px; flex-basis: 28px; border-radius: 50%; }
+}
+
+@media (max-width: 380px) {
+  body #root .topbar { gap: 6px; }
+  body #root .topbar__actions { gap: 5px; }
+  body #root .topbar__search { padding-inline: 11px; }
+}

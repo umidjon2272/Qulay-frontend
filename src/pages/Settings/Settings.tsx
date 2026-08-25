@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ComponentType } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Bell,
@@ -14,6 +14,7 @@ import {
   Moon,
   Palette,
   Save,
+  Settings as SettingsIcon,
   Sparkles,
   Sun,
   User,
@@ -76,11 +77,13 @@ const splitName = (value: string) => {
 type SettingsRootProps = {
   onSelect: (section: SectionId) => void;
   onLogout: () => void;
+  onBack?: () => void;
 };
 
-const SettingsRoot = ({ onSelect, onLogout }: SettingsRootProps) => (
+const SettingsRoot = ({ onSelect, onLogout, onBack }: SettingsRootProps) => (
   <section className="settings-root" aria-label="Sozlamalar">
     <header className="settings-root__header">
+      {onBack && <button type="button" className="settings-root__back" onClick={onBack} aria-label="Profilga qaytish"><ArrowLeft size={18} /></button>}
       <div>
         <span className="settings-root__eyebrow">QULAY AI</span>
         <h1>Sozlamalar</h1>
@@ -117,11 +120,14 @@ const SettingsRoot = ({ onSelect, onLogout }: SettingsRootProps) => (
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const activeParam = searchParams.get("tab");
   const active: SectionId | null = isSectionId(activeParam) ? activeParam : null;
   const setActive = (section: SectionId) => setSearchParams({ tab: section });
   const goToRoot = () => setSearchParams({});
+  const goToProfile = () => navigate("/settings?tab=profile", { replace: true });
+  const fromProfile = location.state && typeof location.state === "object" && "fromProfile" in location.state && location.state.fromProfile === true;
 
   const { showToast } = useToast();
   const { name, email, bio, avatar, setName, setBio, setAvatar } = useProfile();
@@ -202,7 +208,7 @@ const Settings = () => {
   return (
     <main className={`settings-page settings-page--${active ?? "root"}`}>
       {!active ? (
-        <SettingsRoot onSelect={setActive} onLogout={() => setConfirmingLogout(true)} />
+        <SettingsRoot onSelect={setActive} onLogout={() => setConfirmingLogout(true)} onBack={fromProfile ? goToProfile : undefined} />
       ) : (
         <section className="settings-subpage">
           <header className="settings-header">
@@ -253,6 +259,12 @@ const Settings = () => {
                     <LogOut size={14} /> Akkauntdan chiqish
                   </button>
                 </div>
+
+                <button type="button" className="settings-profile-settings" onClick={() => navigate("/settings", { state: { fromProfile: true } })}>
+                  <span className="settings-profile-settings__icon"><SettingsIcon size={16} /></span>
+                  <span><strong>Sozlamalar</strong><small>Profil va ilova afzalliklari</small></span>
+                  <ChevronRight size={17} />
+                </button>
               </div>
             )}
 

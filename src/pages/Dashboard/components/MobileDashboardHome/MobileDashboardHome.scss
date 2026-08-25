@@ -205,3 +205,108 @@
   .dashboard-mobile-home__orb,
   .dashboard-mobile-home__stat-copy b.is-loading { animation: none; }
 }
+
+/* Mobile home source-of-truth polish. Keep the information architecture intact,
+   but make the hero and summary cards feel like one compact glass system. */
+@media (max-width: 700px) {
+  body #root .dashboard-mobile-home {
+    padding: 0 0 18px;
+  }
+
+  body #root .dashboard-mobile-home__header {
+    min-height: 40px;
+    margin-bottom: 18px;
+  }
+
+  body #root .dashboard-mobile-home__brand-mark { width: 32px; height: 32px; border-radius: 11px; }
+  body #root .dashboard-mobile-home__header-actions { gap: 7px; }
+  body #root .dashboard-mobile-home__notification,
+  body #root .dashboard-mobile-home__avatar { width: 40px; height: 40px; border-radius: 14px; }
+  body #root .dashboard-mobile-home__avatar { border-radius: 50%; }
+  body #root .dashboard-mobile-home__notification:active,
+  body #root .dashboard-mobile-home__avatar:active { transform: scale(.94); }
+
+  body #root .dashboard-mobile-home__greeting { margin-bottom: 17px; }
+  body #root .dashboard-mobile-home__greeting > span { font-size: 13px; }
+  body #root .dashboard-mobile-home__greeting h1 { margin: 2px 0 3px; font-size: clamp(25px, 8vw, 30px); }
+  body #root .dashboard-mobile-home__greeting p { font-size: 13px; }
+
+  body #root .dashboard-mobile-home__hero {
+    grid-template-columns: minmax(0, 1fr) 76px;
+    gap: 8px;
+    min-height: 214px;
+    margin-bottom: 22px;
+    padding: 17px 14px 11px;
+    border-radius: 23px;
+  }
+
+  body #root .dashboard-mobile-home__eyebrow { margin-bottom: 9px; font-size: 8px; }
+  body #root .dashboard-mobile-home__hero h2 { max-width: 190px; font-size: 19px; }
+  body #root .dashboard-mobile-home__hero p { max-width: 195px; margin: 7px 0 12px; font-size: 11px; }
+  body #root .dashboard-mobile-home__hero-cta { min-height: 38px; padding-inline: 12px; border-radius: 14px; font-size: 11px; box-shadow: 0 9px 20px rgba(101,73,201,.2); }
+  body #root .dashboard-mobile-home__orb { width: 74px; height: 74px; }
+  body #root .dashboard-mobile-home__orb-core { width: 35px; height: 35px; }
+  body #root .dashboard-mobile-home__orb-ring { width: 88px; height: 33px; }
+  body #root .dashboard-mobile-home__quick-actions { gap: 6px; }
+  body #root .dashboard-mobile-home__quick-actions button { min-height: 57px; padding: 8px 7px; border-radius: 14px; }
+  body #root .dashboard-mobile-home__quick-actions button > span { width: 22px; height: 22px; margin-bottom: 4px; }
+  body #root .dashboard-mobile-home__quick-actions strong { font-size: 9px; }
+  body #root .dashboard-mobile-home__quick-actions small { font-size: 8px; }
+
+  body #root .dashboard-mobile-home__section { margin-bottom: 22px; }
+  body #root .dashboard-mobile-home__section-header { margin-bottom: 9px; }
+  body #root .dashboard-mobile-home__section-header h2 { font-size: 18px; }
+  body #root .dashboard-mobile-home__section-header button { font-size: 11px; }
+
+  body #root .dashboard-mobile-home__stats { gap: 8px; }
+  body #root .dashboard-mobile-home__stat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    min-height: 116px;
+    padding: 12px 8px;
+    border-radius: 18px;
+    text-align: center;
+  }
+
+  body #root .dashboard-mobile-home__stat > svg { position: absolute; top: 12px; right: 10px; width: 14px; height: 14px; }
+  body #root .dashboard-mobile-home__stat-icon { width: 29px; height: 29px; border-radius: 10px; }
+  body #root .dashboard-mobile-home__stat-copy { align-items: center; gap: 2px; width: 100%; }
+  body #root .dashboard-mobile-home__stat-copy strong { max-width: 100%; font-size: 10px; }
+  body #root .dashboard-mobile-home__stat-copy b { min-height: 24px; font-size: 24px; letter-spacing: -.7px; }
+  body #root .dashboard-mobile-home__stat-copy small { max-width: 100%; font-size: 9px; }
+
+  body #root .dashboard-mobile-home__meeting { min-height: 70px; padding: 10px; border-radius: 17px; }
+  body #root .dashboard-mobile-home__meeting-icon { width: 36px; height: 36px; border-radius: 12px; }
+  body #root .dashboard-mobile-home__meeting-copy strong { font-size: 12px; }
+  body #root .dashboard-mobile-home__meeting-copy small { font-size: 10px; }
+  body #root .dashboard-mobile-home__meeting-badge { padding: 5px 7px; font-size: 9px; }
+  body #root .dashboard-mobile-home__empty-meeting { min-height: 58px; border-radius: 16px; font-size: 11px; }
+}
+
+html[data-theme="dark"] body #root .dashboard-mobile-home__hero {
+  border-color: rgba(160, 150, 255, .22);
+  background:
+    radial-gradient(circle at 95% 8%, rgba(132,97,245,.24), transparent 34%),
+    linear-gradient(145deg, rgba(20,42,72,.95), rgba(9,24,43,.92));
+  box-shadow: 0 20px 42px rgba(1,7,20,.3), inset 0 1px 0 rgba(255,255,255,.07);
+}
+
+html[data-theme="dark"] body #root .dashboard-mobile-home__quick-actions button,
+html[data-theme="dark"] body #root .dashboard-mobile-home__stat,
+html[data-theme="dark"] body #root .dashboard-mobile-home__empty-meeting {
+  border-color: rgba(160,177,220,.18);
+  background: linear-gradient(145deg, rgba(18,39,66,.88), rgba(9,24,43,.82));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 10px 25px rgba(1,7,20,.16);
+}
+
+html[data-theme="dark"] body #root .dashboard-mobile-home__stat-copy strong { color: rgba(235,240,255,.76); }
+html[data-theme="dark"] body #root .dashboard-mobile-home__stat-copy small,
+html[data-theme="dark"] body #root .dashboard-mobile-home__meeting-copy small { color: rgba(220,228,248,.58); }
+
+@media (prefers-reduced-motion: reduce) {
+  body #root .dashboard-mobile-home__notification:active,
+  body #root .dashboard-mobile-home__avatar:active { transform: none; }
+}

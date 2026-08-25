@@ -191,3 +191,29 @@
     height: 32px;
   }
 }
+
+html[data-theme="dark"] body #root .message-bubble__avatar {
+  border: 1px solid rgba(164,181,221,.18);
+  background: rgba(20,43,72,.9);
+  color: #b9adff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+html[data-theme="dark"] body #root .message-bubble--user .message-bubble__avatar {
+  border-color: rgba(221,213,255,.26);
+  background: linear-gradient(145deg, #8070ef, #4d83c0);
+  color: #fff;
+}
+
+html[data-theme="dark"] body #root .message-bubble__glass {
+  border-color: rgba(160,177,220,.18);
+  background: linear-gradient(145deg, rgba(19,40,67,.92), rgba(9,24,43,.9));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 10px 26px rgba(1,7,20,.15);
+}
+
+html[data-theme="dark"] body #root .message-bubble__glass p { color: #f5f7ff; }
+html[data-theme="dark"] body #root .message-bubble--user .message-bubble__glass { border-color: rgba(188,174,255,.3); background: linear-gradient(135deg, rgba(113,91,221,.94), rgba(64,121,190,.9)); }
+html[data-theme="dark"] body #root .message-bubble__meta { color: rgba(220,228,248,.52); }
+html[data-theme="dark"] body #root .message-bubble__speak { border: 1px solid rgba(164,181,221,.18); background: rgba(20,43,72,.72); color: rgba(235,240,255,.7); }
+html[data-theme="dark"] body #root .message-bubble__speak:hover,
+html[data-theme="dark"] body #root .message-bubble__speak.is-speaking { border-color: rgba(143,127,255,.48); background: rgba(115,96,226,.2); color: #d8d0ff; }

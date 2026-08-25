@@ -123,3 +123,35 @@
 @media (prefers-reduced-motion: reduce) {
   .ai-welcome__orb span { animation: none; }
 }
+
+html[data-theme="dark"] body #root .ai-page {
+  background:
+    radial-gradient(circle at 88% 2%, rgba(126,91,235,.16), transparent 30%),
+    radial-gradient(circle at 12% 92%, rgba(65,174,239,.08), transparent 28%),
+    #07111f;
+}
+
+html[data-theme="dark"] body #root .ai-page__main {
+  border-color: rgba(160,177,220,.16);
+  background: linear-gradient(145deg, rgba(15,35,60,.9), rgba(7,19,35,.88));
+  box-shadow: 0 20px 55px rgba(1,7,20,.28), inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+html[data-theme="dark"] body #root .ai-page__rail-heading strong { color: #f5f7ff; }
+html[data-theme="dark"] body #root .ai-page__rail-heading span { color: rgba(220,228,248,.58); }
+html[data-theme="dark"] body #root .ai-side-card { border-color: rgba(160,177,220,.16); background: linear-gradient(145deg, rgba(19,40,67,.88), rgba(9,24,43,.86)); box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 14px 34px rgba(1,7,20,.18); }
+html[data-theme="dark"] body #root .ai-side-card__title h2 { color: #f5f7ff; }
+html[data-theme="dark"] body #root .ai-side-card button { border-color: transparent; background: rgba(20,43,72,.7); color: rgba(235,240,255,.72); }
+html[data-theme="dark"] body #root .ai-side-card button:hover { color: #fff; background: rgba(115,96,226,.2); }
+html[data-theme="dark"] body #root .ai-welcome__small { color: rgba(220,228,248,.62); }
+html[data-theme="dark"] body #root .ai-welcome h1 { color: #f7f9ff; }
+html[data-theme="dark"] body #root .ai-welcome p { color: rgba(220,228,248,.68); }
+html[data-theme="dark"] body #root .ai-prompt { border-color: rgba(160,177,220,.18); background: rgba(19,40,67,.78); color: rgba(235,240,255,.82); }
+html[data-theme="dark"] body #root .ai-prompt:hover { border-color: rgba(143,127,255,.45); background: rgba(115,96,226,.2); }
+
+@media (max-width: 700px) {
+  body #root .ai-page__mobile-bar { top: max(8px, env(safe-area-inset-top)); right: 10px; left: 10px; min-height: 46px; }
+  body #root .ai-page__mobile-bar button { width: 42px; height: 42px; border-radius: 14px; }
+  body #root .ai-page__main > .chat-header { padding-top: max(62px, calc(52px + env(safe-area-inset-top))); }
+  html[data-theme="dark"] body #root .ai-page__mobile-bar button { border-color: rgba(160,177,220,.18); background: rgba(13,31,53,.86); color: rgba(235,240,255,.82); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
+}
