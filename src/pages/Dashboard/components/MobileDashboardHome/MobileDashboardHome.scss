@@ -310,3 +310,55 @@ html[data-theme="dark"] body #root .dashboard-mobile-home__meeting-copy small { 
   body #root .dashboard-mobile-home__notification:active,
   body #root .dashboard-mobile-home__avatar:active { transform: none; }
 }
+
+/* Compact AI card: keep the existing actions, remove the oversized illustration,
+   and put the conversation CTA within the first viewport. */
+@media (max-width: 700px) {
+  body #root .dashboard-mobile-home__hero {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  body #root .dashboard-mobile-home__hero-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  body #root .dashboard-mobile-home__hero-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    border: 1px solid rgba(221, 213, 255, .25);
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(132,111,242,.9), rgba(66,117,184,.88));
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 8px 18px rgba(75,66,172,.2);
+  }
+
+  body #root .dashboard-mobile-home__hero-copy { padding-top: 1px; }
+  body #root .dashboard-mobile-home__eyebrow { margin-bottom: 5px; }
+  body #root .dashboard-mobile-home__hero h2 { max-width: none; font-size: 18px; letter-spacing: -.4px; }
+  body #root .dashboard-mobile-home__hero p { margin: 3px 0 0; font-size: 11px; }
+  body #root .dashboard-mobile-home__hero-cta { width: 100%; min-height: 39px; justify-content: center; border-radius: 13px; }
+  body #root .dashboard-mobile-home__hero-cta span { flex: 0 1 auto; }
+  body #root .dashboard-mobile-home__orb { display: none; }
+  body #root .dashboard-mobile-home__quick-actions { grid-column: auto; width: 100%; gap: 5px; }
+  body #root .dashboard-mobile-home__quick-actions button { min-height: 43px; align-items: center; justify-content: center; flex-direction: row; gap: 5px; padding: 6px 5px; border-radius: 12px; text-align: center; }
+  body #root .dashboard-mobile-home__quick-actions button > span { width: 20px; height: 20px; margin: 0; border-radius: 7px; }
+  body #root .dashboard-mobile-home__quick-actions strong { width: auto; max-width: calc(100% - 25px); font-size: 9px; }
+  body #root .dashboard-mobile-home__quick-actions small { display: none; }
+}
+
+@media (max-width: 340px) {
+  body #root .dashboard-mobile-home__hero { gap: 8px; padding: 12px; }
+  body #root .dashboard-mobile-home__quick-actions { gap: 4px; }
+  body #root .dashboard-mobile-home__quick-actions strong { font-size: 8px; }
+}

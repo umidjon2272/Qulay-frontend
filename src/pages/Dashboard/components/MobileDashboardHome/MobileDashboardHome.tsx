@@ -109,18 +109,18 @@ const MobileDashboardHome = () => {
       </section>
 
       <section className="dashboard-mobile-home__hero">
-        <div className="dashboard-mobile-home__hero-copy">
-          <div className="dashboard-mobile-home__eyebrow"><i /> AI YORDAMCHI <span>ONLAYN</span></div>
-          <h2>Bugun sizga qanday yordam beray?</h2>
-          <p>Savolingiz bormi yoki reja tuzish kerakmi? AI yordamga tayyor.</p>
-          <button type="button" className="dashboard-mobile-home__hero-cta" onClick={() => navigate("/ai-assistant")}>
-            <Mic size={15} /> AI bilan gaplashish
-          </button>
+        <div className="dashboard-mobile-home__hero-row">
+          <span className="dashboard-mobile-home__hero-icon"><Sparkles size={18} /></span>
+          <div className="dashboard-mobile-home__hero-copy">
+            <div className="dashboard-mobile-home__eyebrow"><i /> AI YORDAMCHI <span>ONLAYN</span></div>
+            <h2>AI bilan gaplashing</h2>
+            <p>Savol bering yoki topshiriq ayting.</p>
+          </div>
         </div>
-        <button type="button" className="dashboard-mobile-home__orb" onClick={() => navigate("/ai-assistant")} aria-label="AI bilan gaplashish">
-          <span className="dashboard-mobile-home__orb-ring dashboard-mobile-home__orb-ring--one" />
-          <span className="dashboard-mobile-home__orb-ring dashboard-mobile-home__orb-ring--two" />
-          <span className="dashboard-mobile-home__orb-core"><Sparkles size={25} /></span>
+        <button type="button" className="dashboard-mobile-home__hero-cta" onClick={() => navigate("/ai-assistant")}>
+          <Mic size={15} />
+          <span>AI bilan gaplashish</span>
+          <ArrowUpRight size={15} />
         </button>
         <div className="dashboard-mobile-home__quick-actions">
           {quickActions.map((action) => {

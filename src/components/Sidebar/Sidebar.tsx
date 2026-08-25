@@ -36,7 +36,7 @@ const Sidebar = () => {
   const { logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
-  const isProfilePage = location.pathname === "/settings" && new URLSearchParams(location.search).get("tab") === "profile";
+  const isSettingsHub = location.pathname === "/settings";
 
   const handleMobileAI = () => {
     if (typeof window !== "undefined" && window.innerWidth <= 700) {
@@ -108,7 +108,7 @@ const Sidebar = () => {
         <NavLink to="/tasks" className="sidebar__mobile-item" aria-label="Vazifalar"><CheckSquare size={19} /><span>Vazifalar</span></NavLink>
         <button type="button" className="sidebar__mobile-item sidebar__mobile-item--ai" onClick={handleMobileAI} aria-label="AI yordamchi"><Sparkles size={20} /><span>AI</span></button>
         <NavLink to="/calendar" className="sidebar__mobile-item" aria-label="Kalendar"><CalendarDays size={19} /><span>Kalendar</span></NavLink>
-        <button type="button" className={`sidebar__mobile-item ${isProfilePage ? "is-active" : ""}`} onClick={() => navigate("/settings?tab=profile")} aria-label="Profilni ochish" aria-current={isProfilePage ? "page" : undefined}><span className="sidebar__mobile-avatar">{avatar ? <img src={avatar} alt="" /> : name.charAt(0).toUpperCase()}</span><span>Profil</span></button>
+        <button type="button" className={`sidebar__mobile-item ${isSettingsHub ? "is-active" : ""}`} onClick={() => navigate("/settings")} aria-label="Sozlamalarni ochish" aria-current={isSettingsHub ? "page" : undefined}><span className="sidebar__mobile-avatar">{avatar ? <img src={avatar} alt="" /> : name.charAt(0).toUpperCase()}</span><span>Profil</span></button>
       </nav>
 
       {confirmLogout && (

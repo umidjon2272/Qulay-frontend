@@ -1,5 +1,5 @@
 import { AlertTriangle, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import "./ConfirmDialog.scss";
 
@@ -19,6 +19,21 @@ const ConfirmDialog = ({
   onCancel,
 }: ConfirmDialogProps) => {
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !busy) onCancel();
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [busy, onCancel]);
 
   const confirm = async () => {
     if (busy) return;

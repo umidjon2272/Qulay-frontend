@@ -86,13 +86,90 @@
 
 @media (max-width: 600px) {
   .confirm-dialog__overlay {
-    align-items: end;
-    padding: 0;
+    align-items: center;
+    padding: 16px 12px max(16px, env(safe-area-inset-bottom));
   }
 
   .confirm-dialog {
-    width: 100%;
-    padding: 24px 16px calc(20px + env(safe-area-inset-bottom));
-    border-radius: 22px 22px 0 0;
+    width: min(400px, 100%);
+    max-height: calc(100dvh - 32px - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    padding: 20px 16px 16px;
+    border-radius: 22px;
+    animation: confirmDialogMobileIn 180ms cubic-bezier(.22, 1, .36, 1) both;
   }
+
+  .confirm-dialog__close {
+    top: 11px;
+    right: 11px;
+    width: 34px;
+    height: 34px;
+    border-radius: 11px;
+  }
+
+  .confirm-dialog__icon {
+    width: 40px;
+    height: 40px;
+    margin-bottom: 11px;
+    border-radius: 12px;
+  }
+
+  .confirm-dialog h2 {
+    margin-right: 36px;
+    font-size: 19px;
+  }
+
+  .confirm-dialog p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .confirm-dialog__actions {
+    gap: 8px;
+    margin-top: 17px;
+  }
+
+  .confirm-dialog__actions button {
+    min-height: 44px;
+    border-radius: 13px;
+    font-size: 13px;
+  }
+
+  .confirm-dialog__cancel { color: var(--text-primary); }
+
+  .confirm-dialog__confirm {
+    border-color: rgba(255, 117, 143, .22);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--danger) 88%, #d94d7c), var(--danger));
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--danger) 18%, transparent), inset 0 1px 0 rgba(255,255,255,.2);
+  }
+
+  .confirm-dialog__actions button:active,
+  .confirm-dialog__close:active { transform: scale(.96); }
+
+  html[data-theme="dark"] body #root .confirm-dialog__cancel {
+    border-color: rgba(160, 177, 220, .2);
+    background: rgba(20, 43, 72, .76);
+    color: rgba(235, 240, 255, .84);
+  }
+}
+
+@keyframes confirmDialogMobileIn {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+html[data-theme="dark"] body #root .confirm-dialog__overlay {
+  background: rgba(2, 8, 18, .62);
+}
+
+html[data-theme="dark"] body #root .confirm-dialog {
+  border-color: rgba(160, 177, 220, .2);
+  background: linear-gradient(145deg, rgba(20, 42, 70, .98), rgba(8, 22, 40, .98));
+  box-shadow: 0 24px 70px rgba(1, 6, 17, .48), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+html[data-theme="dark"] body #root .confirm-dialog__cancel:hover { background: rgba(31, 57, 91, .92); color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-dialog { animation: none; }
 }
