@@ -268,7 +268,8 @@ html[data-theme="dark"] .chat-input__send:hover:not(:disabled) { background: lin
   }
 
   html.ai-keyboard-open body #root .app-layout--ai .chat-input-area {
-    padding-bottom: 6px;
+    margin-bottom: 4px;
+    padding-bottom: 2px;
   }
 }
 

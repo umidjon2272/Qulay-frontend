@@ -39,6 +39,7 @@ const AppLayout = () => {
     const media = window.matchMedia("(max-width: 700px)");
     const root = document.getElementById("root");
     const html = document.documentElement;
+    let layoutViewportHeight = window.innerHeight;
     const previous = {
       bodyOverflow: document.body.style.overflow,
       bodyOverscroll: document.body.style.overscrollBehavior,
@@ -69,10 +70,18 @@ const AppLayout = () => {
       if (!media.matches) return;
 
       const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const activeElement = document.activeElement;
+      const isTextComposerFocused = activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement;
+      const viewportResizedWithoutKeyboard = !isTextComposerFocused && Math.abs(window.innerHeight - layoutViewportHeight) > 80;
+
+      if (viewportResizedWithoutKeyboard) {
+        layoutViewportHeight = window.innerHeight;
+      }
+
       html.style.setProperty("--ai-visual-viewport-height", `${Math.round(viewportHeight)}px`);
 
       const keyboardOpen = Boolean(
-        window.visualViewport && viewportHeight < window.innerHeight - 80,
+        window.visualViewport && isTextComposerFocused && viewportHeight < layoutViewportHeight - 80,
       );
       html.classList.toggle("ai-keyboard-open", keyboardOpen);
     };
@@ -94,12 +103,16 @@ const AppLayout = () => {
     syncScrollLock();
     media.addEventListener("change", syncScrollLock);
     window.addEventListener("resize", syncViewport);
+    document.addEventListener("focusin", syncViewport);
+    document.addEventListener("focusout", syncViewport);
     window.visualViewport?.addEventListener("resize", syncViewport);
     window.visualViewport?.addEventListener("scroll", syncViewport);
 
     return () => {
       media.removeEventListener("change", syncScrollLock);
       window.removeEventListener("resize", syncViewport);
+      document.removeEventListener("focusin", syncViewport);
+      document.removeEventListener("focusout", syncViewport);
       window.visualViewport?.removeEventListener("resize", syncViewport);
       window.visualViewport?.removeEventListener("scroll", syncViewport);
       restore();

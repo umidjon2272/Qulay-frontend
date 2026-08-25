@@ -129,32 +129,34 @@ const AIAssistant = () => {
 
           {!hasConversation ? (
             <div className="ai-welcome">
-              <div className="ai-welcome__orb" aria-hidden="true">
-                <span /><span /><span />
-                <Sparkles size={28} />
-              </div>
+              <div className="ai-welcome__content">
+                <div className="ai-welcome__orb" aria-hidden="true">
+                  <span /><span /><span />
+                  <Sparkles size={28} />
+                </div>
 
-              <span className="ai-welcome__small">SALOM, MEN QULAY AI</span>
-              <h1>Bugun sizga qanday yordam beray?</h1>
-              <p>Reja tuzing, vazifa yarating yoki shunchaki gaplashishni boshlang.</p>
+                <span className="ai-welcome__small">SALOM, MEN QULAY AI</span>
+                <h1>Bugun sizga qanday yordam beray?</h1>
+                <p>Reja tuzing, vazifa yarating yoki shunchaki gaplashishni boshlang.</p>
 
-              <div className="ai-prompts">
-                {suggestedPrompts.map((prompt) => (
-                  <button type="button" key={prompt} className="ai-prompt" onClick={() => sendMessage(prompt)}>
-                    <Sparkles size={14} />
-                    <span>{prompt}</span>
-                  </button>
-                ))}
+                <div className="ai-prompts">
+                  {suggestedPrompts.map((prompt) => (
+                    <button type="button" key={prompt} className="ai-prompt" onClick={() => sendMessage(prompt)}>
+                      <Sparkles size={14} />
+                      <span>{prompt}</span>
+                    </button>
+                  ))}
+                </div>
+
+                <button type="button" className="ai-welcome__voice" onClick={openVoiceMode}>
+                  <Mic size={15} />
+                  Voice Mode'ni ochish
+                </button>
               </div>
 
               <div className="ai-welcome__input">
                 <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isTyping} />
               </div>
-
-              <button type="button" className="ai-welcome__voice" onClick={openVoiceMode}>
-                <Mic size={15} />
-                Voice Mode'ni ochish
-              </button>
             </div>
           ) : (
             <div className="ai-conversation">
