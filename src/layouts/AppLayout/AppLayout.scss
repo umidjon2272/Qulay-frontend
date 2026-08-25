@@ -113,6 +113,19 @@
 }
 
 @media (max-width: 700px) {
+  body #root .app-layout--ai {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    height: var(--ai-visual-viewport-height, 100dvh);
+    max-height: var(--ai-visual-viewport-height, 100dvh);
+    min-height: 0;
+    overflow: hidden;
+  }
+
   body #root .app-layout:not(.app-layout--ai) {
     display: block;
     min-height: 100dvh;
