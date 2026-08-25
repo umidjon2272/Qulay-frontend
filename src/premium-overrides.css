@@ -571,3 +571,221 @@ html[data-theme="dark"] #root .sidebar__profile-menu { background: color-mix(in 
   #root .app-layout:not(.app-layout--ai) .app-layout__content { padding-inline: 10px; }
   #root .sidebar { right: 8px !important; left: 8px !important; }
 }
+
+/* ================================================================
+   Dark-mode polish layer
+   Keep feature behavior untouched; this layer only normalizes surfaces,
+   typography, controls and empty states across the workspace.
+================================================================ */
+html[data-theme="dark"] {
+  --bg-primary: #07111f;
+  --bg-secondary: #0b1729;
+  --surface: #0f1d32;
+  --surface-solid: #0f1d32;
+  --surface-soft: #132640;
+  --surface-hover: #1a3150;
+  --surface-elevated: #162b47;
+  --text-primary: #f7f9ff;
+  --text-secondary: #b6c1d3;
+  --text-muted: #92a1b8;
+  --border: rgba(169, 190, 228, .18);
+  --border-strong: rgba(181, 201, 237, .34);
+  --accent: #8b78ff;
+  --primary: #806cf3;
+  --accent-strong: #6350dc;
+  --accent-soft: rgba(139, 120, 255, .16);
+  --focus-ring: rgba(139, 120, 255, .34);
+  --shadow-soft: 0 22px 58px rgba(1, 6, 17, .42);
+}
+
+html[data-theme="dark"] #root :where(.calendar-page, .tasks-page, .reminders-page, .settings-page, .files-page) {
+  color: var(--text-primary);
+  background: transparent;
+}
+
+html[data-theme="dark"] #root :where(.calendar-page__header h1, .tasks-header h1, .reminders-header h1, .settings-header h1, .files-page__header h1, .calendar-card__month h2, .calendar-sidebar__header h2, .calendar-summary h2, .tasks-overview h2, .tasks-list__heading h2, .tasks-side h2, .reminders-list__header h2, .reminders-side h2, .settings-card h2, .settings-root h1) {
+  color: var(--text-primary);
+}
+
+html[data-theme="dark"] #root :where(.calendar-page__header p, .tasks-header p, .reminders-header p, .settings-header p, .calendar-summary p, .tasks-overview p, .tasks-side > p, .reminders-side__text, .settings-card > p) {
+  color: var(--text-secondary);
+}
+
+html[data-theme="dark"] #root :where(.calendar-page__eyebrow, .tasks-header__eyebrow, .reminders-header__eyebrow, .settings-header__eyebrow, .files-page__eyebrow, .settings-root__eyebrow) {
+  color: #b3a7ff;
+}
+
+/* One dark-glass surface family for feature cards and side panels. */
+html[data-theme="dark"] #root :where(.calendar-card, .calendar-sidebar, .calendar-summary, .tasks-overview, .tasks-list, .tasks-side, .reminders-stat, .reminders-list, .reminders-side, .files-toolbar, .files-ai, .settings-card, .settings-root__group, .recent-files, .recent-activity, .integration-card) {
+  border-color: var(--border);
+  background: linear-gradient(145deg, rgba(19, 38, 64, .92), rgba(10, 23, 41, .9));
+  box-shadow: 0 16px 38px rgba(1, 7, 20, .22), inset 0 1px 0 rgba(255,255,255,.045);
+  backdrop-filter: blur(22px) saturate(125%);
+  -webkit-backdrop-filter: blur(22px) saturate(125%);
+}
+
+html[data-theme="dark"] #root :where(.task-card, .reminder-card, .calendar-event, .file-card, .folder-card, .recent-file, .integration-card, .tasks-filters, .reminders-filters) {
+  border-color: var(--border);
+  background: rgba(16, 34, 58, .82);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+html[data-theme="dark"] #root :where(.task-card:hover, .reminder-card:hover, .calendar-event:hover, .file-card:hover, .folder-card:hover, .recent-file:hover, .integration-card:hover) {
+  border-color: rgba(139,120,255,.42);
+  background: var(--surface-hover);
+  box-shadow: 0 10px 24px rgba(1,7,20,.25), inset 0 1px 0 rgba(255,255,255,.05);
+}
+
+/* Shared CTA system: primary, secondary and compact icon controls. */
+#root :where(.tasks-header__add, .reminders-header__add, .calendar-page__add, .files-page__primary, .settings-header__save, .tasks-side__button, .reminders-side__button, .calendar-sidebar__button, .calendar-modal__submit, .task-modal__submit, .reminder-modal__submit, .settings-card__submit, .files-ai button, .quick-modal__submit) {
+  min-height: 44px;
+  height: 44px;
+  padding: 0 17px;
+  border: 1px solid rgba(196, 185, 255, .28);
+  border-radius: 17px;
+  color: #fff;
+  background: linear-gradient(135deg, #806cf3 0%, #a35bea 58%, #c264e8 100%);
+  box-shadow: 0 12px 28px rgba(91, 67, 207, .27), inset 0 1px 0 rgba(255,255,255,.3), inset 0 -1px 0 rgba(42,25,111,.22);
+  font-weight: 750;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+#root :where(.tasks-header__add, .reminders-header__add, .calendar-page__add, .files-page__primary, .settings-header__save, .tasks-side__button, .reminders-side__button, .calendar-sidebar__button, .calendar-modal__submit, .task-modal__submit, .reminder-modal__submit, .settings-card__submit, .files-ai button, .quick-modal__submit):hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 16px 34px rgba(91,67,207,.34), inset 0 1px 0 rgba(255,255,255,.36);
+}
+#root :where(.tasks-header__add, .reminders-header__add, .calendar-page__add, .files-page__primary, .settings-header__save, .tasks-side__button, .reminders-side__button, .calendar-sidebar__button, .calendar-modal__submit, .task-modal__submit, .reminder-modal__submit, .settings-card__submit, .files-ai button, .quick-modal__submit):active { transform: translateY(0) scale(.975); }
+
+#root :where(.calendar-card__today, .files-page__secondary, .settings-outline-btn, .hero__button--secondary) {
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+  transition: transform 180ms ease, color 180ms ease, background 180ms ease, border-color 180ms ease;
+}
+#root :where(.calendar-card__today, .files-page__secondary, .settings-outline-btn, .hero__button--secondary):hover { transform: translateY(-1px); color: var(--text-primary); border-color: var(--border-strong); background: var(--surface-hover); }
+
+html[data-theme="dark"] #root :where(.tasks-filters, .reminders-filters) { padding: 5px; border-color: var(--border); border-radius: 16px; background: rgba(8,20,36,.74); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+html[data-theme="dark"] #root :where(.tasks-filters button, .reminders-filters button) { min-height: 34px; border-radius: 11px; color: var(--text-secondary); }
+html[data-theme="dark"] #root :where(.tasks-filters button:hover, .reminders-filters button:hover) { color: var(--text-primary); background: rgba(139,120,255,.12); }
+html[data-theme="dark"] #root :where(.tasks-filters button.active, .reminders-filters button.active) { color: #fff; border-color: rgba(163,145,255,.35); background: linear-gradient(135deg, rgba(128,108,243,.34), rgba(163,91,234,.24)); box-shadow: 0 5px 15px rgba(65,48,161,.22), inset 0 1px 0 rgba(255,255,255,.1); }
+
+/* Search fields share the same 16–18px glass treatment. */
+#root :where(.tasks-search, .reminders-search, .files-toolbar__search) {
+  width: min(280px, 100%);
+  flex: 0 1 280px;
+  min-height: 42px;
+  height: 42px;
+  gap: 9px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--surface-solid) 88%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 7px 18px rgba(1,7,20,.12);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+#root :where(.tasks-search, .reminders-search, .files-toolbar__search):focus-within { border-color: rgba(139,120,255,.62); background: color-mix(in srgb, var(--surface-solid) 96%, transparent); box-shadow: 0 0 0 4px rgba(139,120,255,.13), inset 0 1px 0 rgba(255,255,255,.06); }
+#root :where(.tasks-search input, .reminders-search input, .files-toolbar__search input) { min-width: 0; margin: 0; color: var(--text-primary); background: transparent; }
+#root :where(.tasks-search input::placeholder, .reminders-search input::placeholder, .files-toolbar__search input::placeholder) { color: var(--text-muted); opacity: .95; }
+
+/* Calendar: centered grid, readable month/weekdays and distinct states. */
+html[data-theme="dark"] #root .calendar-card__top { border-bottom-color: var(--border); }
+html[data-theme="dark"] #root .calendar-card__month h2 { min-width: 155px; color: var(--text-primary); font-size: 17px; }
+html[data-theme="dark"] #root .calendar-card__month button { width: 34px; height: 34px; border-color: var(--border); border-radius: 12px; color: var(--text-secondary); background: var(--surface-soft); }
+html[data-theme="dark"] #root .calendar-card__month button:hover { color: #fff; border-color: rgba(139,120,255,.5); background: var(--surface-hover); }
+html[data-theme="dark"] #root .calendar-grid { gap: 4px; padding: 12px; background: #091526; }
+html[data-theme="dark"] #root .calendar-grid__weekday { height: 36px; color: #b9c5d8; background: transparent; font-weight: 750; }
+html[data-theme="dark"] #root .calendar-day { align-items: center; justify-content: center; min-height: 76px; padding: 8px; border: 1px solid transparent; border-radius: 13px; color: #dbe4f2; background: #10223a; font-size: 13px; font-weight: 750; }
+html[data-theme="dark"] #root .calendar-day span { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: transparent; }
+html[data-theme="dark"] #root .calendar-day:hover:not(:disabled) { color: #fff; border-color: rgba(139,120,255,.42); background: #172e4d; }
+html[data-theme="dark"] #root .calendar-day:disabled { color: rgba(146,161,184,.32); background: rgba(9,21,38,.65); }
+html[data-theme="dark"] #root .calendar-day--today:not(.calendar-day--selected) { color: #e9e5ff; border-color: rgba(139,120,255,.78); background: linear-gradient(145deg, rgba(139,120,255,.22), rgba(48,76,133,.22)); box-shadow: 0 0 0 3px rgba(139,120,255,.1), 0 8px 22px rgba(72,60,175,.17); }
+html[data-theme="dark"] #root .calendar-day--today:not(.calendar-day--selected)::after { right: 10px; bottom: 10px; width: 6px; height: 6px; background: #b9aaff; box-shadow: 0 0 0 3px rgba(139,120,255,.14); }
+html[data-theme="dark"] #root .calendar-day--selected { color: #fff; border-color: rgba(205,193,255,.55); background: linear-gradient(135deg, #705de4, #a457e5); box-shadow: 0 10px 23px rgba(72,52,180,.36), inset 0 1px 0 rgba(255,255,255,.24); }
+html[data-theme="dark"] #root .calendar-day--selected span { color: #fff; background: transparent; }
+html[data-theme="dark"] #root .calendar-day i { bottom: 9px; background: #b9aaff; box-shadow: 0 0 0 3px rgba(139,120,255,.16); }
+html[data-theme="dark"] #root .calendar-sidebar__header { border-bottom-color: var(--border); }
+html[data-theme="dark"] #root .calendar-sidebar__header span { color: #b2bdd0; }
+html[data-theme="dark"] #root .calendar-sidebar__icon { border-color: rgba(139,120,255,.32); background: rgba(139,120,255,.14); color: #c0b6ff; }
+html[data-theme="dark"] #root .calendar-event { border-color: var(--border); background: rgba(18,39,65,.82); }
+html[data-theme="dark"] #root .calendar-event__time, html[data-theme="dark"] #root .calendar-event__body span, html[data-theme="dark"] #root .calendar-event__body small { color: var(--text-secondary); }
+html[data-theme="dark"] #root .calendar-events__empty { display: flex; align-items: center; justify-content: center; min-height: 170px; gap: 8px; padding: 24px 16px; border: 1px dashed rgba(169,190,228,.26); border-radius: 15px; color: var(--text-secondary); background: rgba(8,21,38,.48); text-align: center; }
+html[data-theme="dark"] #root .calendar-events__empty strong { color: var(--text-primary); }
+html[data-theme="dark"] #root .calendar-events__empty span { max-width: 205px; color: var(--text-secondary); line-height: 1.5; }
+html[data-theme="dark"] #root .calendar-summary { align-items: center; border-color: rgba(139,120,255,.28); background: linear-gradient(105deg, rgba(91,75,192,.32), rgba(28,73,112,.28)); }
+html[data-theme="dark"] #root .calendar-summary span { color: #c1b7ff; }
+html[data-theme="dark"] #root .calendar-summary h2 { color: #fff; }
+html[data-theme="dark"] #root .calendar-summary p { color: #bdc9dc; }
+
+/* Tasks and reminders: stronger hierarchy and centered empty states. */
+html[data-theme="dark"] #root .tasks-overview { border-color: rgba(139,120,255,.27); background: linear-gradient(120deg, rgba(31,43,79,.88), rgba(13,29,50,.9)); }
+html[data-theme="dark"] #root .tasks-overview span, html[data-theme="dark"] #root .tasks-list__heading span, html[data-theme="dark"] #root .tasks-side__top span, html[data-theme="dark"] #root .reminders-list__header span { color: #bdb4ff; }
+html[data-theme="dark"] #root .tasks-overview h2, html[data-theme="dark"] #root .tasks-list__heading h2, html[data-theme="dark"] #root .tasks-side h2, html[data-theme="dark"] #root .reminders-list__header h2 { color: #fff; }
+html[data-theme="dark"] #root .tasks-overview p, html[data-theme="dark"] #root .tasks-side > p { color: #b5c1d4; }
+html[data-theme="dark"] #root .tasks-overview__progress span { color: #b9c5d7; }
+html[data-theme="dark"] #root .tasks-overview__progress strong { color: #c4b8ff; }
+html[data-theme="dark"] #root .tasks-overview__bar { background: rgba(180,196,223,.16); }
+html[data-theme="dark"] #root .tasks-list__heading button { color: var(--text-secondary); background: var(--surface-soft); border-color: var(--border); }
+html[data-theme="dark"] #root .tasks-side__icon { color: #c0b6ff; background: rgba(139,120,255,.15); border-color: rgba(139,120,255,.28); }
+html[data-theme="dark"] #root .tasks-side__item { border-color: var(--border); background: rgba(10,24,42,.46); }
+html[data-theme="dark"] #root .tasks-side__item strong, html[data-theme="dark"] #root .task-card__body h3 { color: var(--text-primary); }
+html[data-theme="dark"] #root .tasks-side__item span, html[data-theme="dark"] #root .task-card__body p, html[data-theme="dark"] #root .task-card__meta { color: var(--text-secondary); }
+html[data-theme="dark"] #root .tasks-empty, html[data-theme="dark"] #root .reminders-empty { display: flex; align-items: center; justify-content: center; min-height: 230px; gap: 8px; padding: 38px 24px; border: 1px dashed rgba(169,190,228,.28); border-radius: 17px; color: var(--text-secondary); background: linear-gradient(145deg, rgba(18,39,65,.75), rgba(8,21,38,.6)); text-align: center; }
+html[data-theme="dark"] #root .tasks-empty svg, html[data-theme="dark"] #root .reminders-empty > div { color: #c0b6ff; }
+html[data-theme="dark"] #root .tasks-empty h3, html[data-theme="dark"] #root .reminders-empty h3 { color: #fff; }
+html[data-theme="dark"] #root .tasks-empty p, html[data-theme="dark"] #root .reminders-empty p { max-width: 290px; color: var(--text-secondary); line-height: 1.5; }
+
+html[data-theme="dark"] #root .reminders-stat { min-height: 126px; border-color: var(--border); }
+html[data-theme="dark"] #root .reminders-stat--main { border-color: rgba(139,120,255,.3); background: linear-gradient(135deg, rgba(74,64,147,.55), rgba(17,38,64,.9)); }
+html[data-theme="dark"] #root .reminders-stat span { color: #bdc7d8; }
+html[data-theme="dark"] #root .reminders-stat strong { color: #fff; }
+html[data-theme="dark"] #root .reminders-stat p { color: var(--text-secondary); }
+html[data-theme="dark"] #root .reminders-stat__icon, html[data-theme="dark"] #root .reminders-stat__small-icon { color: #c6bcff; background: rgba(139,120,255,.16); border-color: rgba(139,120,255,.28); }
+html[data-theme="dark"] #root .reminders-stat__small-icon--green { color: #8fe0b9; background: rgba(69,212,156,.13); border-color: rgba(69,212,156,.24); }
+html[data-theme="dark"] #root .reminders-side__eyebrow { color: #c0b6ff; }
+html[data-theme="dark"] #root .reminders-side__icon { color: #c6bcff; background: rgba(139,120,255,.16); border-color: rgba(139,120,255,.3); }
+html[data-theme="dark"] #root .reminders-next { border-color: var(--border); background: rgba(9,23,40,.52); }
+html[data-theme="dark"] #root .reminders-next__time { color: #c8beff; }
+html[data-theme="dark"] #root .reminders-next strong { color: var(--text-primary); }
+html[data-theme="dark"] #root .reminders-next span { color: var(--text-secondary); }
+html[data-theme="dark"] #root .reminders-side__line span { background: rgba(169,190,228,.22); }
+
+/* Icon-only hierarchy: voice/accent, neutral utilities and subtle danger. */
+#root :where(.calendar-event__actions button, .task-card__more, .reminder-card__more, .file-card__more, .recent-file__more, .tasks-list__heading button, .chat-input__icon-btn) {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--surface-solid) 86%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+  transition: transform 170ms ease, color 170ms ease, border-color 170ms ease, background 170ms ease;
+}
+#root :where(.calendar-event__actions button, .task-card__more, .reminder-card__more, .file-card__more, .recent-file__more, .tasks-list__heading button, .chat-input__icon-btn):hover { color: var(--text-primary); border-color: var(--border-strong); background: var(--surface-hover); transform: translateY(-1px); }
+#root :where(.calendar-event__actions button, .task-card__more, .reminder-card__more, .file-card__more, .recent-file__more, .tasks-list__heading button, .chat-input__icon-btn):active { transform: scale(.96); }
+html[data-theme="dark"] #root .chat-input__mic { color: #d0c8ff; border-color: rgba(139,120,255,.38); background: rgba(139,120,255,.16); }
+html[data-theme="dark"] #root .chat-input__mic.is-listening { color: #fff; background: linear-gradient(135deg, #806cf3, #a35bea); }
+html[data-theme="dark"] #root :where(.calendar-event__actions button:last-of-type, .task-card__menu .danger, .reminder-card__menu .danger) { color: #e7a2af; }
+html[data-theme="dark"] #root :where(.calendar-event__actions button:last-of-type, .task-card__menu .danger, .reminder-card__menu .danger):hover { color: #ffb1bf; border-color: rgba(239,112,136,.35); background: rgba(239,112,136,.1); }
+
+/* Dark modals and setting controls inherit the same glass language. */
+html[data-theme="dark"] #root :where(.calendar-modal, .task-modal, .reminder-modal, .delete-modal, .settings-nav, .settings-theme--compact button, .settings-language-list button) { border-color: var(--border); background: linear-gradient(145deg, rgba(20,42,70,.97), rgba(9,23,41,.98)); color: var(--text-primary); box-shadow: var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,.05); }
+html[data-theme="dark"] #root :where(.calendar-modal h2, .task-modal h2, .reminder-modal h2, .delete-modal h3, .settings-card h2) { color: #fff; }
+html[data-theme="dark"] #root :where(.calendar-modal > p, .task-modal > p, .reminder-modal > p, .delete-modal p, .settings-card label, .settings-row > div:first-child span, .settings-toggle-row span) { color: var(--text-secondary); }
+html[data-theme="dark"] #root :where(.calendar-modal input, .calendar-modal textarea, .task-modal input, .task-modal textarea, .reminder-modal input, .reminder-modal textarea, .settings-card input, .settings-card textarea) { border-color: var(--border); border-radius: 14px; color: var(--text-primary); background: rgba(6,18,33,.72); }
+html[data-theme="dark"] #root :where(.settings-theme--compact button, .settings-language-list button) { min-height: 48px; border-radius: 14px; color: var(--text-secondary); }
+html[data-theme="dark"] #root :where(.settings-theme--compact button:hover, .settings-language-list button:hover) { color: #fff; background: var(--surface-hover); }
+html[data-theme="dark"] #root :where(.settings-theme--compact button.is-active, .settings-language-list button.is-active) { color: #d6ceff; border-color: rgba(139,120,255,.48); background: rgba(139,120,255,.17); }
+
+@media (max-width: 700px) {
+  #root :where(.tasks-search, .reminders-search, .files-toolbar__search) { width: 100%; flex: 1 1 100%; }
+  html[data-theme="dark"] #root .calendar-day { min-height: 54px; padding: 5px; }
+  html[data-theme="dark"] #root .calendar-day span { width: 28px; height: 28px; }
+}
