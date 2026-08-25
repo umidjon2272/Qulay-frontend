@@ -238,7 +238,13 @@ const Calendar = () => {
                 </div>
               </article>
             ))}
-            {selectedEvents.length === 0 && <div className="calendar-events__empty">Tanlangan kun uchun event yo‘q.</div>}
+            {selectedEvents.length === 0 && (
+              <div className="calendar-events__empty">
+                <CalendarDays size={22} />
+                <strong>Event yo‘q</strong>
+                <span>Tanlangan kun uchun hali uchrashuv belgilanmagan.</span>
+              </div>
+            )}
           </div>
           <button type="button" className="calendar-sidebar__button" onClick={openCreateModal}><Plus size={14} />Event qo‘shish</button>
         </aside>

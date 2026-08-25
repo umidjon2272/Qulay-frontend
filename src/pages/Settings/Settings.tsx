@@ -42,7 +42,7 @@ type SettingsSection = {
 const sections: SettingsSection[] = [
   { id: "appearance", label: "Ko'rinish", description: "Yorug' yoki qorong'i rejim", icon: Palette },
   { id: "notifications", label: "Bildirishnomalar", description: "Vazifalar, eslatmalar va AI", icon: Bell },
-  { id: "language", label: "Til", description: "O'zbek, rus yoki ingliz tili", icon: Languages },
+  { id: "language", label: "Til", description: "O'zbek yoki rus tili", icon: Languages },
   { id: "integrations", label: "Integratsiyalar", description: "Telegram, Calendar va Drive", icon: Link2 },
 ];
 
@@ -66,7 +66,6 @@ const notificationItems: Array<{
 const languageOptions = [
   { value: "O'zbekcha", label: "O'zbek" },
   { value: "Русский", label: "Русский" },
-  { value: "English", label: "English" },
 ];
 
 const splitName = (value: string) => {
@@ -131,7 +130,7 @@ const Settings = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => getSettings().theme === "dark" ? "dark" : "light");
-  const [language, setLanguage] = useState(() => getSettings().language);
+  const [language, setLanguage] = useState(() => getSettings().language === "O'zbekcha" ? "O'zbekcha" : "Русский");
   const [notifications, setNotifications] = useState(() => getSettings().notifications);
   const [firstName, setFirstName] = useState(() => splitName(name).firstName);
   const [lastName, setLastName] = useState(() => splitName(name).lastName);
@@ -148,7 +147,7 @@ const Settings = () => {
   }, [theme, notifications]);
 
   useEffect(() => {
-    const backendLanguage = language === "O'zbekcha" ? "uz" : language === "English" ? "en" : "ru";
+    const backendLanguage = language === "O'zbekcha" ? "uz" : "ru";
     updateSettings({ language });
     void updateProfile({ language: backendLanguage }).catch(() => undefined);
   }, [language]);

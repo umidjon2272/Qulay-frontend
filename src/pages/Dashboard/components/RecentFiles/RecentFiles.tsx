@@ -1,4 +1,4 @@
-import { Download, ExternalLink, FileImage, FileSpreadsheet, FileText, MoreHorizontal, Trash2 } from "lucide-react";
+import { Download, ExternalLink, FileImage, FileSpreadsheet, FileText, MoreHorizontal, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -57,7 +57,14 @@ const RecentFiles = () => {
           <button type="button" onClick={() => navigate("/files")}>Barchasi<ExternalLink size={13} /></button>
         </div>
         <div className="recent-files__list">
-          {recent.length === 0 && <div className="recent-files__empty">Hali fayl yuklanmagan. <button type="button" onClick={() => navigate("/files")}>Fayl yuklash</button></div>}
+          {recent.length === 0 && (
+            <div className="recent-files__empty">
+              <span className="recent-files__empty-icon"><Upload size={20} /></span>
+              <strong>Hali fayl yuklanmagan</strong>
+              <span>Hujjatlaringiz shu yerda ko‘rinadi.</span>
+              <button type="button" onClick={() => navigate("/files")}><Upload size={15} /> Fayl yuklash</button>
+            </div>
+          )}
           {recent.map((file) => {
             const Icon = iconFor(file);
             const isOpen = openMenu === file.id;
