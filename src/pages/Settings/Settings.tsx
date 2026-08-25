@@ -23,11 +23,14 @@ import {
 import { useToast } from "../../hooks/useToast";
 import { useProfile } from "../../hooks/useProfile";
 import { useIntegrations } from "../../hooks/useIntegrations";
+import ChangePasswordModal from "../../components/ChangePasswordModal/ChangePasswordModal";
 import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
 import { getSettings, updateSettings } from "../../services/settingsService";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
+import { notificationApi } from "../../services/api";
+import type { ApiNotificationPreference } from "../../services/api/types";
 
 import "./Settings.scss";
 
@@ -50,7 +53,7 @@ const sections: SettingsSection[] = [
 const isSectionId = (value: string | null): value is SectionId =>
   Boolean(value) && (value === "profile" || sections.some((section) => section.id === value));
 
-type NotificationKey = "newTasks" | "reminders" | "meetingReminders" | "aiReplies";
+type NotificationKey = "newTasks" | "reminders" | "meetingReminders" | "aiReplies" | "telegram" | "webPush";
 
 const notificationItems: Array<{
   key: NotificationKey;
@@ -62,6 +65,8 @@ const notificationItems: Array<{
   { key: "reminders", label: "Eslatmalar", hint: "Eslatma vaqti yaqinlashganda xabar berish", icon: Bell },
   { key: "meetingReminders", label: "Uchrashuvlar", hint: "Uchrashuvdan oldin eslatish", icon: CalendarDays },
   { key: "aiReplies", label: "AI tavsiyalari", hint: "Qulay AI tavsiyalari haqida xabar berish", icon: Sparkles },
+  { key: "telegram", label: "Telegram notifications", hint: "Ulangan Telegram akkauntingizga yuborish", icon: Bell },
+  { key: "webPush", label: "Web push", hint: "Tez orada mavjud bo'ladi", icon: Bell },
 ];
 
 const languageOptions = [
@@ -76,11 +81,12 @@ const splitName = (value: string) => {
 
 type SettingsRootProps = {
   onSelect: (section: SectionId) => void;
+  onChangePassword: () => void;
   onLogout: () => void;
   onBack?: () => void;
 };
 
-const SettingsRoot = ({ onSelect, onLogout, onBack }: SettingsRootProps) => (
+const SettingsRoot = ({ onSelect, onChangePassword, onLogout, onBack }: SettingsRootProps) => (
   <section className="settings-root" aria-label="Sozlamalar">
     <header className="settings-root__header">
       {onBack && <button type="button" className="settings-root__back" onClick={onBack} aria-label="Profilga qaytish"><ArrowLeft size={18} /></button>}
@@ -95,8 +101,8 @@ const SettingsRoot = ({ onSelect, onLogout, onBack }: SettingsRootProps) => (
       <button type="button" onClick={() => onSelect("profile")}>
         <span className="settings-row-icon"><User size={18} /></span><span>Profil</span><ChevronRight size={18} />
       </button>
-      <button type="button" className="is-disabled" disabled>
-        <span className="settings-row-icon"><KeyRound size={18} /></span><span>Parolni o'zgartirish</span><small>Tez orada</small>
+      <button type="button" onClick={onChangePassword}>
+        <span className="settings-row-icon"><KeyRound size={18} /></span><span>Parolni o'zgartirish</span><ChevronRight size={18} />
       </button>
       <button type="button" className="is-danger" onClick={onLogout}>
         <span className="settings-row-icon"><LogOut size={18} /></span><span>Chiqish</span><ChevronRight size={18} />
@@ -141,6 +147,7 @@ const Settings = () => {
   const [firstName, setFirstName] = useState(() => splitName(name).firstName);
   const [lastName, setLastName] = useState(() => splitName(name).lastName);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     const parts = splitName(name);
@@ -151,6 +158,42 @@ const Settings = () => {
   useEffect(() => {
     updateSettings({ theme, notifications });
   }, [theme, notifications]);
+
+  useEffect(() => {
+    if (active !== "notifications") return;
+    void notificationApi.getPreferences().then((preferences) => {
+      setNotifications((current) => ({
+        ...current,
+        newTasks: preferences.taskEnabled,
+        reminders: preferences.reminderEnabled,
+        meetingReminders: preferences.meetingEnabled,
+        aiReplies: preferences.aiEnabled,
+        telegram: preferences.telegramEnabled,
+        webPush: preferences.webPushEnabled,
+      }));
+    }).catch(() => showToast("Bildirishnoma sozlamalarini yuklab bo'lmadi", "error"));
+  }, [active, showToast]);
+
+  const preferencePatchFor = (key: NotificationKey, value: boolean): Partial<ApiNotificationPreference> => ({
+    newTasks: { taskEnabled: value },
+    reminders: { reminderEnabled: value },
+    meetingReminders: { meetingEnabled: value },
+    aiReplies: { aiEnabled: value },
+    telegram: { telegramEnabled: value },
+    webPush: { webPushEnabled: value },
+  }[key]);
+
+  const toggleNotification = async (key: NotificationKey) => {
+    if (key === "webPush") return;
+    const nextValue = !notifications[key];
+    setNotifications((current) => ({ ...current, [key]: nextValue }));
+    try {
+      await notificationApi.updatePreferences(preferencePatchFor(key, nextValue));
+    } catch {
+      setNotifications((current) => ({ ...current, [key]: !nextValue }));
+      showToast("Bildirishnoma sozlamasini saqlab bo'lmadi", "error");
+    }
+  };
 
   useEffect(() => {
     const backendLanguage = language === "O'zbekcha" ? "uz" : "ru";
@@ -208,7 +251,7 @@ const Settings = () => {
   return (
     <main className={`settings-page settings-page--${active ?? "root"}`}>
       {!active ? (
-        <SettingsRoot onSelect={setActive} onLogout={() => setConfirmingLogout(true)} onBack={fromProfile ? goToProfile : undefined} />
+        <SettingsRoot onSelect={setActive} onChangePassword={() => setChangingPassword(true)} onLogout={() => setConfirmingLogout(true)} onBack={fromProfile ? goToProfile : undefined} />
       ) : (
         <section className="settings-subpage">
           <header className="settings-header">
@@ -308,7 +351,7 @@ const Settings = () => {
                       <div className="settings-toggle-row" key={item.key}>
                         <div className="settings-toggle-row__icon"><Icon size={16} /></div>
                         <div><strong>{item.label}</strong><span>{item.hint}</span></div>
-                        <button type="button" className={`settings-switch ${notifications[item.key] ? "is-on" : ""}`} onClick={() => setNotifications((current) => ({ ...current, [item.key]: !current[item.key] }))} role="switch" aria-checked={notifications[item.key]} aria-label={item.label}><i /></button>
+                        <button type="button" disabled={item.key === "webPush"} className={`settings-switch ${notifications[item.key] ? "is-on" : ""}`} onClick={() => void toggleNotification(item.key)} role="switch" aria-checked={notifications[item.key]} aria-label={item.label}><i /></button>
                       </div>
                     );
                   })}
@@ -336,6 +379,17 @@ const Settings = () => {
           confirmLabel="Chiqish"
           onCancel={() => setConfirmingLogout(false)}
           onConfirm={() => void handleLogout()}
+        />
+      )}
+      {changingPassword && (
+        <ChangePasswordModal
+          onCancel={() => setChangingPassword(false)}
+          onSuccess={async () => {
+            setChangingPassword(false);
+            showToast("Parolingiz yangilandi. Qayta kiring.", "success");
+            await logout();
+            navigate("/login", { replace: true });
+          }}
         />
       )}
     </main>

@@ -4,6 +4,7 @@ import { createBrowserRouter } from "react-router-dom";
 import Register from "../pages/Register/Register";
 import Login from "../pages/Login/Login";
 import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
+import ResetPassword from "../pages/ResetPassword/ResetPassword";
 import Dashboard from "../pages/Dashboard/Dashboard";
 
 import AIAssistantShell from "../features/ai/components/AssistantPage/AIAssistantShell";
@@ -19,8 +20,21 @@ import NotFound from "../pages/NotFound/NotFound";
 import AppLayout from "../layouts/AppLayout/AppLayout";
 import RequireAuth from "./router/RequireAuth";
 import RootRedirect from "./router/RootRedirect";
+import AdminConsole from "../pages/Admin/AdminConsole";
 
 export const router = createBrowserRouter([
+  {
+    element: (
+      <RequireAuth>
+        <AdminConsole />
+      </RequireAuth>
+    ),
+    children: [
+      { path: "/admin", element: null },
+      { path: "/admin/*", element: null },
+    ],
+  },
+
   {
     path: "/",
     element: <RootRedirect />,
@@ -39,6 +53,11 @@ export const router = createBrowserRouter([
   {
     path: "/forgot-password",
     element: <ForgotPassword />,
+  },
+
+  {
+    path: "/reset-password",
+    element: <ResetPassword />,
   },
 
   {

@@ -75,6 +75,32 @@ export type PaginatedResponse<T> = {
   meta: PaginationMeta;
 };
 
+export type ApiFile = {
+  id: string;
+  originalName: string;
+  label: string | null;
+  mimeType: string;
+  extension: string | null;
+  sizeBytes: number;
+  source: "UPLOAD" | "GOOGLE_DRIVE" | "TELEGRAM" | "SYSTEM";
+  folderId: string | null;
+  status: "ACTIVE" | "PROCESSING" | "FAILED" | "DELETED";
+  checksum: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+};
+
+export type ApiFolder = {
+  id: string;
+  userId: string;
+  name: string;
+  parentId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { files: number; children: number };
+};
+
 export type ApiToday = {
   date: string;
   timezone: string;
@@ -83,4 +109,31 @@ export type ApiToday = {
   meetings: ApiMeeting[];
   overdueTasks: ApiTask[];
   nextMeeting: ApiMeeting | null;
+};
+
+export type ApiNotification = {
+  id: string;
+  type: "TASK" | "REMINDER" | "MEETING" | "SYSTEM" | "AI";
+  title: string;
+  message: string;
+  entityType: string | null;
+  entityId: string | null;
+  channel: "IN_APP" | "TELEGRAM" | "WEB_PUSH";
+  status: "PENDING" | "SENT" | "READ" | "FAILED" | "CANCELLED";
+  scheduledAt: string | null;
+  sentAt: string | null;
+  readAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ApiNotificationPreference = {
+  userId: string;
+  taskEnabled: boolean;
+  reminderEnabled: boolean;
+  meetingEnabled: boolean;
+  aiEnabled: boolean;
+  telegramEnabled: boolean;
+  webPushEnabled: boolean;
+  defaultMeetingMinutesBefore: number;
 };

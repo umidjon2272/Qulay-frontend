@@ -16,6 +16,7 @@ export type AppSettings = {
     telegram: boolean;
     email: boolean;
     weekly: boolean;
+    webPush: boolean;
   };
   replyStyle: string;
   replyLength: string;
@@ -41,6 +42,7 @@ export const defaultSettings: AppSettings = {
     telegram: false,
     email: true,
     weekly: true,
+    webPush: false,
   },
   replyStyle: "Professional",
   replyLength: "O'rta",

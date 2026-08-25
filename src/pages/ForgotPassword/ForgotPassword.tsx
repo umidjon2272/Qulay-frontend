@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { authApi, getApiErrorMessage } from "../../services/api";
 import "./ForgotPassword.scss";
 
 const ForgotPassword = () => {
@@ -13,7 +14,7 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const submittedRef = useRef(false);
 
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (submittedRef.current) return;
 
@@ -28,11 +29,16 @@ const ForgotPassword = () => {
 
     submittedRef.current = true;
     setLoading(true);
-    window.setTimeout(() => {
+    try {
+      await authApi.forgotPassword(normalizedEmail);
       setLoading(false);
-      setSuccess(`Demo tiklash havolasi ${normalizedEmail} manziliga yuborildi.`);
+      setSuccess("Agar bu email ro‘yxatdan o‘tgan bo‘lsa, parolni tiklash ko‘rsatmasi yuboriladi.");
       submittedRef.current = false;
-    }, 500);
+    } catch (reason) {
+      setLoading(false);
+      submittedRef.current = false;
+      setError(getApiErrorMessage(reason));
+    }
   };
 
   return (
@@ -41,7 +47,7 @@ const ForgotPassword = () => {
         <div className="forgot-card__icon"><Mail size={20} /></div>
         <span className="forgot-card__eyebrow">ACCOUNT RECOVERY</span>
         <h1 id="forgot-title">Parolni tiklash</h1>
-        <p>Email manzilingizni kiriting. Frontend demo rejimida tiklash holati shu yerda ko'rsatiladi.</p>
+        <p>Email manzilingizni kiriting. Agar akkaunt mavjud bo'lsa, tiklash ko'rsatmasi yuboriladi.</p>
 
         <form onSubmit={submit} className="forgot-card__form">
           <label htmlFor="forgot-email">Email</label>

@@ -556,6 +556,16 @@
 
     text-align: center;
   }
+
+  &__error {
+    position: relative;
+    z-index: 2;
+    display: block;
+    margin: -4px 0 12px;
+    color: #c94f67;
+    font-size: var(--font-xs);
+    line-height: var(--line-height-body);
+  }
 }
 
 @keyframes integrationOverlayIn {

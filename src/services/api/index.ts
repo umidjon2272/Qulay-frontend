@@ -6,5 +6,8 @@ export * as noteApi from "./noteApi";
 export * as profileApi from "./profileApi";
 export * as todayApi from "./todayApi";
 export * as conversationApi from "./conversationApi";
+export * as notificationApi from "./notificationApi";
 export * from "./apiClient";
 export * from "./types";
+export * as telegramApi from "../integrationService";
+export * as fileApi from "./fileApi";

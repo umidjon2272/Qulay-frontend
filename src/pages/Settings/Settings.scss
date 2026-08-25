@@ -818,6 +818,8 @@
   transition: background 0.22s ease;
 }
 
+.settings-switch:disabled { cursor: not-allowed; opacity: .55; }
+
 .settings-switch i {
   position: absolute;
 

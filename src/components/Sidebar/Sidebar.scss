@@ -268,7 +268,7 @@
   transition-duration: 0.2s;
 }
 
-.sidebar__link:hover {
+.sidebar__link:hover:not(.sidebar__link--active) {
   color: #7655df;
 
   background:
@@ -284,6 +284,8 @@
 }
 
 .sidebar__link--active {
+  transform: none;
+
   color: #7655df;
 
   background:

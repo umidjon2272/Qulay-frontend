@@ -17,7 +17,7 @@
   width: auto;
   min-width: 0;
   min-height: 100dvh;
-  padding: 0 clamp(18px, 3vw, 42px) 38px;
+  padding: 12px clamp(18px, 3vw, 42px) 38px;
 }
 
 #root .app-layout__content > :not(.topbar) { width: 100%; }
@@ -54,7 +54,7 @@
 #root .sidebar__section-title--bottom { margin-top: 20px; }
 #root .sidebar__link { min-height: 41px; gap: 10px; padding: 0 10px; border: 1px solid transparent; border-radius: 10px; color: #8290a8; transition: color 180ms ease, background 180ms ease, transform 180ms ease; }
 #root .sidebar__link::before { display: none; }
-#root .sidebar__link:hover { transform: translateX(1px); border-color: transparent; color: #f4f6fb; background: rgba(255,255,255,.055); box-shadow: none; }
+#root .sidebar__link:hover:not(.sidebar__link--active) { transform: translateX(1px); border-color: transparent; color: #f4f6fb; background: rgba(255,255,255,.055); box-shadow: none; }
 #root .sidebar__link--active { color: #fff; border-color: rgba(184, 154, 255, .25); background: linear-gradient(105deg, rgba(123,92,255,.96), rgba(215,73,255,.86)); box-shadow: 0 8px 18px rgba(91, 55, 200, .22), inset 0 1px 0 rgba(255,255,255,.2); }
 #root .sidebar__link-icon { width: 29px; height: 29px; border-radius: 8px; color: currentColor; }
 #root .sidebar__link:hover .sidebar__link-icon, #root .sidebar__link--active .sidebar__link-icon { background: transparent; box-shadow: none; transform: none; color: currentColor; }
@@ -137,21 +137,21 @@
 #root .quick-actions__mobile-grid, #root .hero__mobile-header, #root .hero__mobile-greeting, #root .hero__mobile-ai { display: none; }
 
 /* Common card surfaces across feature pages */
-#root :where(.tasks-overview, .tasks-list, .tasks-side, .reminders-list, .reminders-side, .calendar-card, .calendar-sidebar, .files-toolbar, .files-ai, .settings-card, .settings-root__group, .ai-page__main, .ai-side-card, .integration-card) { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: none; }
+#root :where(.tasks-overview, .tasks-list, .tasks-side, .reminders-list, .reminders-side, .calendar-card, .calendar-sidebar, .files-toolbar, .files-ai, .settings-card, .settings-root__group, .ai-page__main, .ai-side-card, .integration-card) { border: 1px solid var(--border); border-radius: 18px; background: var(--surface); box-shadow: none; }
 #root :where(.tasks-overview, .tasks-list, .tasks-side, .reminders-list, .reminders-side, .calendar-card, .calendar-sidebar, .files-toolbar, .files-ai, .settings-card, .settings-root__group) { padding: 18px; }
-#root :where(.task-card, .reminder-card, .calendar-event, .file-card, .folder-card, .recent-file, .integration-card) { border: 1px solid var(--border); border-radius: 11px; background: var(--surface-soft); box-shadow: none; }
+#root :where(.task-card, .reminder-card, .calendar-event, .file-card, .folder-card, .recent-file, .integration-card) { border: 1px solid var(--border); border-radius: 18px; background: var(--surface-soft); box-shadow: none; }
 #root :where(.task-card:hover, .reminder-card:hover, .calendar-event:hover, .file-card:hover, .folder-card:hover, .recent-file:hover, .integration-card:hover) { border-color: var(--border-strong); background: var(--surface-hover); }
 #root :where(.tasks-content, .reminders-content, .calendar-layout) { gap: 14px; }
 #root :where(.tasks-list, .reminders-list) { min-width: 0; }
 #root :where(.tasks-filters button, .reminders-filters button, .settings-chips button) { min-height: 34px; padding: 0 12px; border: 1px solid transparent; border-radius: 8px; color: var(--text-secondary); background: transparent; }
 #root :where(.tasks-filters button.active, .reminders-filters button.active, .settings-chips button.is-active) { color: #fff; border-color: rgba(123,92,255,.22); background: var(--accent-soft); }
-#root :where(.tasks-search, .reminders-search, .files-toolbar__search) { height: 38px; border: 1px solid var(--border); border-radius: 9px; color: var(--text-muted); background: var(--surface); }
+#root :where(.tasks-search, .reminders-search, .files-toolbar__search) { height: 38px; border: 1px solid var(--border); border-radius: 15px; color: var(--text-muted); background: var(--surface); }
 #root :where(.tasks-search input, .reminders-search input, .files-toolbar__search input) { color: var(--text-primary); background: transparent; }
 #root :where(.task-card, .reminder-card) { padding: 13px; }
 #root :where(.task-card__body h3, .reminder-card__body h3, .calendar-event__body strong, .file-card__info strong, .recent-file__info h3, .folder-card strong) { color: var(--text-primary); font-size: 13px; }
 #root :where(.task-card__body p, .reminder-card__content p, .calendar-event__body span, .file-card__info span, .recent-file__info div, .folder-card span) { color: var(--text-secondary); font-size: 11px; }
 #root :where(.task-card__check, .reminder-card__check, .task-card__more, .reminder-card__more, .file-card__more, .recent-file__more) { border-color: var(--border); color: var(--text-secondary); background: transparent; }
-#root :where(.tasks-empty, .reminders-empty, .calendar-events__empty, .files-empty) { border: 1px dashed var(--border); border-radius: 11px; color: var(--text-secondary); background: rgba(13,25,48,.35); }
+#root :where(.tasks-empty, .reminders-empty, .calendar-events__empty, .files-empty) { border: 1px dashed var(--border); border-radius: 18px; color: var(--text-secondary); background: rgba(13,25,48,.35); }
 #root :where(.task-modal, .reminder-modal, .calendar-modal, .quick-modal, .delete-modal, .integration-modal, .file-preview, .confirm-dialog) { border: 1px solid var(--border-strong); border-radius: 16px; color: var(--text-primary); background: var(--surface-elevated); box-shadow: var(--shadow-soft); }
 #root :where(.task-modal input, .task-modal textarea, .task-modal select, .reminder-modal input, .reminder-modal textarea, .calendar-modal input, .calendar-modal textarea, .calendar-modal select, .quick-modal input, .quick-modal textarea, .integration-modal__field, .settings-card input, .settings-card textarea) { border: 1px solid var(--border); border-radius: 9px; color: var(--text-primary); background: var(--bg-secondary); }
 #root :where(.task-modal__overlay, .reminder-modal__overlay, .calendar-modal__overlay, .quick-modal__overlay, .delete-modal__overlay, .integration-modal__overlay, .file-preview__overlay) { background: var(--overlay); backdrop-filter: none; }
@@ -222,7 +222,7 @@
 #root .ai-page__rail-heading strong { color: var(--text-primary); }
 #root .ai-page__rail-heading span { color: var(--text-muted); }
 #root .ai-page__rail-mark, #root .ai-side-card__icon { background: linear-gradient(135deg, var(--primary), var(--magenta)); box-shadow: none; }
-#root .ai-side-card { padding: 14px; background: var(--surface); }
+#root .ai-side-card { padding: 16px; background: var(--surface); }
 #root .ai-side-card button, #root .ai-prompt { border-color: var(--border); color: var(--text-secondary); background: var(--surface-soft); }
 #root .ai-side-card button:hover, #root .ai-prompt:hover { color: var(--text-primary); border-color: rgba(123,92,255,.34); background: var(--surface-hover); }
 #root .ai-page__main { background: var(--surface); }
@@ -366,8 +366,8 @@ body {
 #root .sidebar__user-info span,
 #root .sidebar__section-title { color: var(--text-muted); }
 #root .sidebar__link { color: var(--text-secondary); }
-#root .sidebar__link:hover { color: var(--accent); background: var(--surface-hover); }
-#root .sidebar__link--active { color: var(--accent); background: var(--accent-soft); border-color: rgba(109,92,231,.18); box-shadow: inset 3px 0 0 var(--accent); }
+#root .sidebar__link:hover:not(.sidebar__link--active) { color: var(--accent); background: var(--surface-hover); }
+#root .sidebar__link--active { transform: none; color: var(--accent); background: var(--accent-soft); border-color: rgba(109,92,231,.18); box-shadow: inset 3px 0 0 var(--accent); }
 #root .sidebar__link-icon { color: currentColor; }
 #root .sidebar__link--active .sidebar__link-icon,
 #root .sidebar__link:hover .sidebar__link-icon { color: var(--accent); background: transparent; }
@@ -386,8 +386,8 @@ html[data-theme="dark"] #root .sidebar {
 }
 html[data-theme="dark"] #root .sidebar__brand-text strong,
 html[data-theme="dark"] #root .sidebar__user-info strong { color: var(--text-primary); }
-html[data-theme="dark"] #root .sidebar__link:hover { color: var(--text-primary); background: rgba(255,255,255,.06); }
-html[data-theme="dark"] #root .sidebar__link--active { color: #fff; background: linear-gradient(105deg, rgba(109,92,231,.92), rgba(168,75,235,.82)); border-color: rgba(190,177,255,.25); box-shadow: 0 8px 18px rgba(50,32,135,.22); }
+html[data-theme="dark"] #root .sidebar__link:hover:not(.sidebar__link--active) { color: var(--text-primary); background: rgba(255,255,255,.06); }
+html[data-theme="dark"] #root .sidebar__link--active { transform: none; color: #fff; background: linear-gradient(105deg, rgba(109,92,231,.92), rgba(168,75,235,.82)); border-color: rgba(190,177,255,.25); box-shadow: 0 8px 18px rgba(50,32,135,.22); }
 html[data-theme="dark"] #root .sidebar__link--active .sidebar__link-icon { color: #fff; }
 html[data-theme="dark"] #root .sidebar__ai-card { background: linear-gradient(135deg, rgba(109,92,231,.17), rgba(20,35,60,.92)); }
 html[data-theme="dark"] #root .sidebar__ai-content strong { color: #f0f3ff; }
@@ -396,7 +396,7 @@ html[data-theme="dark"] #root .sidebar__ai-content strong { color: #f0f3ff; }
 #root :where(.dashboard__main, .tasks-page, .reminders-page, .calendar-page, .files-page, .settings-page) { color: var(--text-primary); }
 #root :where(.tasks-header p, .reminders-header p, .calendar-page__header p, .files-page__header p, .settings-header p, .settings-card > p) { color: var(--text-secondary); }
 #root :where(.tasks-header h1, .reminders-header h1, .calendar-page__header h1, .files-page__header h1, .settings-header h1, .settings-root__header h1) { color: var(--text-primary); }
-#root :where(.tasks-overview, .tasks-list, .tasks-side, .reminders-list, .reminders-side, .calendar-card, .calendar-sidebar, .files-toolbar, .files-ai, .settings-card, .settings-root__group, .recent-files, .recent-activity, .integration-card) { border-color: var(--border); background: color-mix(in srgb, var(--surface) 92%, transparent); box-shadow: 0 10px 30px rgba(35,48,75,.045); }
+#root :where(.tasks-overview, .tasks-list, .tasks-side, .reminders-list, .reminders-side, .calendar-card, .calendar-sidebar, .files-toolbar, .files-ai, .settings-card, .settings-root__group, .recent-files, .recent-activity, .integration-card) { border-color: var(--border); border-radius: 18px; background: color-mix(in srgb, var(--surface) 92%, transparent); box-shadow: 0 10px 30px rgba(35,48,75,.045); }
 #root :where(.task-card, .reminder-card, .calendar-event, .file-card, .folder-card, .recent-file, .integration-card) { border-color: var(--border); background: var(--surface-soft); }
 #root :where(.task-card:hover, .reminder-card:hover, .calendar-event:hover, .file-card:hover, .folder-card:hover, .recent-file:hover) { border-color: rgba(109,92,231,.35); background: var(--surface-hover); box-shadow: 0 8px 22px rgba(35,48,75,.07); }
 
@@ -455,7 +455,7 @@ html[data-theme="dark"] #root .hero__button--secondary { color: #c0c9db; backgro
 #root .calendar-events__empty span { color: var(--text-secondary); font-size: 12px; }
 
 /* Empty states, metadata and menu controls stay readable in either theme. */
-#root :where(.tasks-empty, .reminders-empty, .files-empty) { min-height: 190px; padding: 34px 20px; border: 1px dashed var(--border); border-radius: 15px; color: var(--text-secondary); background: var(--surface-soft); }
+#root :where(.tasks-empty, .reminders-empty, .files-empty) { min-height: 190px; padding: 34px 20px; border: 1px dashed var(--border); border-radius: 18px; color: var(--text-secondary); background: var(--surface-soft); }
 #root :where(.tasks-empty svg, .reminders-empty > div, .files-empty svg) { color: var(--accent); opacity: 1; }
 #root :where(.tasks-empty h3, .reminders-empty h3, .files-empty strong) { margin: 13px 0 5px; color: var(--text-primary); font-size: 15px; font-weight: 700; }
 #root :where(.tasks-empty p, .reminders-empty p, .files-empty span) { color: var(--text-secondary); font-size: 13px; }
@@ -464,7 +464,7 @@ html[data-theme="dark"] #root .hero__button--secondary { color: #c0c9db; backgro
 #root :where(.task-card__check, .reminder-card__check, .task-card__more, .reminder-card__more, .file-card__more, .recent-file__more) { border-color: var(--border); color: var(--text-secondary); background: var(--surface); }
 #root :where(.task-card__more:hover, .reminder-card__more:hover, .recent-file__more:hover) { color: var(--accent); background: var(--accent-soft); }
 #root :where(.task-priority, .reminder-priority) { border: 1px solid currentColor; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 700; }
-#root .recent-files__empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 174px; gap: 6px; padding: 26px 20px; border: 1px dashed var(--border); border-radius: 15px; color: var(--text-secondary); background: var(--surface-soft); text-align: center; }
+#root .recent-files__empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 174px; gap: 6px; padding: 26px 20px; border: 1px solid var(--border); border-radius: 18px; color: var(--text-secondary); background: var(--surface-soft); text-align: center; }
 #root .recent-files__empty-icon { display: grid; place-items: center; width: 44px; height: 44px; margin-bottom: 4px; border-radius: 13px; color: var(--accent); background: var(--accent-soft); }
 #root .recent-files__empty strong { color: var(--text-primary); font-size: 14px; }
 #root .recent-files__empty > span:not(.recent-files__empty-icon) { color: var(--text-secondary); font-size: 12px; }
@@ -505,7 +505,7 @@ html[data-theme="dark"] #root .hero__button--secondary { color: #c0c9db; backgro
 /* Final shell contract: the authenticated workspace uses every available
    desktop pixel while retaining a calm 20–24px breathing space. */
 #root .app-layout { width: 100%; max-width: none; gap: 0; padding: 0; overflow-x: clip; }
-#root .app-layout__content { flex: 1 1 auto; width: 100%; max-width: none; min-width: 0; padding: 0 clamp(20px, 2vw, 28px) 32px; }
+#root .app-layout__content { flex: 1 1 auto; width: 100%; max-width: none; min-width: 0; padding: 12px clamp(20px, 2vw, 28px) 32px; }
 #root .app-layout__content > * { width: 100%; max-width: none; min-width: 0; }
 #root .app-layout__content > .topbar { flex: 0 0 auto; }
 #root :where(.dashboard__main, .tasks-page, .reminders-page, .calendar-page, .files-page, .settings-page, .settings-root) { width: 100%; max-width: none !important; margin-inline: 0; }
@@ -518,7 +518,7 @@ html[data-theme="dark"] #root .hero__button--secondary { color: #c0c9db; backgro
 #root .topbar__icon,
 #root .topbar__profile,
 #root .topbar .theme-toggle--menu { border-color: var(--border); background: color-mix(in srgb, var(--surface-solid) 84%, transparent); box-shadow: 0 6px 18px rgba(35,48,75,.045), inset 0 1px 0 rgba(255,255,255,.72); backdrop-filter: blur(16px) saturate(125%); -webkit-backdrop-filter: blur(16px) saturate(125%); }
-#root .topbar__search { width: min(360px, 38vw); height: 42px; border-radius: 15px; }
+#root .topbar__search { width: min(360px, 38vw); height: 42px; border-radius: 18px; }
 #root .topbar__search input::placeholder { color: var(--text-secondary); opacity: .9; }
 #root .topbar__search kbd { color: var(--text-secondary); background: var(--surface-soft); }
 #root .topbar__icon, #root .topbar .theme-toggle--menu { width: 40px; min-width: 40px; height: 40px; min-height: 40px; border-radius: 13px; }

@@ -6,6 +6,7 @@ import type { User } from "./api/types";
 import { removeStorage } from "./storage";
 import { clearWorkspaceCache } from "./workspaceCache";
 import { clearProfileCache } from "./profileService";
+import type { ChangePasswordInput, ChangePasswordResponse } from "./api/authApi";
 
 export type AuthSession = User;
 export const AUTH_SESSION_CHANGED = "yechim_ai_auth_session_changed";
@@ -32,6 +33,8 @@ export const signUp = async (input: { email: string; password: string; firstName
   notifyAuthChanged();
   return response.user;
 };
+
+export const changePassword = (input: ChangePasswordInput): Promise<ChangePasswordResponse> => authApi.changePassword(input);
 
 const restoreSessionOnce = async (): Promise<User | null> => {
   const storedUser = getAuthSession();

@@ -16,14 +16,14 @@
 .ai-page__ambient--two { bottom: -150px; left: -110px; width: 360px; height: 360px; background: rgba(73, 172, 235, 0.11); }
 
 .ai-page__workspace { position: relative; z-index: 1; display: grid; grid-template-columns: 276px minmax(0, 1fr); gap: 18px; flex: 1; min-height: 0; }
-.ai-page__rail { display: flex; flex-direction: column; gap: 14px; min-height: 0; padding: 6px 0 10px; }
+.ai-page__rail { display: flex; flex-direction: column; gap: 16px; min-height: 0; padding: 6px 0 10px; }
 .ai-page__rail-heading { display: flex; align-items: center; gap: 10px; padding: 4px 8px 11px; }
 .ai-page__rail-heading > div:last-child { display: flex; flex-direction: column; gap: 2px; }
 .ai-page__rail-heading strong { color: #2b2734; font-size: 14px; }
 .ai-page__rail-heading span { color: #9a93a5; font-size: 11px; }
 .ai-page__rail-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 11px; background: linear-gradient(135deg, #8663eb, #5f76c9); color: white; box-shadow: 0 8px 18px rgba(105, 68, 209, 0.22); }
 
-.ai-side-card { padding: 15px; border: 1px solid rgba(255, 255, 255, 0.82); border-radius: 18px; background: rgba(255, 255, 255, 0.54); box-shadow: 0 14px 34px rgba(54, 43, 80, 0.045), inset 0 1px 0 rgba(255, 255, 255, 0.95); backdrop-filter: blur(22px) saturate(130%); -webkit-backdrop-filter: blur(22px) saturate(130%); }
+.ai-side-card { padding: 16px; border: 1px solid rgba(255, 255, 255, 0.82); border-radius: 18px; background: rgba(255, 255, 255, 0.54); box-shadow: 0 14px 34px rgba(54, 43, 80, 0.045), inset 0 1px 0 rgba(255, 255, 255, 0.95); backdrop-filter: blur(22px) saturate(130%); -webkit-backdrop-filter: blur(22px) saturate(130%); }
 .ai-side-card--history { flex: 1; min-height: 0; }
 .ai-side-card__title { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
 .ai-side-card__title h2 { margin: 0; color: #40394d; font-size: 13px; font-weight: 750; }
