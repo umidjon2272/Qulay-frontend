@@ -983,6 +983,19 @@
 .settings-root__group > button.is-danger { color: var(--danger, #c14f63); }
 .settings-root__group > button.is-danger svg { color: currentColor; }
 
+.settings-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border: 1px solid color-mix(in srgb, var(--accent) 12%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-soft) 82%, transparent);
+  color: var(--accent);
+}
+
 .settings-header__back,
 .settings-header__placeholder {
   display: grid;
@@ -1069,8 +1082,10 @@
 .settings-toggle-row__icon {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 1px solid color-mix(in srgb, var(--accent) 12%, var(--border));
   border-radius: 10px;
   background: var(--accent-soft, rgba(118, 85, 223, 0.1));
   color: var(--accent, #7655df);
@@ -1091,8 +1106,8 @@
   .settings-profile-actions > button { justify-content: center; width: 100%; }
   .settings-theme--compact { gap: 6px; }
   .settings-theme--compact button { min-height: 44px; padding-inline: 10px; }
-  .settings-card .settings-toggle-row { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 9px; padding: 13px 0; }
-  .settings-toggle-row__icon { width: 28px; height: 28px; }
+  .settings-card .settings-toggle-row { grid-template-columns: 38px minmax(0, 1fr) auto; gap: 14px; min-height: 64px; padding: 12px 4px; }
+  .settings-toggle-row__icon { width: 38px; height: 38px; flex-basis: 38px; border-radius: 12px; }
   .settings-toggle-row > div:nth-child(2) { min-width: 0; }
 }
 
@@ -1125,3 +1140,69 @@ html[data-theme="dark"] body #root .settings-root__group > button.is-danger:hove
 html[data-theme="dark"] body #root .settings-danger-btn:hover { border-color: rgba(255,117,143,.36); background: rgba(116,42,69,.38); color: #ffd6dd; transform: translateY(-1px); }
 html[data-theme="dark"] body #root .settings-root__group > button.is-danger:active,
 html[data-theme="dark"] body #root .settings-danger-btn:active { transform: scale(.98); }
+
+@media (max-width: 700px) {
+  body #root .settings-page--root,
+  body #root .settings-subpage {
+    padding-inline: 4px;
+  }
+
+  body #root .settings-root__group {
+    padding: 6px 10px;
+    border-radius: 19px;
+  }
+
+  body #root .settings-root__group > button {
+    min-height: 64px;
+    gap: 14px;
+    padding-inline: 6px;
+    border-radius: 14px;
+  }
+
+  body #root .settings-root__group > button > span:not(.settings-row-icon) {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  body #root .settings-root__group > button > svg:last-child,
+  body #root .settings-profile-settings > svg {
+    flex: 0 0 auto;
+    margin-left: 8px;
+  }
+
+  body #root .settings-row-icon,
+  body #root .settings-profile-settings__icon {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 12px;
+  }
+
+  body #root .settings-theme--compact button,
+  body #root .settings-language-list button {
+    min-height: 64px;
+    padding-inline: 16px;
+    gap: 14px;
+    border-radius: 14px;
+  }
+
+  body #root .settings-theme--compact button strong,
+  body #root .settings-language-list button > span:not(.settings-row-icon) {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  body #root .settings-language-list button > svg:last-child,
+  body #root .settings-theme--compact button > svg:last-child { flex: 0 0 auto; margin-left: 8px; }
+
+  body #root .settings-profile-settings {
+    min-height: 64px;
+    padding-inline: 12px;
+  }
+}
+
+html[data-theme="dark"] body #root .settings-row-icon {
+  border-color: rgba(160, 177, 220, .2);
+  background: rgba(115, 96, 226, .16);
+  color: #c9c0ff;
+}

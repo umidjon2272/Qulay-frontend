@@ -33,6 +33,51 @@ const AppLayout = () => {
     };
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (!isAIWorkspace || typeof window === "undefined") return undefined;
+
+    const media = window.matchMedia("(max-width: 700px)");
+    const root = document.getElementById("root");
+    const html = document.documentElement;
+    const previous = {
+      bodyOverflow: document.body.style.overflow,
+      bodyOverscroll: document.body.style.overscrollBehavior,
+      htmlHeight: html.style.height,
+      htmlOverflow: html.style.overflow,
+      htmlOverscroll: html.style.overscrollBehavior,
+      rootHeight: root?.style.height ?? "",
+    };
+
+    const restore = () => {
+      document.body.style.overflow = previous.bodyOverflow;
+      document.body.style.overscrollBehavior = previous.bodyOverscroll;
+      html.style.height = previous.htmlHeight;
+      html.style.overflow = previous.htmlOverflow;
+      html.style.overscrollBehavior = previous.htmlOverscroll;
+      if (root) root.style.height = previous.rootHeight;
+    };
+
+    const syncScrollLock = () => {
+      restore();
+      if (!media.matches) return;
+
+      document.body.style.overflow = "hidden";
+      document.body.style.overscrollBehavior = "none";
+      html.style.height = "100%";
+      html.style.overflow = "hidden";
+      html.style.overscrollBehavior = "none";
+      if (root) root.style.height = "100%";
+    };
+
+    syncScrollLock();
+    media.addEventListener("change", syncScrollLock);
+
+    return () => {
+      media.removeEventListener("change", syncScrollLock);
+      restore();
+    };
+  }, [isAIWorkspace]);
+
   return (
     <div className={`app-layout ${isAIWorkspace ? "app-layout--ai" : ""} ${isDashboard ? "app-layout--dashboard" : ""}`}>
       <Sidebar />

@@ -120,6 +120,47 @@
   .ai-welcome__voice { margin-bottom: 6px; }
 }
 
+/* Mobile chat scroll contract: only .message-list owns vertical scrolling. */
+@media (max-width: 700px) {
+  body #root .app-layout--ai,
+  body #root .app-layout--ai .app-layout__content,
+  body #root .ai-page,
+  body #root .ai-page__workspace,
+  body #root .ai-page__main {
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body #root .app-layout--ai,
+  body #root .ai-page,
+  body #root .ai-page__workspace,
+  body #root .ai-page__main {
+    display: flex;
+    flex-direction: column;
+  }
+
+  body #root .app-layout--ai .app-layout__content,
+  body #root .ai-page__workspace,
+  body #root .ai-page__main { flex: 1 1 auto; }
+
+  body #root .ai-page__workspace { display: flex; width: 100%; }
+  body #root .ai-page__main { width: 100%; border: 0; border-radius: 0; }
+  body #root .ai-page__main > .chat-header { flex: 0 0 auto; }
+  body #root .ai-conversation { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+  body #root .message-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  body #root .chat-input-area { flex: 0 0 auto; min-height: 0; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  body #root .ai-welcome { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ai-welcome__orb span { animation: none; }
 }

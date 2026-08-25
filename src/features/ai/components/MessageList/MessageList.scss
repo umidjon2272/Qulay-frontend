@@ -4,13 +4,16 @@
 
   gap: 16px;
 
-  flex: 1;
+  flex: 1 1 auto;
 
   min-height: 0;
 
   padding: 18px 16px;
 
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ai-conversation > .message-list {

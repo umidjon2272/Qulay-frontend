@@ -93,23 +93,23 @@ const SettingsRoot = ({ onSelect, onLogout, onBack }: SettingsRootProps) => (
     <div className="settings-root__group">
       <span className="settings-root__label">Akkaunt</span>
       <button type="button" onClick={() => onSelect("profile")}>
-        <User size={18} /><span>Profil</span><ChevronRight size={18} />
+        <span className="settings-row-icon"><User size={18} /></span><span>Profil</span><ChevronRight size={18} />
       </button>
       <button type="button" className="is-disabled" disabled>
-        <KeyRound size={18} /><span>Parolni o'zgartirish</span><small>Tez orada</small>
+        <span className="settings-row-icon"><KeyRound size={18} /></span><span>Parolni o'zgartirish</span><small>Tez orada</small>
       </button>
       <button type="button" className="is-danger" onClick={onLogout}>
-        <LogOut size={18} /><span>Chiqish</span><ChevronRight size={18} />
+        <span className="settings-row-icon"><LogOut size={18} /></span><span>Chiqish</span><ChevronRight size={18} />
       </button>
     </div>
 
     <div className="settings-root__group">
       {sections.map((section) => {
         const Icon = section.icon;
-        return (
-          <button type="button" key={section.id} onClick={() => onSelect(section.id)}>
-            <Icon size={18} />
-            <span><strong>{section.label}</strong><small>{section.description}</small></span>
+          return (
+            <button type="button" key={section.id} onClick={() => onSelect(section.id)}>
+              <span className="settings-row-icon"><Icon size={18} /></span>
+              <span><strong>{section.label}</strong><small>{section.description}</small></span>
             <ChevronRight size={18} />
           </button>
         );
@@ -274,10 +274,10 @@ const Settings = () => {
                 <p>Interfeys mavzusini tanlang.</p>
                 <div className="settings-theme settings-theme--compact" role="group" aria-label="Mavzu">
                   <button type="button" className={theme === "light" ? "is-active" : ""} onClick={() => setTheme("light")}>
-                    <Sun size={17} /><strong>Yorug'</strong>{theme === "light" && <Check size={14} />}
+                    <span className="settings-row-icon"><Sun size={17} /></span><strong>Yorug'</strong>{theme === "light" && <Check size={14} />}
                   </button>
                   <button type="button" className={theme === "dark" ? "is-active" : ""} onClick={() => setTheme("dark")}>
-                    <Moon size={17} /><strong>Qorong'i</strong>{theme === "dark" && <Check size={14} />}
+                    <span className="settings-row-icon"><Moon size={17} /></span><strong>Qorong'i</strong>{theme === "dark" && <Check size={14} />}
                   </button>
                 </div>
               </div>
@@ -290,7 +290,7 @@ const Settings = () => {
                 <div className="settings-language-list" role="radiogroup" aria-label="Til">
                   {languageOptions.map((option) => (
                     <button type="button" key={option.value} className={language === option.value ? "is-active" : ""} onClick={() => setLanguage(option.value)} role="radio" aria-checked={language === option.value}>
-                      <Languages size={17} /><span>{option.label}</span>{language === option.value && <Check size={15} />}
+                      <span className="settings-row-icon"><Languages size={17} /></span><span>{option.label}</span>{language === option.value && <Check size={15} />}
                     </button>
                   ))}
                 </div>
