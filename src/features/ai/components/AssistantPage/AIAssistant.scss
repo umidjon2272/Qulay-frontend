@@ -110,7 +110,11 @@
   .ai-page__mobile-bar button:last-child { margin-left: 0; }
   .ai-page__main > .chat-header { padding-top: max(61px, calc(51px + env(safe-area-inset-top))); border-bottom: 1px solid var(--border); }
   .ai-page__main > .chat-header .chat-header__actions { display: none; }
-  .ai-welcome { justify-content: space-between; padding: 12px 13px 8px; overflow: hidden; }
+  .ai-welcome {
+    justify-content: flex-start;
+    padding: 12px 13px 8px;
+    overflow: hidden;
+  }
   .ai-welcome__content { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 0; overflow-y: auto; overscroll-behavior-y: contain; }
   .ai-welcome__orb { width: 68px; height: 68px; border-radius: 23px; }
   .ai-welcome h1 { font-size: 27px; }
@@ -118,7 +122,7 @@
   .ai-prompts { display: flex; width: 100%; overflow-x: auto; scrollbar-width: none; }
   .ai-prompts::-webkit-scrollbar { display: none; }
   .ai-prompt { flex: 0 0 208px; min-height: 46px; }
-  .ai-welcome__input { flex: 0 0 auto; width: 100%; margin-top: 8px; }
+  .ai-welcome__input { flex: 0 0 auto; width: 100%; margin-top: auto; }
   .ai-welcome__voice { margin-bottom: 6px; }
 }
 

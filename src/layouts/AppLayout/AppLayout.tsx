@@ -50,6 +50,7 @@ const AppLayout = () => {
       aiKeyboardOpen: html.classList.contains("ai-keyboard-open"),
       rootHeight: root?.style.height ?? "",
     };
+    let viewportFrame: number | null = null;
 
     const restore = () => {
       document.body.style.overflow = previous.bodyOverflow;
@@ -78,12 +79,26 @@ const AppLayout = () => {
         layoutViewportHeight = window.innerHeight;
       }
 
-      html.style.setProperty("--ai-visual-viewport-height", `${Math.round(viewportHeight)}px`);
-
       const keyboardOpen = Boolean(
         window.visualViewport && isTextComposerFocused && viewportHeight < layoutViewportHeight - 80,
       );
+
+      if (keyboardOpen) {
+        html.style.setProperty("--ai-visual-viewport-height", `${Math.round(viewportHeight)}px`);
+      } else {
+        html.style.removeProperty("--ai-visual-viewport-height");
+      }
+
       html.classList.toggle("ai-keyboard-open", keyboardOpen);
+    };
+
+    const scheduleViewportSync = () => {
+      if (viewportFrame !== null) return;
+
+      viewportFrame = window.requestAnimationFrame(() => {
+        viewportFrame = null;
+        syncViewport();
+      });
     };
 
     const syncScrollLock = () => {
@@ -102,19 +117,20 @@ const AppLayout = () => {
 
     syncScrollLock();
     media.addEventListener("change", syncScrollLock);
-    window.addEventListener("resize", syncViewport);
-    document.addEventListener("focusin", syncViewport);
-    document.addEventListener("focusout", syncViewport);
-    window.visualViewport?.addEventListener("resize", syncViewport);
-    window.visualViewport?.addEventListener("scroll", syncViewport);
+    window.addEventListener("resize", scheduleViewportSync);
+    document.addEventListener("focusin", scheduleViewportSync);
+    document.addEventListener("focusout", scheduleViewportSync);
+    window.visualViewport?.addEventListener("resize", scheduleViewportSync);
+    window.visualViewport?.addEventListener("scroll", scheduleViewportSync);
 
     return () => {
       media.removeEventListener("change", syncScrollLock);
-      window.removeEventListener("resize", syncViewport);
-      document.removeEventListener("focusin", syncViewport);
-      document.removeEventListener("focusout", syncViewport);
-      window.visualViewport?.removeEventListener("resize", syncViewport);
-      window.visualViewport?.removeEventListener("scroll", syncViewport);
+      window.removeEventListener("resize", scheduleViewportSync);
+      document.removeEventListener("focusin", scheduleViewportSync);
+      document.removeEventListener("focusout", scheduleViewportSync);
+      window.visualViewport?.removeEventListener("resize", scheduleViewportSync);
+      window.visualViewport?.removeEventListener("scroll", scheduleViewportSync);
+      if (viewportFrame !== null) window.cancelAnimationFrame(viewportFrame);
       restore();
     };
   }, [isAIWorkspace]);
