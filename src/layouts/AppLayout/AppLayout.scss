@@ -1,12 +1,13 @@
 .app-layout {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
 
   width: 100%;
+  max-width: none;
   min-height: 100vh;
   min-height: 100dvh;
 
-  gap: 18px;
+  gap: 0;
 
   padding: 0;
 
@@ -27,13 +28,16 @@
 }
 
 .app-layout__content {
-  flex: 1;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
 
   min-width: 0;
 
   width: 100%;
+  max-width: none;
 
-  padding-top: 52px;
+  padding: 0 24px 32px;
 
   animation: appLayoutContentIn 0.28s ease both;
 }
@@ -88,7 +92,7 @@
   }
 
   .app-layout__content {
-    padding-top: 0;
+    padding: 0 13px calc(96px + env(safe-area-inset-bottom));
   }
 
   .app-layout--ai {

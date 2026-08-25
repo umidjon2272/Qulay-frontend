@@ -8,6 +8,7 @@ import {
   LogOut,
   Settings,
   Sparkles,
+  UserRound,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -31,7 +32,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { open: openAIChat } = useAIChat();
-  const { name, avatar } = useProfile();
+  const { name, email, avatar } = useProfile();
   const { logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
@@ -86,9 +87,18 @@ const Sidebar = () => {
 
       {profileMenuOpen && (
         <div className="sidebar__profile-menu">
-          <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/settings?tab=profile"); }}>Profil</button>
-          <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/settings"); }}>Sozlamalar</button>
-          <button type="button" className="is-danger" onClick={() => setConfirmLogout(true)}><LogOut size={15} /> Chiqish</button>
+          <div className="sidebar__profile-menu-head">
+            <div className="sidebar__profile-menu-avatar">{avatar ? <img src={avatar} alt="" /> : name.charAt(0).toUpperCase()}</div>
+            <div>
+              <strong>{name}</strong>
+              <span>{email || "Qulay AI foydalanuvchisi"}</span>
+            </div>
+          </div>
+          <div className="sidebar__profile-menu-divider" />
+          <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/settings?tab=profile"); }}><UserRound size={16} /><span>Profil</span></button>
+          <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/settings"); }}><Settings size={16} /><span>Sozlamalar</span></button>
+          <div className="sidebar__profile-menu-divider" />
+          <button type="button" className="is-danger" onClick={() => setConfirmLogout(true)}><LogOut size={16} /><span>Chiqish</span></button>
         </div>
       )}
 
