@@ -36,6 +36,70 @@ export type AdminSettings = {
   storage: { provider: string; maxFileSizeBytes: number; localWarning: string | null };
   system: { environment: string; version: string | null; api: { status: string }; database: { status: string; latencyMs: number } };
 };
+export type AdminSettingsSection = keyof AdminSettings;
+export type NormalizedAdminSettings = { data: AdminSettings; missingSections: AdminSettingsSection[] };
+
+const emptyAdminSettings = (): AdminSettings => ({
+  platform: { name: "Qulay AI", defaultUserStatus: "ACTIVE", registrationEnabled: false, maintenanceMode: false },
+  security: {
+    accessTokenExpiresIn: "", refreshTokenExpiresIn: "",
+    loginBruteForce: { maxFailures: 0, lockMinutes: 0 },
+    rateLimits: { loginPerIp: { max: 0, windowMinutes: 0 }, loginPerEmail: { max: 0, windowMinutes: 0 }, registerPerIp: { max: 0, windowMinutes: 0 }, registerPerEmail: { max: 0, windowMinutes: 0 }, passwordReset: { max: 0, windowMinutes: 0 }, globalPerIp: { max: 0, windowSeconds: 0 } },
+  },
+  notifications: { workerStatus: "stopped", intervalSeconds: 0, batchSize: 0, retryLimit: 0 },
+  integrations: { telegram: { configured: false }, google: { configured: false }, openai: { configured: false } },
+  storage: { provider: "", maxFileSizeBytes: 0, localWarning: null },
+  system: { environment: "", version: null, api: { status: "unreachable" }, database: { status: "unreachable", latencyMs: 0 } },
+});
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
+
+/** Never throws: a malformed or partially-shaped backend response degrades to safe per-section defaults instead of crashing the page. */
+export const normalizeAdminSettings = (raw: unknown): NormalizedAdminSettings => {
+  const data = emptyAdminSettings();
+  const missingSections: AdminSettingsSection[] = [];
+  const sections = Object.keys(data) as AdminSettingsSection[];
+  if (!isRecord(raw)) return { data, missingSections: sections };
+  for (const key of sections) {
+    const value = raw[key];
+    if (isRecord(value)) Object.assign(data[key], value);
+    else missingSections.push(key);
+  }
+  return { data, missingSections };
+};
+
+export type AdminUsage = {
+  range: number;
+  provider: { status: "configured" | "not_configured" };
+  totals: {
+    requests: number; inputTokens: number; outputTokens: number; audioSeconds: number; estimatedCost: number;
+    text: { requests: number }; voice: { requests: number }; tool: { requests: number }; file: { requests: number };
+  };
+  byUser: Array<{ user: { id: string; email: string; firstName: string; lastName: string }; requests: number; inputTokens: number; outputTokens: number; estimatedCost: number }>;
+  trend: Array<{ date: string; count: number }>;
+  tools: Array<{ tool: string | null; count: number }>;
+};
+export type AdminConnectionCounts = { connected: number; disconnected: number; error: number };
+export type AdminIntegrations = { telegram: AdminConnectionCounts; google: AdminConnectionCounts };
+export type AdminNotifications = {
+  range: number;
+  totals: { total: number; pending: number; sent: number; failed: number; read: number };
+  failed: Array<{ id: string; type: string; channel: string; status: string; retryCount: number; failedAt: string | null; createdAt: string; user: { id: string; email: string } }>;
+};
+export type AdminFiles = {
+  stats: { total: number; totalSizeBytes: number; images: number; pdfs: number; docs: number; storage: Record<string, number>; sources: Record<string, number> };
+  items: Array<{ id: string; originalName: string; mimeType: string; extension: string; sizeBytes: number; source: string; storageProvider: string; createdAt: string; owner: { id: string; email: string; firstName: string; lastName: string } }>;
+  meta: AdminPage<unknown>["meta"];
+};
+export type AdminActivity = {
+  items: Array<{ id: string; time: string; action: string; entity: { type: string; id: string | null }; source: string; user: { id: string; email: string; firstName: string; lastName: string } }>;
+  meta: AdminPage<unknown>["meta"];
+};
+export type AdminSystem = {
+  api: { status: string }; database: { status: string; latencyMs: number }; notificationWorker: { status: string };
+  uptimeSeconds: number; environment: string; version: string | null; migrations: { status: string };
+  integrations: AdminIntegrations;
+};
 
 export const adminApi = {
   overview: (range: AdminRange) => request<AdminOverview>(`/admin/overview?range=${range}`),
@@ -43,11 +107,11 @@ export const adminApi = {
   user: (id: string) => request<AdminUserDetail>(`/admin/users/${id}`),
   status: (id: string, status: "ACTIVE" | "BLOCKED") => request<{ id: string; status: string }>(`/admin/users/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
   role: (id: string, role: "USER" | "ADMIN") => request<{ id: string; role: string }>(`/admin/users/${id}/role`, { method: "PATCH", body: JSON.stringify({ role }) }),
-  usage: (range: AdminRange) => request<any>(`/admin/usage?range=${range}`),
-  integrations: () => request<any>("/admin/integrations"),
-  notifications: (range: AdminRange) => request<any>(`/admin/notifications?range=${range}`),
-  files: (page: number) => request<any>(`/admin/files?page=${page}&limit=20`),
-  activity: (page: number) => request<any>(`/admin/activity?page=${page}&limit=25`),
-  system: () => request<any>("/admin/system"),
-  settings: () => request<AdminSettings>("/admin/settings"),
+  usage: (range: AdminRange) => request<AdminUsage>(`/admin/usage?range=${range}`),
+  integrations: () => request<AdminIntegrations>("/admin/integrations"),
+  notifications: (range: AdminRange) => request<AdminNotifications>(`/admin/notifications?range=${range}`),
+  files: (page: number) => request<AdminFiles>(`/admin/files?page=${page}&limit=20`),
+  activity: (params: { page: number; userId?: string; action?: string; entityType?: string; from?: string; to?: string }) => request<AdminActivity>(`/admin/activity?limit=25&${new URLSearchParams(Object.entries({ ...params }).filter(([, value]) => Boolean(value)) as string[][])}`),
+  system: () => request<AdminSystem>("/admin/system"),
+  settings: () => request<unknown>("/admin/settings").then(normalizeAdminSettings),
 };

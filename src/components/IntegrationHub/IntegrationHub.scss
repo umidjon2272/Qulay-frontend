@@ -555,6 +555,51 @@
     font-size: var(--font-xs);
 
     text-align: center;
+
+    &--delivery {
+      margin: -6px 0 12px;
+
+      color: #7c76e0;
+      font-weight: 600;
+
+      text-align: left;
+    }
+  }
+
+  &__resend {
+    position: relative;
+    z-index: 2;
+
+    display: block;
+
+    width: 100%;
+
+    margin-top: 10px;
+    padding: 8px 0;
+
+    border: 0;
+    background: transparent;
+
+    color: #7655df;
+
+    font-size: var(--font-xs);
+    font-weight: 650;
+
+    text-align: center;
+
+    cursor: pointer;
+
+    transition: 0.2s ease;
+
+    &:disabled {
+      color: #b6b1c0;
+
+      cursor: default;
+    }
+
+    &:not(:disabled):hover {
+      text-decoration: underline;
+    }
   }
 
   &__error {

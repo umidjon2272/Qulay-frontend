@@ -64,8 +64,20 @@ export type TelegramPeer = {
   lastActivity: string | null;
 };
 
+export type TelegramDeliveryType = "telegram_app" | "sms" | "call" | "email" | "fragment" | "firebase_sms" | "unknown";
+
+export type TelegramCodeRequiredResult = {
+  status: "code_required";
+  delivery: TelegramDeliveryType;
+  nextDelivery: TelegramDeliveryType | null;
+  timeoutSeconds: number | null;
+};
+
 export const connectTelegram = (phoneNumber: string) =>
-  request<{ status: "code_required" }>("/integrations/telegram/connect", { method: "POST", body: JSON.stringify({ phoneNumber }) });
+  request<TelegramCodeRequiredResult>("/integrations/telegram/connect", { method: "POST", body: JSON.stringify({ phoneNumber }) });
+
+export const resendTelegramCode = () =>
+  request<TelegramCodeRequiredResult>("/integrations/telegram/resend-code", { method: "POST" });
 
 export const verifyTelegramCode = (code: string) =>
   request<{ status: "connected" | "password_required" }>("/integrations/telegram/verify-code", { method: "POST", body: JSON.stringify({ code }) });

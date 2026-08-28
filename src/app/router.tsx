@@ -23,6 +23,7 @@ import RequireAdmin from "./router/RequireAdmin";
 import RootRedirect from "./router/RootRedirect";
 import AdminConsole from "../pages/Admin/AdminConsole";
 import AdminLogin from "../pages/Admin/AdminLogin";
+import AdminErrorBoundary from "./router/AdminErrorBoundary";
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
         <AdminConsole />
       </RequireAdmin>
     ),
+    errorElement: <AdminErrorBoundary />,
     children: [
       { path: "/admin", element: null },
       { path: "/admin/*", element: null },

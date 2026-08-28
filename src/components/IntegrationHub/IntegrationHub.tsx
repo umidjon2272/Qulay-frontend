@@ -10,8 +10,10 @@ import {
   disconnectGoogle,
   getGoogleConnectUrl,
   getGoogleStatus,
+  resendTelegramCode,
   verifyTelegramCode,
   verifyTelegramPassword,
+  type TelegramDeliveryType,
 } from "../../services/integrationService";
 
 import "./IntegrationHub.scss";
@@ -20,6 +22,18 @@ type IntegrationHubProps = { limit?: number; columns?: number };
 type TelegramStep = "phone" | "code" | "password";
 
 const errorMessage = (error: unknown) => error instanceof ApiError ? error.message : "Telegram bilan ulanishda xatolik yuz berdi.";
+
+const telegramDeliveryMessage = (delivery: TelegramDeliveryType | null): string => {
+  switch (delivery) {
+    case "telegram_app": return "Kod boshqa ochiq Telegram qurilmangizga yuborildi.";
+    case "email": return "Kod Telegram akkauntingizga bog'langan emailga yuborildi.";
+    case "sms": return "Kod SMS orqali yuborildi.";
+    case "call": return "Kod qo'ng'iroq orqali aytib beriladi.";
+    case "fragment": return "Kod Fragment orqali olinadi.";
+    case "firebase_sms": return "Kod avtomatik tekshiruv orqali yuborildi.";
+    default: return "Tasdiqlash kodi yuborildi.";
+  }
+};
 
 const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
   const { integrations, connect, disconnect } = useIntegrations();
@@ -31,8 +45,17 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
   const [telegramStep, setTelegramStep] = useState<TelegramStep>("phone");
   const [telegramBusy, setTelegramBusy] = useState(false);
   const [telegramError, setTelegramError] = useState<string | null>(null);
+  const [telegramDelivery, setTelegramDelivery] = useState<TelegramDeliveryType | null>(null);
+  const [telegramResendAvailableAt, setTelegramResendAvailableAt] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const connectTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (telegramStep !== "code" || telegramResendAvailableAt === null) return undefined;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [telegramStep, telegramResendAvailableAt]);
 
   useEffect(() => {
     if (selectedId !== "telegram") return undefined;
@@ -63,6 +86,7 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
   const visible = limit ? integrations.slice(0, limit) : integrations;
   const selected = integrations.find((item) => item.id === selectedId);
   const SelectedIcon = selected?.icon;
+  const resendRemainingSeconds = telegramResendAvailableAt ? Math.max(0, Math.ceil((telegramResendAvailableAt - now) / 1000)) : 0;
 
   const closeModal = () => {
     if (connectTimerRef.current !== null) {
@@ -70,6 +94,7 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
       connectTimerRef.current = null;
     }
     setConnectingId(null); setSelectedId(null); setUsername(""); setTelegramPhone(""); setTelegramCode(""); setTelegramPassword(""); setTelegramStep("phone"); setTelegramBusy(false); setTelegramError(null);
+    setTelegramDelivery(null); setTelegramResendAvailableAt(null);
   };
 
   const finishTelegramConnection = async () => {
@@ -83,7 +108,9 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
     setTelegramBusy(true); setTelegramError(null);
     try {
       if (telegramStep === "phone") {
-        await connectTelegram(telegramPhone.trim());
+        const result = await connectTelegram(telegramPhone.trim());
+        setTelegramDelivery(result.delivery);
+        setTelegramResendAvailableAt(result.timeoutSeconds ? Date.now() + result.timeoutSeconds * 1000 : null);
         setTelegramStep("code");
       } else if (telegramStep === "code") {
         const result = await verifyTelegramCode(telegramCode.trim());
@@ -93,6 +120,20 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
         await verifyTelegramPassword(telegramPassword);
         await finishTelegramConnection();
       }
+    } catch (error) {
+      setTelegramError(errorMessage(error));
+    } finally {
+      setTelegramBusy(false);
+    }
+  };
+
+  const resendTelegramStep = async () => {
+    if (telegramBusy || resendRemainingSeconds > 0) return;
+    setTelegramBusy(true); setTelegramError(null);
+    try {
+      const result = await resendTelegramCode();
+      setTelegramDelivery(result.delivery);
+      setTelegramResendAvailableAt(result.timeoutSeconds ? Date.now() + result.timeoutSeconds * 1000 : null);
     } catch (error) {
       setTelegramError(errorMessage(error));
     } finally {
@@ -147,8 +188,10 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
             {telegramStep === "phone" && <input type="tel" className="integration-modal__field" placeholder="+998901234567" value={telegramPhone} onChange={(event) => setTelegramPhone(event.target.value)} autoComplete="tel" />}
             {telegramStep === "code" && <input type="text" inputMode="numeric" className="integration-modal__field" placeholder="12345" value={telegramCode} onChange={(event) => setTelegramCode(event.target.value)} autoComplete="one-time-code" />}
             {telegramStep === "password" && <input type="password" className="integration-modal__field" placeholder="Telegram 2FA paroli" value={telegramPassword} onChange={(event) => setTelegramPassword(event.target.value)} autoComplete="current-password" />}
+            {telegramStep === "code" && <span className="integration-modal__note integration-modal__note--delivery">{telegramDeliveryMessage(telegramDelivery)}</span>}
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
             <button type="button" className="integration-modal__connect" onClick={() => void submitTelegramStep()} disabled={telegramBusy}>{telegramBusy ? "Tekshirilmoqda..." : telegramStep === "phone" ? "Kodni yuborish" : telegramStep === "code" ? "Kodni tasdiqlash" : "Ulanishni yakunlash"}<ExternalLink size={15} /></button>
+            {telegramStep === "code" && <button type="button" className="integration-modal__resend" onClick={() => void resendTelegramStep()} disabled={telegramBusy || resendRemainingSeconds > 0}>{resendRemainingSeconds > 0 ? `Qayta yuborish (${resendRemainingSeconds}s)` : "Qayta yuborish"}</button>}
             <span className="integration-modal__note">Session Qulay AI serverida shifrlangan holda saqlanadi.</span>
           </> : (selected.id === "google-calendar" || selected.id === "google-drive") ? <>
             <button type="button" className="integration-modal__connect" onClick={() => { if (connectingId) return; setConnectingId(selected.id); void getGoogleConnectUrl().then(({ url }) => { window.location.assign(url); }).catch((error) => { setTelegramError(errorMessage(error)); setConnectingId(null); }); }} disabled={connectingId === selected.id}>{connectingId === selected.id ? "Google oynatilmoqda..." : "Google bilan ulash"}<ExternalLink size={15} /></button>
