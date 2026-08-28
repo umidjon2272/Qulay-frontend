@@ -53,6 +53,7 @@ export type TelegramStatus = {
   displayName: string | null;
   maskedPhone: string | null;
   connectedAt: string | null;
+  temporaryError?: boolean;
 };
 
 export type TelegramPeer = {

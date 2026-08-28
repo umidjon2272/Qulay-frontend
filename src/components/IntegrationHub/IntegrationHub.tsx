@@ -45,6 +45,7 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
   const [telegramStep, setTelegramStep] = useState<TelegramStep>("phone");
   const [telegramBusy, setTelegramBusy] = useState(false);
   const [telegramError, setTelegramError] = useState<string | null>(null);
+  const [telegramTemporaryError, setTelegramTemporaryError] = useState(false);
   const [telegramDelivery, setTelegramDelivery] = useState<TelegramDeliveryType | null>(null);
   const [telegramResendAvailableAt, setTelegramResendAvailableAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -61,8 +62,11 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
     if (selectedId !== "telegram") return undefined;
     let active = true;
     void getTelegramStatus().then((status) => {
-      if (active && status.connected) connect("telegram", status.username ?? status.displayName ?? "Telegram");
-    }).catch(() => undefined);
+      if (!active) return;
+      setTelegramTemporaryError(Boolean(status.temporaryError));
+      if (status.connected) connect("telegram", status.username ?? status.displayName ?? "Telegram");
+      else disconnect("telegram");
+    }).catch(() => { if (active) setTelegramTemporaryError(true); });
     return () => { active = false; };
   }, [connect, selectedId]);
 
@@ -94,7 +98,7 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
       connectTimerRef.current = null;
     }
     setConnectingId(null); setSelectedId(null); setUsername(""); setTelegramPhone(""); setTelegramCode(""); setTelegramPassword(""); setTelegramStep("phone"); setTelegramBusy(false); setTelegramError(null);
-    setTelegramDelivery(null); setTelegramResendAvailableAt(null);
+    setTelegramDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false);
   };
 
   const finishTelegramConnection = async () => {
@@ -177,11 +181,12 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
           <button type="button" className="integration-modal__close" onClick={closeModal} aria-label="Integratsiya oynasini yopish"><X size={17} /></button>
           <div className={`integration-modal__icon integration-modal__icon--${selected.color}`}>{SelectedIcon && <SelectedIcon size={23} />}</div>
           <h2>{selected.name}</h2>
-          <p>{selected.connected ? `${selected.name} Qulay AI bilan ulangan.` : `${selected.name}ni Qulay AI bilan ulang.`}</p>
+          <p>{selected.id === "telegram" && selected.connected ? "Telegram ulangan" : selected.connected ? `${selected.name} Qulay AI bilan ulangan.` : `${selected.name}ni Qulay AI bilan ulang.`}</p>
+          {selected.id === "telegram" && selected.connected && telegramTemporaryError && <span className="integration-modal__error">Telegram bilan vaqtinchalik aloqa muammosi</span>}
 
           {selected.connected ? <>
             <div className="integration-modal__security"><ShieldCheck size={17} /><div><strong>Ulangan hisob</strong><span>{selected.username || "Faol ulanish"}</span></div></div>
-            <button type="button" className="integration-modal__connect integration-modal__connect--danger" onClick={() => void disconnectSelected()} disabled={telegramBusy}><Unlink size={15} /> {telegramBusy ? "Uzilmoqda..." : "Ulanishni uzish"}</button>
+            <button type="button" className="integration-modal__connect integration-modal__connect--danger" onClick={() => void disconnectSelected()} disabled={telegramBusy}><Unlink size={15} /> {telegramBusy ? "Uzilmoqda..." : selected.id === "telegram" ? "Uzish" : "Ulanishni uzish"}</button>
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
           </> : selected.id === "telegram" ? <>
             <label className="integration-modal__label">{telegramStep === "phone" ? "Telefon raqam" : telegramStep === "code" ? "Telegram kodi" : "2FA parol"}</label>

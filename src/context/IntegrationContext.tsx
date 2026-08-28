@@ -18,6 +18,7 @@ import {
   connectIntegration,
   disconnectIntegration,
   getIntegrationState,
+  getTelegramStatus,
 } from "../services/integrationService";
 import { subscribeToWorkspaceData } from "../services/workspaceEvents";
 import { useToast } from "../hooks/useToast";
@@ -35,6 +36,16 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const { showToast } = useToast();
 
   useEffect(() => subscribeToWorkspaceData("integrations", () => setState(loadState())), []);
+
+  // Telegram is server-owned: refresh/login/browser state must never decide whether it is connected.
+  useEffect(() => {
+    let active = true;
+    void getTelegramStatus().then((status) => {
+      if (!active) return;
+      setState((current) => ({ ...current, telegram: { connected: status.connected, username: status.username ?? status.displayName ?? undefined } }));
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   const connect = useCallback(
     (id: IntegrationId, username: string) => {
