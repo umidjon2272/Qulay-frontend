@@ -115,7 +115,7 @@ const handleTelegramSearch = async (query: string): Promise<RouterReply> => {
   logRouter("intent_detected", { intent: "telegram_search" });
   try {
     const peers = await searchTelegramPeers(query, 10);
-    if (peers.length === 0) return { text: "Telegramda mos chat topilmadi." };
+    if (peers.length === 0) return { text: "Telegramda mos kontakt yoki chat topilmadi." };
     return {
       text: peers.length === 1
         ? "Telegramda mos chat topildi."
