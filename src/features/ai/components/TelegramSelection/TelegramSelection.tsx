@@ -5,6 +5,8 @@ import type { TelegramCandidate, TelegramSelection as TelegramSelectionData } fr
 
 import "./TelegramSelection.scss";
 
+const TYPE_LABELS = { USER: "Foydalanuvchi", GROUP: "Guruh", CHANNEL: "Kanal" } as const;
+
 type TelegramSelectionProps = {
   selection: TelegramSelectionData;
   onSelect?: (candidate: TelegramCandidate) => void;
@@ -32,8 +34,11 @@ const TelegramSelectionCard = ({ selection, onSelect }: TelegramSelectionProps) 
               onSelect(candidate);
             }}
           >
-            <span className="telegram-selection__name">{candidate.displayName}</span>
-            {candidate.username && <span className="telegram-selection__username">@{candidate.username}</span>}
+            <span className="telegram-selection__identity">
+              <span className="telegram-selection__name">{candidate.displayName}</span>
+              <small className="telegram-selection__type">{TYPE_LABELS[candidate.type]}</small>
+            </span>
+            {candidate.username && <span className="telegram-selection__username">{candidate.username.startsWith("@") ? candidate.username : `@${candidate.username}`}</span>}
           </button>
         ))}
       </div>

@@ -14,8 +14,8 @@ import ActionConfirmation from "../components/ActionConfirmation/ActionConfirmat
 
 const requestMock = request as unknown as Mock;
 
-const peer = (overrides: Partial<{ peerId: string; displayName: string; username: string | null }> = {}) => ({
-  peerId: "peer-1",
+const peer = (overrides: Partial<{ peerId: string; type: "USER" | "GROUP" | "CHANNEL"; displayName: string; username: string | null }> = {}) => ({
+  peerId: "-1001234567890",
   type: "USER" as const,
   displayName: "Aziz Karimov",
   username: "aziz",
@@ -43,8 +43,25 @@ describe("routeMessage — Telegram search", () => {
     expect(reply.text).not.toContain("kimga va nima haqida yozish kerakligini ayting");
     expect(reply.telegramSelection).toEqual({
       mode: "search_result",
-      candidates: [{ peerId: "peer-1", displayName: "Aziz Karimov", username: "aziz" }],
+      candidates: [{ peerId: "-1001234567890", type: "USER", displayName: "Aziz Karimov", username: "aziz" }],
     });
+  });
+
+  it.each([
+    "telegraamdan Azizni top",
+    "telgramda Azizni qidir",
+    "telegrammda Azizni izla",
+    "telegrmdan Azizni top",
+    "Telegram orqali Azizni top",
+  ])('%s tolerates the known Telegram spelling variants', async (message) => {
+    requestMock.mockResolvedValueOnce({ status: "success", tool: "search_telegram_chats", data: [peer()], meta: { executedAt: "", requestId: "r1" } });
+
+    const reply = await routeMessage(message);
+
+    const body = JSON.parse((requestMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.tool).toBe("search_telegram_chats");
+    expect(body.input.query).toBe("Aziz");
+    expect(reply.telegramSelection?.candidates[0]?.peerId).toBe("-1001234567890");
   });
 
   it('"Telegramda Azizni qidir" also routes to search_telegram_chats', async () => {
@@ -54,6 +71,20 @@ describe("routeMessage — Telegram search", () => {
 
     const body = JSON.parse((requestMock.mock.calls[0][1] as RequestInit).body as string);
     expect(body.tool).toBe("search_telegram_chats");
+  });
+
+  it("ignores malformed Telegram candidates instead of crashing", async () => {
+    requestMock.mockResolvedValueOnce({
+      status: "success",
+      tool: "search_telegram_chats",
+      data: [{ peerId: 123, displayName: "Broken" }, peer()],
+      meta: { executedAt: "", requestId: "r1" },
+    });
+
+    const reply = await routeMessage("Telegramdan Azizni top");
+
+    expect(reply.telegramSelection?.candidates).toHaveLength(1);
+    expect(reply.telegramSelection?.candidates[0]?.peerId).toBe("-1001234567890");
   });
 
   it("shows a controlled error when Telegram is not connected", async () => {
@@ -76,6 +107,16 @@ describe("routeMessage — Telegram search", () => {
 });
 
 describe("routeMessage — Telegram send", () => {
+  it("accepts a Telegram keyword typo in the explicit send form", async () => {
+    requestMock
+      .mockResolvedValueOnce({ status: "success", tool: "search_telegram_chats", data: [peer()], meta: { executedAt: "", requestId: "r1" } })
+      .mockResolvedValueOnce({ status: "confirmation_required", tool: "send_telegram_message", preview: { recipient: peer(), text: "Salom", confirmationRequired: true }, meta: { requestId: "r2" } });
+
+    const reply = await routeMessage("telegraam orqali Azizga Salom yubor");
+
+    expect(reply.action?.type).toBe("sendTelegramMessage");
+  });
+
   it('"Azizga salom deb yoz" resolves the recipient and prepares confirmation', async () => {
     requestMock
       .mockResolvedValueOnce({ status: "success", tool: "search_telegram_chats", data: [peer()], meta: { executedAt: "", requestId: "r1" } })
@@ -93,7 +134,7 @@ describe("routeMessage — Telegram send", () => {
     expect(previewBody).toMatchObject({
       tool: "send_telegram_message",
       confirmed: false,
-      input: { peerId: "peer-1", text: "salom" },
+      input: { peerId: "-1001234567890", text: "salom" },
     });
   });
 
@@ -118,7 +159,7 @@ describe("routeMessage — Telegram send", () => {
     const sendBody = JSON.parse((requestMock.mock.calls[1][1] as RequestInit).body as string);
     expect(sendBody.tool).toBe("send_telegram_message");
     expect(sendBody.confirmed).toBe(false);
-    expect(sendBody.input).toEqual({ peerId: "peer-1", text: "Salom, ishlar yaxshimi?" });
+    expect(sendBody.input).toEqual({ peerId: "-1001234567890", text: "Salom, ishlar yaxshimi?" });
 
     // Never auto-sends: only a confirmation_required preview call was made.
     expect(reply.action?.type).toBe("sendTelegramMessage");
@@ -129,7 +170,7 @@ describe("routeMessage — Telegram send", () => {
     requestMock.mockResolvedValueOnce({
       status: "success",
       tool: "search_telegram_chats",
-      data: [peer({ peerId: "p1", displayName: "Aziz Karimov" }), peer({ peerId: "p2", displayName: "Aziz Yusupov", username: "aziz2" })],
+      data: [peer({ peerId: "123456789", displayName: "Aziz Karimov" }), peer({ peerId: "-1009876543210", displayName: "Aziz Yusupov", username: "aziz2", type: "CHANNEL" })],
       meta: { executedAt: "", requestId: "r1" },
     });
 
@@ -149,6 +190,26 @@ describe("routeMessage — Telegram send", () => {
     const reply = await routeMessage("Azizga 'Salom' deb yoz.");
 
     expect(reply.text).toMatch(/ulanmagan/i);
+  });
+
+  it("maps an expired Telegram session to a reconnect instruction", async () => {
+    requestMock
+      .mockResolvedValueOnce({ status: "success", tool: "search_telegram_chats", data: [peer()], meta: { executedAt: "", requestId: "r1" } })
+      .mockRejectedValueOnce(new ApiError(400, "Telegram connection has expired", { message: "Telegram connection has expired" }));
+
+    const reply = await routeMessage("Azizga 'Salom' deb yoz.");
+
+    expect(reply.text).toMatch(/qayta ulang/i);
+  });
+
+  it("maps strict tool validation failures to a Telegram-specific message", async () => {
+    requestMock
+      .mockResolvedValueOnce({ status: "success", tool: "search_telegram_chats", data: [peer()], meta: { executedAt: "", requestId: "r1" } })
+      .mockRejectedValueOnce(new ApiError(400, "Invalid tool input", { message: "Invalid tool input", errors: ["peerId: must be a string"] }));
+
+    const reply = await routeMessage("Azizga 'Salom' deb yoz.");
+
+    expect(reply.text).toMatch(/ma'lumot formati xato/i);
   });
 
   it("reports no match without inventing a recipient", async () => {
@@ -172,7 +233,7 @@ describe("confirm / cancel semantics", () => {
 
     const result = await executeAIAction({
       type: "sendTelegramMessage",
-      payload: { peerId: "peer-1", recipientName: "Aziz Karimov", recipientUsername: "aziz", text: "Salom" },
+      payload: { peerId: "-1001234567890", recipientName: "Aziz Karimov", recipientUsername: "aziz", text: "Salom" },
       label: "Telegram xabari",
       confirmationMessage: 'Aziz Karimovga yuborilsinmi?\n"Salom"',
       success: "✅ Aziz Karimovga xabar yuborildi.",
@@ -183,6 +244,8 @@ describe("confirm / cancel semantics", () => {
     const body = JSON.parse((requestMock.mock.calls[0][1] as RequestInit).body as string);
     expect(body.tool).toBe("send_telegram_message");
     expect(body.confirmed).toBe(true);
+    expect(body.input).toEqual({ peerId: "-1001234567890", text: "Salom" });
+    expect(Object.keys(body.input).sort()).toEqual(["peerId", "text"]);
   });
 
   it('clicking "Bekor qilish" never invokes onConfirm, so no send request is made', () => {
@@ -193,7 +256,7 @@ describe("confirm / cancel semantics", () => {
       ActionConfirmation({
         action: {
           type: "sendTelegramMessage",
-          payload: { peerId: "peer-1", recipientName: "Aziz Karimov", text: "Salom" },
+          payload: { peerId: "-1001234567890", recipientName: "Aziz Karimov", text: "Salom" },
           label: "Telegram xabari",
           confirmationMessage: 'Aziz Karimovga yuborilsinmi?\n"Salom"',
           success: "✅ Aziz Karimovga xabar yuborildi.",

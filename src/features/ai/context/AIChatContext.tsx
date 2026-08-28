@@ -54,6 +54,7 @@ const isTelegramSelection = (value: unknown): boolean => {
     if (!isRecord(candidate)) return false;
     return (
       typeof candidate.peerId === "string" &&
+      (candidate.type === "USER" || candidate.type === "GROUP" || candidate.type === "CHANNEL") &&
       typeof candidate.displayName === "string" &&
       (candidate.username === null || typeof candidate.username === "string")
     );

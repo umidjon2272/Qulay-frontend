@@ -8,6 +8,7 @@ import { clearTaskCache } from "../../../services/taskService";
 import { notifyWorkspaceDataChanged } from "../../../services/workspaceEvents";
 import { getApiErrorMessage } from "../../../services/api/apiClient";
 import { logRouter } from "../router/debugLog";
+import { describeTelegramError } from "../router/telegramError";
 import type { AIAction } from "./actionTypes";
 
 export type AIActionExecutionResult = {
@@ -117,7 +118,9 @@ export const executeAIAction = async (
     }
   } catch (error) {
     logRouter("tool_error", { tool: action.type });
-    const fallback = getApiErrorMessage(error, action.error);
+    const fallback = action.type === "sendTelegramMessage"
+      ? describeTelegramError(error)
+      : getApiErrorMessage(error, action.error);
     return { success: false, message: fallback };
   }
 };

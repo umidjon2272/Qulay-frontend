@@ -1,4 +1,4 @@
-import { ApiError, getApiErrorMessage } from "../../../services/api/apiClient";
+import { getApiErrorMessage } from "../../../services/api/apiClient";
 import { executeAiTool, isToolSuccess } from "../../../services/api/aiToolsApi";
 import type { TelegramPeer } from "../../../services/integrationService";
 import { parseAIAction } from "../actions/aiActions";
@@ -6,6 +6,7 @@ import type { AIAction } from "../actions/actionTypes";
 import { logRouter } from "./debugLog";
 import { detectTelegramSearch, detectTelegramSend } from "./telegramIntent";
 import { detectContactLookup, detectMemoryLookup, isFinanceSummaryIntent } from "./toolIntents";
+import { describeTelegramError } from "./telegramError";
 import type { TelegramCandidate, TelegramSelection } from "./routerTypes";
 
 export type RouterReply = {
@@ -14,44 +15,58 @@ export type RouterReply = {
   telegramSelection?: TelegramSelection;
 };
 
-const TELEGRAM_NOT_CONNECTED_MESSAGE =
-  "Telegram hali ulanmagan. Sozlamalar → Integratsiyalar orqali Telegramni ulang.";
-const TELEGRAM_NOT_CONFIGURED_MESSAGE =
-  "Telegram integratsiyasi hozir sozlanmagan. Administratorga murojaat qiling.";
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
-const describeTelegramError = (error: unknown): string => {
-  if (error instanceof ApiError) {
-    if (error.status === 503) return TELEGRAM_NOT_CONFIGURED_MESSAGE;
-    if (error.status === 400 && /not connected/i.test(error.message)) return TELEGRAM_NOT_CONNECTED_MESSAGE;
-    if (error.status === 401) return "Sessiya muddati tugagan. Iltimos qayta kiring.";
-  }
-  return getApiErrorMessage(error, "Telegram bilan bog'lanishda xatolik yuz berdi.");
+const isTelegramPeer = (value: unknown): value is TelegramPeer => {
+  if (typeof value !== "object" || value === null) return false;
+  const peer = value as Partial<TelegramPeer>;
+  return (
+    typeof peer.peerId === "string" && peer.peerId.trim().length > 0 &&
+    (peer.type === "USER" || peer.type === "GROUP" || peer.type === "CHANNEL") &&
+    typeof peer.displayName === "string" && peer.displayName.trim().length > 0 &&
+    (peer.username === null || peer.username === undefined || typeof peer.username === "string")
+  );
 };
+
+const normalizeTelegramPeers = (value: unknown): TelegramPeer[] =>
+  Array.isArray(value) ? value.filter(isTelegramPeer) : [];
 
 const toCandidate = (peer: TelegramPeer): TelegramCandidate => ({
   peerId: peer.peerId,
+  type: peer.type,
   displayName: peer.displayName,
-  username: peer.username,
+  username: peer.username ?? null,
 });
 
 const searchTelegramPeers = async (query: string, limit: number): Promise<TelegramPeer[]> => {
   logRouter("tool_call", { tool: "search_telegram_chats", confirmed: true });
-  const result = await executeAiTool<TelegramPeer[]>("search_telegram_chats", { query, limit }, true);
+  const result = await executeAiTool<unknown>("search_telegram_chats", { query, limit }, true);
   logRouter("tool_result", { tool: "search_telegram_chats", status: result.status });
   if (!isToolSuccess(result)) throw new Error("Unexpected confirmation_required for search_telegram_chats");
-  return result.data;
+  return normalizeTelegramPeers(result.data);
 };
 
 export const buildTelegramSendConfirmation = async (peer: TelegramCandidate, text: string): Promise<RouterReply> => {
   logRouter("tool_call", { tool: "send_telegram_message", confirmed: false });
-  const result = await executeAiTool<{ recipient: TelegramPeer; text: string; confirmationRequired: true }>(
+  const result = await executeAiTool<unknown>(
     "send_telegram_message",
     { peerId: peer.peerId, text },
     false,
   );
   logRouter("tool_result", { tool: "send_telegram_message", status: result.status, confirmationRequired: true });
 
-  const recipient = result.status === "confirmation_required" ? result.preview.recipient : peer;
+  // A write preview must never turn into an implicit send. If the backend ever
+  // violates the confirmation contract, stop here rather than presenting a
+  // misleading confirmation after a possible write.
+  if (result.status !== "confirmation_required") {
+    throw new Error("Telegram send preview did not require confirmation");
+  }
+
+  const previewRecipient = isRecord(result.preview) && isTelegramPeer(result.preview.recipient)
+    ? result.preview.recipient
+    : null;
+  const recipient = previewRecipient ?? peer;
   const confirmationMessage = `${recipient.displayName}ga yuborilsinmi?\n"${text}"`;
 
   const action: AIAction = {

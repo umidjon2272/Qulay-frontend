@@ -9,6 +9,14 @@ export type TelegramSearchMatch = { query: string };
 
 const QUOTE_PAIR = /["'«“‘]([^"'»”’]+)["'»”’]/u;
 const SEND_VERB = /(?:deb\s+)?(?:yoz|yubor|jo['’]nat)(?:ing|ib)?\.?\s*$/iu;
+const TELEGRAM_WORD = /\b(?:telegram|telegraam|telegramm|telgram|telegrm)(?=(?:dan|da)\b|\s|$)/giu;
+
+/**
+ * Normalizes only the known Telegram keyword spelling variants used for intent
+ * matching. The original message is still used for recipient/message extraction,
+ * so names and message casing are never rewritten.
+ */
+const normalizeTelegramKeyword = (value: string) => value.replace(TELEGRAM_WORD, "telegram");
 
 const stripTrailingDeb = (value: string) => value.replace(/\s+deb$/iu, "").trim();
 
@@ -41,7 +49,7 @@ export const detectTelegramSend = (raw: string): TelegramSendMatch | null => {
   if (match) return { recipientRaw: match[1], text: match[2].trim() };
 
   // "Telegram orqali <Ism>ga <matn> yubor/yoz" (no "deb").
-  match = trimmed.match(/telegram\s+orqali\s+([\p{L}][\p{L}'’-]{1,40}?)(?:ga|ka|qa)\s+(.+?)\s+(?:yubor|yoz)(?:ing|ib)?\.?\s*$/iu);
+  match = normalizeTelegramKeyword(trimmed).match(/telegram\s+orqali\s+([\p{L}][\p{L}'’-]{1,40}?)(?:ga|ka|qa)\s+(.+?)\s+(?:yubor|yoz)(?:ing|ib)?\.?\s*$/iu);
   if (match) return { recipientRaw: match[1], text: stripTrailingDeb(match[2]) };
 
   return null;
@@ -56,14 +64,18 @@ export const detectTelegramSend = (raw: string): TelegramSendMatch | null => {
 export const detectTelegramSearch = (raw: string): TelegramSearchMatch | null => {
   const trimmed = raw.trim();
   if (!trimmed) return null;
+  const normalized = normalizeTelegramKeyword(trimmed);
 
-  let match = trimmed.match(/telegram(?:dan|da)\s+(.+?)\s*ni\s*(?:top|qidir|izla)(?:ing)?\.?\s*$/iu);
+  let match = normalized.match(/telegram(?:dan|da)\s+(.+?)\s*ni\s*(?:top|qidir|izla)(?:ing)?\.?\s*$/iu);
   if (match) return { query: match[1].trim() };
 
-  match = trimmed.match(/@([\w.]{2,32})\s*ni\s*(?:top|qidir|izla)(?:ing)?\.?\s*$/iu);
+  match = normalized.match(/telegram\s+orqali\s+(.+?)\s*ni?\s*(?:top|qidir|izla)(?:ing)?\.?\s*$/iu);
+  if (match) return { query: match[1].trim() };
+
+  match = normalized.match(/@([\w.]{2,32})\s*ni\s*(?:top|qidir|izla)(?:ing)?\.?\s*$/iu);
   if (match) return { query: `@${match[1]}` };
 
-  match = trimmed.match(/telegram(?:da|dan)\s+(.+?)\s*(?:qidir|izla|top)(?:ing)?\.?\s*$/iu);
+  match = normalized.match(/telegram(?:da|dan)\s+(.+?)\s*(?:qidir|izla|top)(?:ing)?\.?\s*$/iu);
   if (match) return { query: match[1].trim() };
 
   return null;

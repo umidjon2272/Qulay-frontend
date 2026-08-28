@@ -1,5 +1,6 @@
 export type TelegramCandidate = {
   peerId: string;
+  type: "USER" | "GROUP" | "CHANNEL";
   displayName: string;
   username: string | null;
 };
