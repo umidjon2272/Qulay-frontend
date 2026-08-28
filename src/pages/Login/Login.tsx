@@ -49,8 +49,12 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await signIn(normalizedEmail, password, remember);
-      goToDefaultPage();
+      const user = await signIn(normalizedEmail, password, remember);
+      if (user.role === "ADMIN") {
+        navigate("/admin", { replace: true });
+      } else {
+        goToDefaultPage();
+      }
     } catch (reason) {
       setLoading(false);
       setError(getApiErrorMessage(reason));

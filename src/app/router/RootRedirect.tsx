@@ -16,7 +16,8 @@ const RootRedirect = () => {
   const { user, status, authError } = useAuth();
   if (status === "loading" && !user) return <AuthBootstrapShell />;
   if (!user && authError) return <AuthRecoveryShell />;
-  return <Navigate to={user ? getDefaultPath() : "/register"} replace />;
+  if (!user) return <Navigate to="/register" replace />;
+  return <Navigate to={user.role === "ADMIN" ? "/admin" : getDefaultPath()} replace />;
 };
 
 export default RootRedirect;
