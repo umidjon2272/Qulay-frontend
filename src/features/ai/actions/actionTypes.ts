@@ -38,6 +38,13 @@ export type GetTodayPlanPayload = {
   dateKey: string;
 };
 
+export type SendTelegramMessagePayload = {
+  peerId: string;
+  recipientName: string;
+  recipientUsername?: string;
+  text: string;
+};
+
 type ActionBase<Type extends string, Payload> = {
   type: Type;
   payload: Payload;
@@ -52,7 +59,8 @@ export type AIAction =
   | ActionBase<"createReminder", CreateReminderPayload>
   | ActionBase<"createMeeting", CreateMeetingPayload>
   | ActionBase<"createNote", CreateNotePayload>
-  | ActionBase<"getTodayPlan", GetTodayPlanPayload>;
+  | ActionBase<"getTodayPlan", GetTodayPlanPayload>
+  | ActionBase<"sendTelegramMessage", SendTelegramMessagePayload>;
 
 export type AIActionType = AIAction["type"];
 
@@ -104,6 +112,15 @@ export const isAIAction = (value: unknown): value is AIAction => {
 
   if (action.type === "createNote") {
     return isString(payload.title) && isString(payload.content);
+  }
+
+  if (action.type === "sendTelegramMessage") {
+    return (
+      isString(payload.peerId) &&
+      isString(payload.recipientName) &&
+      isString(payload.text) &&
+      (payload.recipientUsername === undefined || isString(payload.recipientUsername))
+    );
   }
 
   return action.type === "getTodayPlan" && isString(payload.dateKey);

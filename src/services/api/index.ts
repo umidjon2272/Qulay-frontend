@@ -11,3 +11,4 @@ export * from "./apiClient";
 export * from "./types";
 export * as telegramApi from "../integrationService";
 export * as fileApi from "./fileApi";
+export * as aiToolsApi from "./aiToolsApi";

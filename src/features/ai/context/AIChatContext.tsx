@@ -14,10 +14,12 @@ import { subscribeToWorkspaceData } from "../../../services/workspaceEvents";
 import { AUTH_SESSION_CHANGED, getAuthSession } from "../../../services/authService";
 import { executeAIAction, type AIActionExecutionResult } from "../actions/actionExecutor";
 import { isAIAction, type AIAction } from "../actions/actionTypes";
+import { buildTelegramSendConfirmation } from "../router/chatRouter";
 import { getAIReply } from "../../../services/aiService";
 import {
   AIChatContext,
   type ChatMessage,
+  type TelegramCandidate,
 } from "./AIChatContextValue";
 
 const formatTime = () =>
@@ -39,6 +41,25 @@ const MAX_CHAT_MESSAGES = 200;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
+const isTelegramSelection = (value: unknown): boolean => {
+  if (value === undefined) return true;
+  if (
+    !isRecord(value) ||
+    (value.mode !== "search_result" && value.mode !== "send_recipient") ||
+    !Array.isArray(value.candidates) ||
+    (value.mode === "send_recipient" && typeof value.pendingText !== "string")
+  ) return false;
+
+  return value.candidates.every((candidate) => {
+    if (!isRecord(candidate)) return false;
+    return (
+      typeof candidate.peerId === "string" &&
+      typeof candidate.displayName === "string" &&
+      (candidate.username === null || typeof candidate.username === "string")
+    );
+  });
+};
+
 const isChatMessage = (value: unknown): value is ChatMessage => {
   if (!isRecord(value)) return false;
 
@@ -49,7 +70,8 @@ const isChatMessage = (value: unknown): value is ChatMessage => {
     (value.role === "user" || value.role === "ai") &&
     typeof value.text === "string" &&
     typeof value.time === "string" &&
-    isAction
+    isAction &&
+    isTelegramSelection(value.telegramSelection)
   );
 };
 
@@ -197,6 +219,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           text: reply.text,
           time: formatTime(),
           action: reply.action,
+          telegramSelection: reply.telegramSelection,
         };
 
         setMessages((current) => appendMessage(current, aiMessage));
@@ -279,6 +302,39 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const resolveTelegramSelection = useCallback(async (messageId: number, candidate: TelegramCandidate, pendingText: string): Promise<void> => {
+    if (!mountedRef.current) return;
+
+    setMessages((current) => current.map((message) => (
+      message.id === messageId ? { ...message, telegramSelection: undefined } : message
+    )));
+    setIsTyping(true);
+
+    try {
+      const reply = await buildTelegramSendConfirmation(candidate, pendingText);
+      if (!mountedRef.current) return;
+
+      setMessages((current) => appendMessage(current, {
+          id: nextMessageId(),
+          role: "ai",
+          text: reply.text,
+          time: formatTime(),
+          action: reply.action,
+        }));
+    } catch {
+      if (!mountedRef.current) return;
+
+      setMessages((current) => appendMessage(current, {
+          id: nextMessageId(),
+          role: "ai",
+          text: "Telegram xabarini tayyorlashda xatolik yuz berdi.",
+          time: formatTime(),
+        }));
+    } finally {
+      if (mountedRef.current) setIsTyping(pendingRequestsRef.current.size > 0);
+    }
+  }, []);
+
   const clearChat = useCallback(() => {
     generationRef.current += 1;
 
@@ -334,6 +390,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       isTyping,
       sendMessage,
       executeAction,
+      resolveTelegramSelection,
       clearChat,
       speakingId,
       speak,
@@ -348,6 +405,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       isTyping,
       sendMessage,
       executeAction,
+      resolveTelegramSelection,
       clearChat,
       speakingId,
       speak,

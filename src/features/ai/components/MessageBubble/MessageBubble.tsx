@@ -3,8 +3,10 @@ import { Sparkles, User, Volume2, VolumeX } from "lucide-react";
 
 import type { ChatMessage } from "../../context/AIChatContextValue";
 import type { AIAction } from "../../actions/actionTypes";
+import { useAIChat } from "../../hooks/useAIChat";
 
 import ActionConfirmation from "../ActionConfirmation/ActionConfirmation";
+import TelegramSelectionCard from "../TelegramSelection/TelegramSelection";
 
 import "./MessageBubble.scss";
 
@@ -20,9 +22,11 @@ type ActionStatus = "pending" | "loading" | "success" | "cancelled";
 
 const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: MessageBubbleProps) => {
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
+  const { resolveTelegramSelection } = useAIChat();
 
   const isUser = message.role === "user";
   const action = message.action;
+  const selection = message.telegramSelection;
   const canSpeak = typeof window !== "undefined" && Boolean(window.speechSynthesis);
 
   return (
@@ -52,6 +56,17 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
                 }
               }}
               onDismiss={() => setActionStatus("cancelled")}
+            />
+          )}
+
+          {!isUser && selection && (
+            <TelegramSelectionCard
+              selection={selection}
+              onSelect={(candidate) => {
+                if (selection.mode === "send_recipient" && selection.pendingText) {
+                  void resolveTelegramSelection(message.id, candidate, selection.pendingText);
+                }
+              }}
             />
           )}
         </div>

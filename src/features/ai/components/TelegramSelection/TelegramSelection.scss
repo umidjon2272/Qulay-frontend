@@ -1,0 +1,98 @@
+.telegram-selection {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 9px;
+
+  margin-top: 8px;
+  padding: 8px 8px 8px 10px;
+
+  border: 1px solid rgba(130, 91, 234, 0.22);
+  border-radius: 12px;
+
+  background: rgba(238, 232, 255, 0.5);
+}
+
+.telegram-selection__icon {
+  display: grid;
+  place-items: center;
+
+  width: 24px;
+  height: 24px;
+
+  flex-shrink: 0;
+
+  border-radius: 8px;
+
+  background: linear-gradient(135deg, #825bea, #6944d1);
+
+  color: white;
+}
+
+.telegram-selection__list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+
+  flex: 1;
+  min-width: 0;
+}
+
+.telegram-selection__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 8px;
+
+  padding: 7px 10px;
+
+  border: 1px solid rgba(120, 100, 160, 0.18);
+  border-radius: 9px;
+
+  background: rgba(255, 255, 255, 0.7);
+
+  cursor: pointer;
+  text-align: left;
+
+  transition: transform 0.16s ease, background 0.16s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: rgba(238, 232, 255, 0.9);
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+}
+
+.telegram-selection__option--result:disabled {
+  opacity: 1;
+}
+
+.telegram-selection__name {
+  color: #2c2833;
+  font-size: var(--font-sm);
+  font-weight: 650;
+}
+
+.telegram-selection__username {
+  color: #7c7488;
+  font-size: var(--font-xs);
+}
+
+html[data-theme="dark"] body #root .telegram-selection {
+  border: 1px solid rgba(157, 142, 255, .25);
+  background: linear-gradient(145deg, rgba(27, 45, 79, .96), rgba(10, 25, 45, .94));
+}
+
+html[data-theme="dark"] body #root .telegram-selection__option {
+  border-color: rgba(164, 181, 221, .2);
+  background: rgba(22, 45, 75, .76);
+}
+
+html[data-theme="dark"] body #root .telegram-selection__name { color: #fff; }
+html[data-theme="dark"] body #root .telegram-selection__username { color: rgba(235, 240, 255, .68); }

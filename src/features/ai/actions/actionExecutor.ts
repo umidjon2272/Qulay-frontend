@@ -1,8 +1,13 @@
-import { createMeeting } from "../../../services/meetingService";
-import { createNote } from "../../../services/noteService";
-import { createReminder } from "../../../services/reminderService";
-import { getTodayPlan } from "../../../services/todayPlanService";
-import { createTask } from "../../../services/taskService";
+import { executeAiTool } from "../../../services/api/aiToolsApi";
+import { localDateTimeToIso, meetingFromApi, priorityToApi, reminderFromApi, taskFromApi } from "../../../services/api/helpers";
+import type { ApiMeeting, ApiNote, ApiReminder, ApiTask } from "../../../services/api/types";
+import { clearMeetingCache } from "../../../services/meetingService";
+import { clearNoteCache } from "../../../services/noteService";
+import { clearReminderCache } from "../../../services/reminderService";
+import { clearTaskCache } from "../../../services/taskService";
+import { notifyWorkspaceDataChanged } from "../../../services/workspaceEvents";
+import { getApiErrorMessage } from "../../../services/api/apiClient";
+import { logRouter } from "../router/debugLog";
 import type { AIAction } from "./actionTypes";
 
 export type AIActionExecutionResult = {
@@ -11,22 +16,38 @@ export type AIActionExecutionResult = {
   data?: unknown;
 };
 
+/**
+ * Every write goes through the backend AI Tool Registry
+ * (`/api/ai/tools/execute`) with `confirmed: true` — the chat UI's own
+ * ActionConfirmation card is the user's confirmation, so the tool is asked
+ * to execute immediately rather than round-tripping through its own preview.
+ */
+const runWriteTool = async <TResult>(tool: string, input: Record<string, unknown>): Promise<TResult> => {
+  logRouter("tool_call", { tool, confirmed: true });
+  const result = await executeAiTool<TResult>(tool, input, true);
+  logRouter("tool_result", { tool, status: result.status });
+  if (result.status !== "success") throw new Error(`Unexpected confirmation_required for ${tool}`);
+  return result.data;
+};
+
 const formatPlanMessage = async (action: Extract<AIAction, { type: "getTodayPlan" }>) => {
-  const plan = await getTodayPlan(action.payload.dateKey);
+  logRouter("tool_call", { tool: "get_today_plan", confirmed: true });
+  const result = await executeAiTool<{
+    tasks: ApiTask[];
+    reminders: ApiReminder[];
+    meetings: ApiMeeting[];
+  }>("get_today_plan", { date: action.payload.dateKey }, true);
+  logRouter("tool_result", { tool: "get_today_plan", status: result.status });
+  if (result.status !== "success") throw new Error("Unexpected confirmation_required for get_today_plan");
+
+  const plan = result.data;
   const items = [
-    ...plan.meetings.map((meeting) => ({ time: meeting.time, text: `• ${meeting.time} — ${meeting.title}` })),
-    ...plan.tasks
-      .filter((task) => !task.completed)
-      .map((task) => ({ time: task.time, text: `• ${task.time} — ${task.title}` })),
-    ...plan.reminders
-      .filter((reminder) => !reminder.completed)
-      .map((reminder) => ({ time: reminder.time, text: `• ${reminder.time} — ${reminder.title}` })),
+    ...plan.meetings.map(meetingFromApi).map((meeting) => ({ time: meeting.time, text: `• ${meeting.time} — ${meeting.title}` })),
+    ...plan.tasks.map(taskFromApi).filter((task) => !task.completed).map((task) => ({ time: task.time, text: `• ${task.time} — ${task.title}` })),
+    ...plan.reminders.map(reminderFromApi).filter((reminder) => !reminder.completed).map((reminder) => ({ time: reminder.time, text: `• ${reminder.time} — ${reminder.title}` })),
   ].sort((a, b) => a.time.localeCompare(b.time));
 
-  if (items.length === 0) {
-    return "✅ Bugungi rejangiz bo‘sh.";
-  }
-
+  if (items.length === 0) return "✅ Bugungi rejangiz bo‘sh.";
   return `✅ Bugungi reja (${items.length} ta):\n${items.map((item) => item.text).join("\n")}`;
 };
 
@@ -36,64 +57,67 @@ export const executeAIAction = async (
   try {
     switch (action.type) {
       case "createTask": {
-        const task = await createTask({
+        const data = await runWriteTool<ApiTask>("create_task", {
           title: action.payload.title,
-          description: action.payload.description,
-          time: action.payload.time,
-          category: "AI",
-          priority: action.payload.priority,
-          completed: false,
-          date: action.payload.date,
+          description: action.payload.description || undefined,
+          dueAt: action.payload.date && action.payload.time ? localDateTimeToIso(action.payload.date, action.payload.time) : undefined,
+          priority: priorityToApi(action.payload.priority),
         });
-
-        return { success: true, message: action.success, data: task };
+        clearTaskCache();
+        notifyWorkspaceDataChanged("tasks");
+        return { success: true, message: action.success, data: taskFromApi(data) };
       }
 
       case "createReminder": {
-        const reminder = await createReminder({
+        const data = await runWriteTool<ApiReminder>("create_reminder", {
           title: action.payload.title,
-          description: action.payload.description,
-          date: action.payload.dateLabel,
-          dateKey: action.payload.date,
-          time: action.payload.time,
-          priority: action.payload.priority,
-          completed: false,
+          remindAt: localDateTimeToIso(action.payload.date, action.payload.time),
+          note: action.payload.description || undefined,
         });
-
-        return { success: true, message: action.success, data: reminder };
+        clearReminderCache();
+        notifyWorkspaceDataChanged("reminders");
+        return { success: true, message: action.success, data: reminderFromApi(data) };
       }
 
       case "createMeeting": {
-        const meeting = await createMeeting({
+        const notes = [action.payload.participant && `Ishtirokchi: ${action.payload.participant}`, action.payload.description]
+          .filter(Boolean)
+          .join(" · ") || undefined;
+        const data = await runWriteTool<ApiMeeting>("create_meeting", {
           title: action.payload.title,
-          date: action.payload.date,
-          time: action.payload.time,
-          location: action.payload.location,
-          participant: action.payload.participant,
-          description: action.payload.description,
-          reminder: action.payload.reminder,
+          startAt: localDateTimeToIso(action.payload.date, action.payload.time),
+          location: action.payload.location || undefined,
+          notes,
         });
-
-        return { success: true, message: action.success, data: meeting };
+        clearMeetingCache();
+        notifyWorkspaceDataChanged("calendarEvents");
+        return { success: true, message: action.success, data: meetingFromApi(data) };
       }
 
       case "createNote": {
-        const note = await createNote({
+        const data = await runWriteTool<ApiNote>("create_note", {
           title: action.payload.title,
           content: action.payload.content,
         });
+        clearNoteCache();
+        notifyWorkspaceDataChanged("notes");
+        return { success: true, message: action.success, data };
+      }
 
-        return { success: true, message: action.success, data: note };
+      case "sendTelegramMessage": {
+        const data = await runWriteTool<{ messageId: string }>("send_telegram_message", {
+          peerId: action.payload.peerId,
+          text: action.payload.text,
+        });
+        return { success: true, message: action.success, data };
       }
 
       case "getTodayPlan":
-        return {
-          success: true,
-          message: await formatPlanMessage(action),
-          data: await getTodayPlan(action.payload.dateKey),
-        };
+        return { success: true, message: await formatPlanMessage(action) };
     }
-  } catch {
-    return { success: false, message: action.error };
+  } catch (error) {
+    logRouter("tool_error", { tool: action.type });
+    const fallback = getApiErrorMessage(error, action.error);
+    return { success: false, message: fallback };
   }
 };

@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, Check, Flag, ListTodo, NotebookPen, X } from "lucide-react";
+import { Bell, CalendarDays, Check, Flag, ListTodo, NotebookPen, Send, X } from "lucide-react";
 
 import type { AIAction } from "../../actions/actionTypes";
 
@@ -61,6 +61,14 @@ const getActionDetails = (action: AIAction): ActionDetails => {
         target: "Bugungi reja",
         summary: "Task, reminder va uchrashuvlar jamlanadi.",
       };
+    case "sendTelegramMessage":
+      return {
+        title: action.payload.recipientUsername
+          ? `${action.payload.recipientName} (@${action.payload.recipientUsername})`
+          : action.payload.recipientName,
+        target: "Telegram",
+        summary: `“${action.payload.text}”`,
+      };
   }
 };
 
@@ -69,6 +77,7 @@ const getActionIcon = (action: AIAction) => {
   if (action.type === "createReminder") return Bell;
   if (action.type === "createMeeting") return CalendarDays;
   if (action.type === "createNote") return NotebookPen;
+  if (action.type === "sendTelegramMessage") return Send;
   return Flag;
 };
 
@@ -85,14 +94,18 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
 
       <div className="action-confirmation__content">
         <strong className="action-confirmation__name">{status === "success" ? "Bajarildi" : status === "cancelled" ? "Bekor qilindi" : action.label}</strong>
-        <span className="action-confirmation__title">{details.title}</span>
+        <span className="action-confirmation__title">
+          {action.type === "sendTelegramMessage" ? `Qabul qiluvchi: ${details.title}` : details.title}
+        </span>
         {(details.date || details.time) && (
           <span className="action-confirmation__meta">
             {[details.date, details.time].filter(Boolean).join(" · ")}
           </span>
         )}
         <span className="action-confirmation__meta">{details.target}{details.priority ? ` · ${details.priority}` : ""}</span>
-        <span className="action-confirmation__summary">{details.summary}</span>
+        <span className="action-confirmation__summary">
+          {action.type === "sendTelegramMessage" ? `Xabar: ${details.summary}` : details.summary}
+        </span>
       </div>
 
       {!resolved && <div className="action-confirmation__actions">
