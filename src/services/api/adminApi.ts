@@ -22,6 +22,21 @@ export type AdminUserDetail = AdminUser & {
 };
 export type AdminPage<T> = { items: T[]; meta: { page: number; limit: number; total: number; totalPages: number } };
 
+type RateLimitInfo = { max: number; windowMinutes: number };
+export type AdminSettings = {
+  platform: { name: string; defaultUserStatus: "ACTIVE" | "BLOCKED"; registrationEnabled: boolean; maintenanceMode: boolean };
+  security: {
+    accessTokenExpiresIn: string;
+    refreshTokenExpiresIn: string;
+    loginBruteForce: { maxFailures: number; lockMinutes: number };
+    rateLimits: { loginPerIp: RateLimitInfo; loginPerEmail: RateLimitInfo; registerPerIp: RateLimitInfo; registerPerEmail: RateLimitInfo; passwordReset: RateLimitInfo; globalPerIp: { max: number; windowSeconds: number } };
+  };
+  notifications: { workerStatus: "running" | "stopped"; intervalSeconds: number; batchSize: number; retryLimit: number };
+  integrations: { telegram: { configured: boolean }; google: { configured: boolean }; openai: { configured: boolean } };
+  storage: { provider: string; maxFileSizeBytes: number; localWarning: string | null };
+  system: { environment: string; version: string | null; api: { status: string }; database: { status: string; latencyMs: number } };
+};
+
 export const adminApi = {
   overview: (range: AdminRange) => request<AdminOverview>(`/admin/overview?range=${range}`),
   users: (params: { page: number; search?: string; role?: string; status?: string; sort?: string; order?: string }) => request<AdminPage<AdminUser>>(`/admin/users?${new URLSearchParams(Object.entries(params).filter(([, value]) => Boolean(value)) as string[][])}`),
@@ -34,5 +49,5 @@ export const adminApi = {
   files: (page: number) => request<any>(`/admin/files?page=${page}&limit=20`),
   activity: (page: number) => request<any>(`/admin/activity?page=${page}&limit=25`),
   system: () => request<any>("/admin/system"),
-  settings: () => request<any>("/admin/settings"),
+  settings: () => request<AdminSettings>("/admin/settings"),
 };
