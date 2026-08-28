@@ -27,9 +27,10 @@ const TelegramSelectionCard = ({ selection, onSelect }: TelegramSelectionProps) 
             type="button"
             key={candidate.peerId}
             className={`telegram-selection__option ${selection.mode === "search_result" ? "telegram-selection__option--result" : ""}`}
-            disabled={selection.mode === "search_result" || selectedPeerId !== null}
+            disabled={selectedPeerId !== null}
+            aria-label={`${candidate.displayName}${candidate.username ? ` ${candidate.username}` : ""}ni tanlash`}
             onClick={() => {
-              if (selection.mode !== "send_recipient" || !onSelect) return;
+              if (!onSelect) return;
               setSelectedPeerId(candidate.peerId);
               onSelect(candidate);
             }}

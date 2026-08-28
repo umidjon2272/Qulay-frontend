@@ -15,6 +15,8 @@ import { AUTH_SESSION_CHANGED, getAuthSession } from "../../../services/authServ
 import { executeAIAction, type AIActionExecutionResult } from "../actions/actionExecutor";
 import { isAIAction, type AIAction } from "../actions/actionTypes";
 import { buildTelegramSendConfirmation } from "../router/chatRouter";
+import { matchTelegramCandidate } from "../router/telegramCandidateSelection";
+import type { TelegramSelection } from "../router/routerTypes";
 import { getAIReply } from "../../../services/aiService";
 import {
   AIChatContext,
@@ -110,6 +112,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const pendingRequestsRef = useRef(new Map<number, AbortController>());
   const executedActionsRef = useRef(new Set<string>());
   const executingActionsRef = useRef(new Set<string>());
+  const pendingTelegramSelectionRef = useRef<{ messageId: number; selection: TelegramSelection } | null>(null);
 
   useEffect(() => subscribeToWorkspaceData("settings", () => {
     const nextSaveHistory = getSettings().ai.saveHistory;
@@ -130,6 +133,10 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       (max, message) => Math.max(max, message.id),
       0,
     );
+    const pending = [...messages].reverse().find((message) => message.telegramSelection);
+    pendingTelegramSelectionRef.current = pending?.telegramSelection
+      ? { messageId: pending.id, selection: pending.telegramSelection }
+      : null;
   }, [messages]);
 
   useEffect(() => {
@@ -164,6 +171,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       generationRef.current += 1;
       for (const controller of pendingRequestsRef.current.values()) controller.abort();
       pendingRequestsRef.current.clear();
+      pendingTelegramSelectionRef.current = null;
       executedActionsRef.current.clear();
       executingActionsRef.current.clear();
       setMessages([{ ...welcomeMessage, id: 0, time: formatTime() }]);
@@ -184,10 +192,69 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((value) => !value), []);
 
+  const resolveTelegramSelection = useCallback(async (
+    messageId: number,
+    candidate: TelegramCandidate,
+    selection: TelegramSelection,
+  ): Promise<void> => {
+    if (!mountedRef.current) return;
+    pendingTelegramSelectionRef.current = null;
+    setMessages((current) => current.map((message) => (
+      message.id === messageId ? { ...message, telegramSelection: undefined } : message
+    )));
+
+    if (selection.mode === "search_result") {
+      const username = candidate.username
+        ? ` (${candidate.username.startsWith("@") ? candidate.username : `@${candidate.username}`})`
+        : "";
+      setMessages((current) => appendMessage(current, {
+        id: nextMessageId(), role: "ai",
+        text: `Tanlandi: ${candidate.displayName}${username}`,
+        time: formatTime(),
+      }));
+      return;
+    }
+
+    if (!selection.pendingText) return;
+    setIsTyping(true);
+    try {
+      const reply = await buildTelegramSendConfirmation(candidate, selection.pendingText);
+      if (!mountedRef.current) return;
+      setMessages((current) => appendMessage(current, {
+        id: nextMessageId(), role: "ai", text: reply.text,
+        time: formatTime(), action: reply.action,
+      }));
+    } catch {
+      if (!mountedRef.current) return;
+      setMessages((current) => appendMessage(current, {
+        id: nextMessageId(), role: "ai",
+        text: "Telegram xabarini tayyorlashda xatolik yuz berdi.", time: formatTime(),
+      }));
+    } finally {
+      if (mountedRef.current) setIsTyping(pendingRequestsRef.current.size > 0);
+    }
+  }, []);
+
   const sendMessage = useCallback((text: string) => {
     const trimmed = text.trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!trimmed || !mountedRef.current) return;
     if (pendingRequestsRef.current.size > 0) return;
+
+    const pendingSelection = pendingTelegramSelectionRef.current;
+    if (pendingSelection) {
+      const userMessage: ChatMessage = { id: nextMessageId(), role: "user", text: trimmed, time: formatTime() };
+      setMessages((current) => appendMessage(current, userMessage));
+      const candidate = matchTelegramCandidate(trimmed, pendingSelection.selection.candidates);
+      if (candidate) {
+        void resolveTelegramSelection(pendingSelection.messageId, candidate, pendingSelection.selection);
+      } else {
+        setMessages((current) => appendMessage(current, {
+          id: nextMessageId(), role: "ai",
+          text: "Tanlovni raqam, aniq ism yoki @username bilan kiriting.", time: formatTime(),
+        }));
+      }
+      return;
+    }
 
     const requestId = ++requestIdRef.current;
     const generation = generationRef.current;
@@ -249,7 +316,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           setIsTyping(pendingRequestsRef.current.size > 0);
         }
       });
-  }, []);
+  }, [resolveTelegramSelection]);
 
   const executeAction = useCallback(async (action: AIAction): Promise<AIActionExecutionResult> => {
     if (!mountedRef.current) {
@@ -303,39 +370,6 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const resolveTelegramSelection = useCallback(async (messageId: number, candidate: TelegramCandidate, pendingText: string): Promise<void> => {
-    if (!mountedRef.current) return;
-
-    setMessages((current) => current.map((message) => (
-      message.id === messageId ? { ...message, telegramSelection: undefined } : message
-    )));
-    setIsTyping(true);
-
-    try {
-      const reply = await buildTelegramSendConfirmation(candidate, pendingText);
-      if (!mountedRef.current) return;
-
-      setMessages((current) => appendMessage(current, {
-          id: nextMessageId(),
-          role: "ai",
-          text: reply.text,
-          time: formatTime(),
-          action: reply.action,
-        }));
-    } catch {
-      if (!mountedRef.current) return;
-
-      setMessages((current) => appendMessage(current, {
-          id: nextMessageId(),
-          role: "ai",
-          text: "Telegram xabarini tayyorlashda xatolik yuz berdi.",
-          time: formatTime(),
-        }));
-    } finally {
-      if (mountedRef.current) setIsTyping(pendingRequestsRef.current.size > 0);
-    }
-  }, []);
-
   const clearChat = useCallback(() => {
     generationRef.current += 1;
 
@@ -344,6 +378,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     }
 
     pendingRequestsRef.current.clear();
+    pendingTelegramSelectionRef.current = null;
     executedActionsRef.current.clear();
     executingActionsRef.current.clear();
     setMessages([{ ...welcomeMessage, id: 0, time: formatTime() }]);

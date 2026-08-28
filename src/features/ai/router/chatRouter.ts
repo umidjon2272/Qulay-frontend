@@ -74,7 +74,7 @@ export const buildTelegramSendConfirmation = async (peer: TelegramCandidate, tex
     payload: {
       peerId: recipient.peerId,
       recipientName: recipient.displayName,
-      recipientUsername: recipient.username ?? undefined,
+      recipientUsername: recipient.username?.replace(/^@/, '') ?? undefined,
       text,
     },
     label: "Telegram xabari",

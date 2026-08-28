@@ -63,9 +63,7 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
             <TelegramSelectionCard
               selection={selection}
               onSelect={(candidate) => {
-                if (selection.mode === "send_recipient" && selection.pendingText) {
-                  void resolveTelegramSelection(message.id, candidate, selection.pendingText);
-                }
+                void resolveTelegramSelection(message.id, candidate, selection);
               }}
             />
           )}

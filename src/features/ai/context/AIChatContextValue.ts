@@ -24,7 +24,7 @@ export type AIChatContextValue = {
   isTyping: boolean;
   sendMessage: (text: string) => void;
   executeAction: (action: AIAction) => Promise<AIActionExecutionResult>;
-  resolveTelegramSelection: (messageId: number, candidate: TelegramCandidate, pendingText: string) => Promise<void>;
+  resolveTelegramSelection: (messageId: number, candidate: TelegramCandidate, selection: TelegramSelection) => Promise<void>;
   clearChat: () => void;
   speakingId: number | null;
   speak: (id: number, text: string) => void;
