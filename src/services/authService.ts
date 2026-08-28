@@ -27,6 +27,26 @@ export const signIn = async (email: string, password: string, remember = true): 
   return response.user;
 };
 
+export class AdminAccessDeniedError extends Error {
+  constructor() {
+    super("Admin huquqi mavjud emas.");
+    this.name = "AdminAccessDeniedError";
+  }
+}
+
+/**
+ * Authenticate through the normal API, but do not persist a non-admin login.
+ * The response is checked before touching either localStorage or sessionStorage.
+ */
+export const signInAdmin = async (email: string, password: string, remember = true): Promise<User> => {
+  const response = await authApi.login(email.trim().toLowerCase(), password);
+  if (response.user.role !== "ADMIN") throw new AdminAccessDeniedError();
+
+  saveAuth({ accessToken: response.accessToken, refreshToken: response.refreshToken }, response.user, remember);
+  notifyAuthChanged();
+  return response.user;
+};
+
 export const signUp = async (input: { email: string; password: string; firstName: string; lastName: string }, remember = true): Promise<User> => {
   const response = await authApi.register({ ...input, email: input.email.trim().toLowerCase() });
   saveAuth({ accessToken: response.accessToken, refreshToken: response.refreshToken }, response.user, remember);

@@ -107,7 +107,7 @@ const Pagination = ({ meta, page, onPage }: { meta?: { page: number; total: numb
 
 const AdminConsole = () => {
   const location = useLocation(); const navigate = useNavigate(); const { user, logout } = useAuth(); const [theme, setTheme] = useState(document.documentElement.dataset.theme === "dark"); const [mobileOpen, setMobileOpen] = useState(false);
-  useEffect(() => { if (user?.role !== "ADMIN") navigate("/dashboard", { replace: true }); }, [user, navigate]);
+  useEffect(() => { if (user?.role !== "ADMIN") navigate("/admin/login", { replace: true, state: { accessDenied: true } }); }, [user, navigate]);
   if (!user || user.role !== "ADMIN") return null;
   const path = location.pathname; const detailMatch = path.match(/^\/admin\/users\/([^/]+)/); const section = detailMatch ? "user" : path === "/admin" ? "overview" : path.split("/")[2] ?? "overview";
   const content = section === "overview" ? <AdminOverviewPage /> : section === "users" && !detailMatch ? <UsersPage /> : section === "user" && detailMatch ? <UserDetailPage id={detailMatch[1]} /> : ["usage", "integrations", "notifications", "files", "activity", "system", "settings"].includes(section) ? <DataPage kind={section as "usage"} /> : <AdminOverviewPage />;

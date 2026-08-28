@@ -19,20 +19,27 @@ import NotFound from "../pages/NotFound/NotFound";
 
 import AppLayout from "../layouts/AppLayout/AppLayout";
 import RequireAuth from "./router/RequireAuth";
+import RequireAdmin from "./router/RequireAdmin";
 import RootRedirect from "./router/RootRedirect";
 import AdminConsole from "../pages/Admin/AdminConsole";
+import AdminLogin from "../pages/Admin/AdminLogin";
 
 export const router = createBrowserRouter([
   {
     element: (
-      <RequireAuth>
+      <RequireAdmin>
         <AdminConsole />
-      </RequireAuth>
+      </RequireAdmin>
     ),
     children: [
       { path: "/admin", element: null },
       { path: "/admin/*", element: null },
     ],
+  },
+
+  {
+    path: "/admin/login",
+    element: <AdminLogin />,
   },
 
   {
