@@ -26,6 +26,7 @@ import { useIntegrations } from "../../hooks/useIntegrations";
 import ChangePasswordModal from "../../components/ChangePasswordModal/ChangePasswordModal";
 import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
 import { getSettings, updateSettings } from "../../services/settingsService";
+import { getGoogleStatus } from "../../services/integrationService";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
@@ -137,7 +138,7 @@ const Settings = () => {
 
   const { showToast } = useToast();
   const { name, email, bio, avatar, setName, setBio, setAvatar } = useProfile();
-  const { integrations } = useIntegrations();
+  const { integrations, connect, disconnect } = useIntegrations();
   const { logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -148,6 +149,24 @@ const Settings = () => {
   const [lastName, setLastName] = useState(() => splitName(name).lastName);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
+
+  useEffect(() => {
+    if (active !== "integrations" && searchParams.get("integration") !== "google") return;
+    let activeRequest = true;
+    void getGoogleStatus().then((status) => {
+      if (!activeRequest) return;
+      if (status.connected) {
+        const account = status.email ?? status.displayName ?? "Google";
+        connect("google-calendar", account);
+        connect("google-drive", account);
+      } else {
+        disconnect("google-calendar");
+        disconnect("google-drive");
+      }
+      if (searchParams.get("integration") === "google") setSearchParams({ tab: "integrations" }, { replace: true });
+    }).catch(() => showToast("Google ulanish holatini tekshirib bo'lmadi", "error"));
+    return () => { activeRequest = false; };
+  }, [active, connect, disconnect, searchParams, setSearchParams, showToast]);
 
   useEffect(() => {
     const parts = splitName(name);

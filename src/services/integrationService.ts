@@ -107,6 +107,7 @@ export const sendTelegramMessage = (peerId: string, text: string, confirmed: boo
   });
 
 export type GoogleStatus = {
+  configured: boolean;
   connected: boolean;
   email: string | null;
   displayName: string | null;

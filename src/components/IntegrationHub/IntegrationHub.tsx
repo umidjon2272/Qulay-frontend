@@ -68,7 +68,7 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
       else disconnect("telegram");
     }).catch(() => { if (active) setTelegramTemporaryError(true); });
     return () => { active = false; };
-  }, [connect, selectedId]);
+  }, [connect, disconnect, selectedId]);
 
   useEffect(() => {
     let active = true;
@@ -78,10 +78,13 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
         const account = status.email ?? status.displayName ?? "Google";
         connect("google-calendar", account);
         connect("google-drive", account);
+      } else {
+        disconnect("google-calendar");
+        disconnect("google-drive");
       }
     }).catch(() => undefined);
     return () => { active = false; };
-  }, [connect]);
+  }, [connect, disconnect]);
 
   useEffect(() => () => {
     if (connectTimerRef.current !== null) window.clearTimeout(connectTimerRef.current);
