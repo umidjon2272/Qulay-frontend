@@ -18,13 +18,14 @@ import {
 } from "../../services/integrationService";
 
 import { useI18n } from "../../i18n/useI18n";
+import { useToast } from "../../hooks/useToast";
 
 import "./IntegrationHub.scss";
 
 type IntegrationHubProps = { limit?: number; columns?: number; navigateOnSelect?: boolean };
 type TelegramStep = "phone" | "code" | "password";
 
-const errorMessage = (error: unknown) => error instanceof ApiError ? error.message : "Telegram bilan ulanishda xatolik yuz berdi.";
+const errorMessage = (error: unknown, fallback = "Integratsiya bilan ulanishda xatolik yuz berdi.") => error instanceof ApiError ? error.message : fallback;
 
 const telegramDeliveryMessage = (delivery: TelegramDeliveryType | null): string => {
   switch (delivery) {
@@ -41,6 +42,7 @@ const telegramDeliveryMessage = (delivery: TelegramDeliveryType | null): string 
 const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: IntegrationHubProps) => {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { showToast } = useToast();
   const [searchParams] = useSearchParams();
   const focusedIntegration = searchParams.get("focus");
   const { integrations, connect, disconnect, sync } = useIntegrations();
@@ -83,9 +85,11 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       const account = status.email ?? status.displayName ?? "Google";
       sync("google-calendar", Boolean(status.connected && status.calendarEnabled), account);
       sync("google-drive", Boolean(status.connected && status.driveEnabled), account);
-    }).catch(() => undefined);
+    }).catch((error) => {
+      if (active) showToast(errorMessage(error, "Google ulanish holatini tekshirib bo'lmadi."), "error");
+    });
     return () => { active = false; };
-  }, [sync]);
+  }, [showToast, sync]);
 
   useEffect(() => () => {
     if (connectTimerRef.current !== null) window.clearTimeout(connectTimerRef.current);
@@ -203,7 +207,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             {telegramStep === "code" && <button type="button" className="integration-modal__resend" onClick={() => void resendTelegramStep()} disabled={telegramBusy || resendRemainingSeconds > 0}>{resendRemainingSeconds > 0 ? `Qayta yuborish (${resendRemainingSeconds}s)` : "Qayta yuborish"}</button>}
             <span className="integration-modal__note">Session Qulay AI serverida shifrlangan holda saqlanadi.</span>
           </> : (selected.id === "google-calendar" || selected.id === "google-drive") ? <>
-            <button type="button" className="integration-modal__connect" onClick={() => { if (connectingId) return; setConnectingId(selected.id); void getGoogleConnectUrl().then(({ url }) => { window.location.assign(url); }).catch((error) => { setTelegramError(errorMessage(error)); setConnectingId(null); }); }} disabled={connectingId === selected.id}>{connectingId === selected.id ? "Google oynatilmoqda..." : "Google bilan ulash"}<ExternalLink size={15} /></button>
+            <button type="button" className="integration-modal__connect" onClick={() => { if (connectingId) return; setConnectingId(selected.id); void getGoogleConnectUrl().then(({ url }) => { window.location.assign(url); }).catch((error) => { const message = errorMessage(error, "Google OAuth oynasini ochib bo'lmadi."); setTelegramError(message); showToast(message, "error"); setConnectingId(null); }); }} disabled={connectingId === selected.id}>{connectingId === selected.id ? "Google oynatilmoqda..." : "Google bilan ulash"}<ExternalLink size={15} /></button>
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
             <span className="integration-modal__note">Google OAuth oynasida Calendar va Drive ruxsatlarini tasdiqlang.</span>
           </> : <>

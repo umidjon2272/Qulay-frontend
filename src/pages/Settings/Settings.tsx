@@ -173,7 +173,7 @@ const Settings = () => {
       }
 
       if (oauthIntegration === "google") setSearchParams({ tab: "integrations" }, { replace: true });
-    }).catch(() => showToast("Google ulanish holatini tekshirib bo'lmadi", "error"));
+    }).catch((error) => showToast(error instanceof Error && error.message ? error.message : "Google ulanish holatini tekshirib bo'lmadi", "error"));
     return () => { activeRequest = false; };
   }, [active, searchParams, setSearchParams, showToast, sync]);
 

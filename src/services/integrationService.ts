@@ -116,6 +116,6 @@ export type GoogleStatus = {
   driveEnabled: boolean;
 };
 
-export const getGoogleConnectUrl = () => request<{ url: string }>("/integrations/google/connect-url");
+export const getGoogleConnectUrl = () => request<{ url: string }>("/integrations/google/auth-url");
 export const getGoogleStatus = () => request<GoogleStatus>("/integrations/google/status");
 export const disconnectGoogle = () => request<{ status: "disconnected" }>("/integrations/google/disconnect", { method: "DELETE" });
