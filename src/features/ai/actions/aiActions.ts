@@ -56,8 +56,9 @@ const getTime = (input: string): string => {
 const removeTimeAndDate = (input: string) =>
   input
     .replace(/\b(?:bugun|ertaga|today|tomorrow)\b/g, " ")
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, " ")
     .replace(
-      /\b(?:soat\s*)?(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:da|de)?\b/g,
+      /\b(?:soat\s*)?(?:[01]?\d|2[0-3])(?::[0-5]\d)?\s*(?:da|de|ga)?\b/g,
       " ",
     );
 
@@ -109,6 +110,22 @@ const extractSubject = (input: string, words: string[]) => {
       .replace(/\s+/g, " ")
       .trim(),
   );
+};
+
+const extractMeetingTitle = (input: string): string => {
+  const quoted = input.match(/(?:^|\s)["“«']\s*([^"”»']{1,200}?)\s*["”»']/u)?.[1];
+  if (quoted?.trim()) return toTitle(quoted.replace(/[.,!?;:]+$/g, ""));
+
+  const cleaned = removeTimeAndDate(input)
+    .replace(/\b(?:dushanba|seshanba|chorshanba|payshanba|juma|shanba|yakshanba)(?:\s+kuni)?\b/gu, " ")
+    .replace(/\b(?:uchrashuv|yig'ilish)(?:i|ni|ini|im|imiz|ga|da)?\b/gu, " ")
+    .replace(/\b(?:meeting)(?:ni|ga)?\b/gu, " ")
+    .replace(/\b(?:yarat(?:ib\s+ber)?|qo'sh|qosh|qo'y|qoy|belgila|tashkil\s+qil|rejalashtir|create|add|schedule)\b/gu, " ")
+    .replace(/\b(?:iltimos|menga|men\s+uchun|nomli|deb|ga)\b/gu, " ")
+    .replace(/["“”«»'.,!?;:]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return toTitle(cleaned);
 };
 
 const createTaskAction = (input: string, now: Date): AIAction => {
@@ -166,14 +183,7 @@ const createReminderAction = (input: string, now: Date): AIAction => {
 const createMeetingAction = (input: string, now: Date): AIAction => {
   const { dateKey, dateLabel } = getDateContext(input, now);
   const time = getTime(input);
-  const subject = extractSubject(input, ["uchrashuv", "meeting", "yig'ilish"]);
-  const title = subject
-    ? subject.toLocaleLowerCase().includes("uchrashuv")
-      ? subject
-      : subject.toLocaleLowerCase().endsWith(" bilan")
-        ? `${subject} uchrashuv`
-        : `${subject} bilan uchrashuv`
-    : "Yangi uchrashuv";
+  const title = extractMeetingTitle(input) || "Yangi uchrashuv";
   const participantMatch = input.match(/\b([\p{L}][\p{L}\s-]{1,30}?)\s+bilan\b/iu)
     ?? input.match(/\b(?:bilan|with)\s+([\p{L}][\p{L}\s-]{1,30}?)(?:\s+uchrashuv|\s+meeting|\s+qo'y|$)/iu);
   const participant = participantMatch?.[1]?.trim();
