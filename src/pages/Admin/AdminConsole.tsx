@@ -5,19 +5,27 @@ import type { LucideIcon } from "lucide-react";
 import { useAuth } from "../../hooks/useAuth";
 import { getApiErrorMessage } from "../../services/api/apiClient";
 import { adminApi, type AdminActivity, type AdminConnectionCounts, type AdminFiles, type AdminIntegrations, type AdminNotifications, type AdminOverview, type AdminRange, type AdminSettingsSection, type AdminSystem, type AdminUsage, type AdminUser, type AdminUserDetail, type NormalizedAdminSettings } from "../../services/api/adminApi";
+import { notifyPlatformNameChanged, usePlatform } from "../../context/PlatformContext";
 import "./AdminConsole.scss";
 
 type NavItem = { label: string; path: string; icon: LucideIcon; exact?: boolean };
-const navItems: NavItem[] = [
-  { label: "Umumiy ko'rinish", path: "/admin", icon: LayoutDashboard, exact: true },
-  { label: "Foydalanuvchilar", path: "/admin/users", icon: Users },
-  { label: "Foydalanish", path: "/admin/usage", icon: BarChart3 },
-  { label: "Integratsiyalar", path: "/admin/integrations", icon: Globe2 },
-  { label: "Bildirishnomalar", path: "/admin/notifications", icon: Bell },
-  { label: "Fayllar", path: "/admin/files", icon: FileText },
-  { label: "Faoliyat jurnali", path: "/admin/activity", icon: Activity },
-  { label: "Tizim holati", path: "/admin/system", icon: HeartPulse },
-  { label: "Sozlamalar", path: "/admin/settings", icon: Settings2 },
+type NavGroup = { label: string; items: NavItem[] };
+const navGroups: NavGroup[] = [
+  { label: "BOSHQARUV", items: [
+    { label: "Umumiy ko'rinish", path: "/admin", icon: LayoutDashboard, exact: true },
+    { label: "Foydalanuvchilar", path: "/admin/users", icon: Users },
+    { label: "Foydalanish", path: "/admin/usage", icon: BarChart3 },
+  ] },
+  { label: "TIZIM", items: [
+    { label: "Integratsiyalar", path: "/admin/integrations", icon: Globe2 },
+    { label: "Bildirishnomalar", path: "/admin/notifications", icon: Bell },
+    { label: "Fayllar", path: "/admin/files", icon: FileText },
+    { label: "Faoliyat jurnali", path: "/admin/activity", icon: Activity },
+    { label: "Tizim holati", path: "/admin/system", icon: HeartPulse },
+  ] },
+  { label: "SOZLASH", items: [
+    { label: "Sozlamalar", path: "/admin/settings", icon: Settings2 },
+  ] },
 ];
 const rangeOptions: AdminRange[] = [7, 30, 90];
 
@@ -81,7 +89,7 @@ const TrendChart = ({ data, label }: { data: Array<{ date: string; count: number
   </div>;
 };
 
-const KpiCard = ({ label, value, icon: Icon, accent = "violet" }: { label: string; value: number; icon: LucideIcon; accent?: string }) => <div className={`admin-kpi admin-kpi--${accent}`}><div className="admin-kpi__top"><span>{label}</span><Icon size={17} /></div><strong>{formatNumber(value)}</strong><small>Baza asosidagi real ko'rsatkich</small></div>;
+const KpiCard = ({ label, value, icon: Icon, accent = "violet" }: { label: string; value: number | string | undefined; icon: LucideIcon; accent?: string }) => <div className={`admin-kpi admin-kpi--${accent}`}><div className="admin-kpi__top"><span>{label}</span><Icon size={17} /></div><strong>{typeof value === "number" ? formatNumber(value) : value ?? "0"}</strong><small>Baza asosidagi real ko'rsatkich</small></div>;
 
 const AdminOverviewPage = () => {
   const [range, setRange] = useState<AdminRange>(30);
@@ -107,7 +115,7 @@ const AdminOverviewPage = () => {
 
 const PageHeader = ({ eyebrow, title, description, children }: { eyebrow: string; title: string; description: string; children?: ReactNode }) => <header className="admin-page-header"><div><span className="admin-eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>{children}</header>;
 const CardHeading = ({ title, detail, children }: { title: string; detail?: string; children?: ReactNode }) => <div className="admin-card-heading"><div><h2>{title}</h2>{detail && <span>{detail}</span>}</div>{children}</div>;
-const RangeSelector = ({ value, onChange }: { value: AdminRange; onChange: (value: AdminRange) => void }) => <div className="admin-segmented">{rangeOptions.map((option) => <button type="button" className={value === option ? "is-active" : ""} onClick={() => onChange(option)} key={option}>{option}k</button>)}</div>;
+const RangeSelector = ({ value, onChange }: { value: AdminRange; onChange: (value: AdminRange) => void }) => <div className="admin-segmented">{rangeOptions.map((option) => <button type="button" className={value === option ? "is-active" : ""} onClick={() => onChange(option)} key={option}>{option} kun</button>)}</div>;
 const MiniMetric = ({ icon, label, value }: { icon: ReactNode; label: string; value: number | undefined }) => <div className="admin-mini-metric"><span className="admin-mini-metric__icon">{icon}</span><span>{label}</span><strong>{formatNumber(value)}</strong></div>;
 
 const UsersPage = () => {
@@ -162,12 +170,34 @@ const UserDetailPage = ({ id }: { id: string }) => {
 const DetailRow = ({ label, children }: { label: string; children: ReactNode }) => <div className="admin-detail-row"><span>{label}</span><strong>{children}</strong></div>;
 
 const DataPage = ({ kind }: { kind: "usage" | "integrations" | "notifications" | "files" | "system" | "settings" }) => {
-  const [range, setRange] = useState<AdminRange>(30); const [data, setData] = useState<any>(null); const [page, setPage] = useState(1); const [loading, setLoading] = useState(true); const [error, setError] = useState<string | null>(null);
-  const load = () => { setLoading(true); setError(null); const call = kind === "usage" ? adminApi.usage(range) : kind === "integrations" ? adminApi.integrations() : kind === "notifications" ? adminApi.notifications(range) : kind === "files" ? adminApi.files(page) : kind === "system" ? adminApi.system() : adminApi.settings(); void call.then(setData).catch((reason: unknown) => setError(getApiErrorMessage(reason))).finally(() => setLoading(false)); };
-  useEffect(load, [kind, range, page]);
+  const [range, setRange] = useState<AdminRange>(30);
+  const [data, setData] = useState<any>(null);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [fileSearch, setFileSearch] = useState("");
+  const [fileSource, setFileSource] = useState("");
+  const [fileStorage, setFileStorage] = useState("");
+  const [fileType, setFileType] = useState("");
+
+  const load = () => {
+    setLoading(true); setError(null);
+    const call = kind === "usage" ? adminApi.usage(range)
+      : kind === "integrations" ? adminApi.integrations()
+        : kind === "notifications" ? adminApi.notifications(range)
+          : kind === "files" ? adminApi.files({ page, search: fileSearch, source: fileSource, storageProvider: fileStorage, type: fileType })
+            : kind === "system" ? adminApi.system()
+              : adminApi.settings();
+    void call.then(setData).catch((reason: unknown) => setError(getApiErrorMessage(reason))).finally(() => setLoading(false));
+  };
+  useEffect(load, [kind, range, page, fileSearch, fileSource, fileStorage, fileType]);
   const meta = data?.meta;
   if (error && !data) return <div className="admin-page"><PageHeader eyebrow={eyebrowFor(kind)} title={titleFor(kind)} description={descriptionFor(kind)} /><ErrorState error={error} retry={load} /></div>;
-  return <div className="admin-page admin-fade-in"><PageHeader eyebrow={eyebrowFor(kind)} title={titleFor(kind)} description={descriptionFor(kind)}>{["usage", "notifications"].includes(kind) && <RangeSelector value={range} onChange={setRange} />}</PageHeader>{loading && !data ? <Loading /> : <>{kind === "usage" && <UsageView data={data} />} {kind === "integrations" && <IntegrationsView data={data} />} {kind === "notifications" && <NotificationsView data={data} />} {kind === "files" && <FilesView data={data} />} {kind === "system" && <SystemView data={data} />} {kind === "settings" && <SettingsView data={data} />}{meta && <Pagination meta={meta} page={page} onPage={setPage} />}</>}</div>;
+  return <div className="admin-page admin-fade-in">
+    <PageHeader eyebrow={eyebrowFor(kind)} title={titleFor(kind)} description={descriptionFor(kind)}>{["usage", "notifications"].includes(kind) && <RangeSelector value={range} onChange={setRange} />}</PageHeader>
+    {kind === "files" && <section className="admin-card admin-activity-filters"><div className="admin-toolbar"><div className="admin-search"><Search size={17} /><input value={fileSearch} onChange={(event) => { setPage(1); setFileSearch(event.target.value); }} placeholder="Fayl nomi bo'yicha qidirish" /></div><select value={fileSource} onChange={(event) => { setPage(1); setFileSource(event.target.value); }}><option value="">Barcha manbalar</option><option value="UPLOAD">Yuklangan</option><option value="GOOGLE_DRIVE">Google Drive</option><option value="TELEGRAM">Telegram</option><option value="SYSTEM">Tizim</option></select><select value={fileStorage} onChange={(event) => { setPage(1); setFileStorage(event.target.value); }}><option value="">Barcha storage</option><option value="LOCAL">Lokal</option><option value="S3">Amazon S3</option></select><select value={fileType} onChange={(event) => { setPage(1); setFileType(event.target.value); }}><option value="">Barcha turlar</option><option value="image">Rasm</option><option value="pdf">PDF</option><option value="document">Hujjat</option></select></div></section>}
+    {loading && !data ? <Loading /> : <>{kind === "usage" && <UsageView data={data} />} {kind === "integrations" && <IntegrationsView data={data} />} {kind === "notifications" && <NotificationsView data={data} />} {kind === "files" && <FilesView data={data} />} {kind === "system" && <SystemView data={data} />} {kind === "settings" && <SettingsView data={data} />}{meta && <Pagination meta={meta} page={page} onPage={setPage} />}</>}
+  </div>;
 };
 
 const isUuid = (value: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -210,10 +240,28 @@ const SECTION_DESCRIPTIONS: Record<string, string> = {
 };
 const descriptionFor = (kind: string) => SECTION_DESCRIPTIONS[kind] ?? "";
 
-const UsageView = ({ data }: { data: AdminUsage }) => <><div className="admin-kpi-grid admin-kpi-grid--compact"><KpiCard label="Jami so'rovlar" value={data?.totals?.requests} icon={Bot} /><KpiCard label="Matn so'rovlari" value={data?.totals?.text?.requests} icon={BarChart3} accent="blue" /><KpiCard label="Vosita ishlatilishi" value={data?.totals?.tool?.requests} icon={Zap} accent="green" /></div><div className="admin-grid admin-grid--charts"><section className="admin-card"><CardHeading title="Foydalanish dinamikasi" detail="Haqiqiy AiUsage qatorlari" /><TrendChart data={data?.trend ?? []} label="Foydalanish dinamikasi" /></section><section className="admin-card"><CardHeading title="Provayder holati" /><div className="admin-provider-state"><Bot size={26} /><strong>{data?.provider?.status === "configured" ? "Provayder ulangan" : "OpenAI hali ulanmagan"}</strong><span>Bazada qayd etilgan qiymat bo'lmaganda token va xarajat ko'rsatkichlari nolga teng bo'lib qoladi.</span></div></section></div><section className="admin-card"><CardHeading title="Faol foydalanuvchilar" detail="Tanlangan davr" />{data?.byUser?.length ? <div className="admin-simple-list">{data.byUser.map((row) => <div key={row.user.id}><span className="admin-avatar">{initials(row.user)}</span><span><strong>{row.user.firstName} {row.user.lastName}</strong><small>{row.user.email}</small></span><b>{formatNumber(row.requests)} so'rov</b></div>)}</div> : <EmptyState title="AI foydalanish qayd etilmagan" text="Bu neytral holat — soxta foydalanish ko'rsatilmaydi." />}</section></>;
-const IntegrationsView = ({ data }: { data: AdminIntegrations }) => <div className="admin-grid admin-grid--secondary"><ConnectionCard label="Telegram" data={data?.telegram} icon={<Zap size={21} />} /><ConnectionCard label="Google" data={data?.google} icon={<Globe2 size={21} />} /></div>;
+const UsageView = ({ data }: { data: AdminUsage }) => <><div className="admin-kpi-grid admin-kpi-grid--compact"><KpiCard label="Jami so'rovlar" value={data?.totals?.requests} icon={Bot} /><KpiCard label="Input tokenlar" value={data?.totals?.inputTokens} icon={BarChart3} accent="blue" /><KpiCard label="Output tokenlar" value={data?.totals?.outputTokens} icon={Zap} accent="green" /><KpiCard label="Taxminiy xarajat" value={`$${Number(data?.totals?.estimatedCost ?? 0).toFixed(4)}`} icon={Activity} /></div><div className="admin-grid admin-grid--charts"><section className="admin-card"><CardHeading title="Foydalanish dinamikasi" detail="Haqiqiy AiUsage qatorlari" /><TrendChart data={data?.trend ?? []} label="Foydalanish dinamikasi" /></section><section className="admin-card"><CardHeading title="Provayder holati" /><div className="admin-provider-state"><Bot size={26} /><strong>{data?.provider?.status === "configured" ? "Provayder ulangan" : "OpenAI hali ulanmagan"}</strong><span>{data?.provider?.status === "configured" ? `${formatNumber(data?.totals?.tool?.requests)} ta tool execution · ${formatNumber(Math.round(data?.totals?.audioSeconds ?? 0))} soniya audio` : "OpenAI ulangandan keyin token, xarajat va javob statistikasi shu yerda ko'rinadi."}</span></div></section></div><div className="admin-grid admin-grid--secondary"><section className="admin-card"><CardHeading title="Faol foydalanuvchilar" detail="Tanlangan davr" />{data?.byUser?.length ? <div className="admin-simple-list">{data.byUser.map((row) => <div key={row.user.id}><span className="admin-avatar">{initials(row.user)}</span><span><strong>{row.user.firstName} {row.user.lastName}</strong><small>{row.user.email}</small></span><b>{formatNumber(row.requests)} so'rov</b></div>)}</div> : <EmptyState title="AI foydalanish qayd etilmagan" text="Bu neytral holat — soxta foydalanish ko'rsatilmaydi." />}</section><section className="admin-card"><CardHeading title="Eng ko'p ishlatilgan tool'lar" detail="AI Tool Registry activity loglari" />{data?.tools?.length ? <div className="admin-simple-list">{data.tools.slice(0, 8).map((row) => <div key={row.tool ?? "unknown"}><span className="admin-kpi__icon"><Zap size={15} /></span><span><strong>{row.tool ?? "Noma'lum tool"}</strong><small>Tool execution</small></span><b>{formatNumber(row.count)}</b></div>)}</div> : <EmptyState title="Tool ishlatilishi qayd etilmagan" />}</section></div></>;
+const IntegrationsView = ({ data }: { data: AdminIntegrations }) => <><div className="admin-grid admin-grid--secondary"><ConnectionCard label="Telegram" data={data?.telegram} icon={<Zap size={21} />} /><ConnectionCard label="Google" data={data?.google} icon={<Globe2 size={21} />} /></div><div className="admin-grid admin-grid--secondary"><section className="admin-card"><CardHeading title="Integratsiya salomatligi" detail="Sirlarsiz real tizim holati" /><div className="admin-health-list"><div><span>Telegram oxirgi tekshiruv</span><b>{data?.health?.telegram?.lastValidatedAt ? formatDate(data.health.telegram.lastValidatedAt) : "Hali tekshirilmagan"}</b></div><div><span>Telegram so'nggi xatolar</span><b className={(data?.health?.telegram?.recentErrors ?? 0) ? "is-warning" : "is-healthy"}>{formatNumber(data?.health?.telegram?.recentErrors)}</b></div><div><span>Calendar ruxsati faol userlar</span><b>{formatNumber(data?.health?.google?.calendarEnabledUsers)}</b></div><div><span>Drive ruxsati faol userlar</span><b>{formatNumber(data?.health?.google?.driveEnabledUsers)}</b></div></div></section><section className="admin-card"><CardHeading title="Muammoli integratsiyalar" detail="Oxirgi 24 soat / ERROR holati" />{data?.warnings?.length ? <div className="admin-simple-list">{data.warnings.map((row) => <div key={`${row.provider}-${row.userId}-${row.at ?? row.code}`}><span className="admin-status admin-status--blocked"><i />{row.provider === "telegram" ? "Telegram" : "Google"}</span><span><strong>{row.email}</strong><small>{row.code} · {row.at ? formatDate(row.at) : "vaqt noma'lum"}</small></span></div>)}</div> : <EmptyState title="Muammoli integratsiya yo'q" text="Ulanishlar normal ishlayapti." />}</section></div></>;
 const ConnectionCard = ({ label, data, icon }: { label: string; data: AdminConnectionCounts | undefined; icon: ReactNode }) => <section className="admin-card"><div className="admin-connection-heading"><span className="admin-kpi__icon">{icon}</span><div><h2>{label}</h2><span>Umumiy tizim statistikasi</span></div></div><div className="admin-status-grid">{(["connected", "disconnected", "error"] as const).map((key) => <div key={key}><span>{CONNECTION_LABELS[key]}</span><strong>{formatNumber(data?.[key])}</strong></div>)}</div></section>;
-const NotificationsView = ({ data }: { data: AdminNotifications }) => <><section className="admin-card"><CardHeading title="Yetkazib berish holati" detail="Tanlangan davr" /><div className="admin-status-grid admin-status-grid--wide">{Object.entries(data?.totals ?? {}).map(([key, value]) => <div key={key}><span>{NOTIFICATION_TOTAL_LABELS[key] ?? key}</span><strong>{formatNumber(value)}</strong></div>)}</div></section><section className="admin-card"><CardHeading title="So'nggi muvaffaqiyatsiz bildirishnomalar" detail="Kontent yashiringan" />{data?.failed?.length ? <div className="admin-simple-list">{data.failed.map((row) => <div key={row.id}><span className="admin-status admin-status--blocked"><i />XATO</span><span><strong>{row.type} · {row.channel}</strong><small>{row.user?.email} · {formatDate(row.failedAt ?? row.createdAt)}</small></span><b>{row.retryCount} marta qayta urinildi</b></div>)}</div> : <EmptyState title="Muvaffaqiyatsiz bildirishnoma yo'q" />}</section></>;
+const NotificationsView = ({ data }: { data: AdminNotifications }) => {
+  const [retrying, setRetrying] = useState<string | null>(null);
+  const [retried, setRetried] = useState<Set<string>>(() => new Set());
+  const totalDelivered = (data?.totals?.sent ?? 0) + (data?.totals?.read ?? 0);
+  const attempted = totalDelivered + (data?.totals?.failed ?? 0);
+  const successRate = attempted ? Math.round(totalDelivered / attempted * 100) : 100;
+  const retry = async (id: string) => {
+    if (retrying) return;
+    setRetrying(id);
+    try {
+      await adminApi.retryNotification(id);
+      setRetried((current) => new Set([...current, id]));
+    } finally { setRetrying(null); }
+  };
+  return <>
+    <section className="admin-card"><CardHeading title="Yetkazib berish holati" detail={`Muvaffaqiyat ${successRate}%`} /><div className="admin-status-grid admin-status-grid--wide">{Object.entries(data?.totals ?? {}).map(([key, value]) => <div key={key}><span>{NOTIFICATION_TOTAL_LABELS[key] ?? key}</span><strong>{formatNumber(value)}</strong></div>)}</div></section>
+    <section className="admin-card"><CardHeading title="So'nggi muvaffaqiyatsiz bildirishnomalar" detail="Kontent yashiringan · qayta yuborish xavfsiz navbatga qo'yadi" />{data?.failed?.length ? <div className="admin-simple-list">{data.failed.map((row) => <div key={row.id}><span className="admin-status admin-status--blocked"><i />XATO</span><span><strong>{row.type} · {row.channel}</strong><small>{row.user?.email} · {formatDate(row.failedAt ?? row.createdAt)}</small></span><span className="admin-inline-action"><b>{row.retryCount} urinish</b><button type="button" disabled={retrying === row.id || retried.has(row.id)} onClick={() => void retry(row.id)}>{retried.has(row.id) ? "Navbatga qo'yildi" : retrying === row.id ? "Kutilmoqda..." : "Qayta yuborish"}</button></span></div>)}</div> : <EmptyState title="Muvaffaqiyatsiz bildirishnoma yo'q" />}</section>
+  </>;
+};
 const FilesView = ({ data }: { data: AdminFiles }) => <><section className="admin-card"><CardHeading title="Saqlash hajmi" detail="O'chirilgan yozuvlar hisobga olinmagan" /><div className="admin-status-grid admin-status-grid--wide">{[["Jami fayllar", formatNumber(data?.stats?.total)], ["Jami hajm", formatBytes(data?.stats?.totalSizeBytes)], ["Rasmlar", formatNumber(data?.stats?.images)], ["PDF", formatNumber(data?.stats?.pdfs)], ["Hujjatlar", formatNumber(data?.stats?.docs)]].map(([label, value]) => <div key={label}><span>{label}</span><strong>{value}</strong></div>)}</div></section><div className="admin-grid admin-grid--secondary"><section className="admin-card"><CardHeading title="Saqlash provayderi" /><div className="admin-status-grid">{["local", "s3"].map((key) => <div key={key}><span>{key === "local" ? "Lokal" : "Amazon S3"}</span><strong>{formatNumber(data?.stats?.storage?.[key])}</strong></div>)}</div></section><section className="admin-card"><CardHeading title="Manba bo'yicha" /><div className="admin-status-grid">{Object.keys(SOURCE_LABELS).map((key) => <div key={key}><span>{SOURCE_LABELS[key]}</span><strong>{formatNumber(data?.stats?.sources?.[key])}</strong></div>)}</div></section></div><section className="admin-card"><CardHeading title="So'nggi fayllar" detail="Faqat metama'lumot" />{data?.items?.length ? <div className="admin-simple-list">{data.items.map((row) => <div key={row.id}><span className="admin-file-icon"><FileText size={17} /></span><span><strong>{row.originalName}</strong><small>{row.owner?.email} · {row.mimeType} · {SOURCE_LABELS[row.source?.toLowerCase()] ?? row.source}</small></span><b>{formatBytes(row.sizeBytes)}</b></div>)}</div> : <EmptyState title="Hech qanday fayl yuklanmagan" />}</section></>;
 const ActivityView = ({ data }: { data: AdminActivity }) => <section className="admin-card"><CardHeading title="Audit izi" detail="Nozik qiymatlar yashiringan" />{data?.items?.length ? <div className="admin-simple-list">{data.items.map((row) => <div key={row.id}><span className="admin-avatar">{initials(row.user)}</span><span><strong>{actionLabel(row.action)}</strong><small>{row.user?.email} · {entityLabel(row.entity?.type)} · {formatDate(row.time)}</small></span><b>{row.source === "AI_TOOL" ? "AI vositasi" : "Ilova"}</b></div>)}</div> : <EmptyState title="Faoliyat qayd etilmagan" />}</section>;
 const SystemView = ({ data }: { data: AdminSystem }) => <div className="admin-grid admin-grid--secondary"><section className="admin-card"><CardHeading title="Ishlash vaqti ma'lumotlari" /><div className="admin-health-list">{[["API", HEALTH_LABELS[data?.api?.status] ?? data?.api?.status, data?.api?.status === "ok"], ["Ma'lumotlar bazasi", HEALTH_LABELS[data?.database?.status] ?? data?.database?.status, data?.database?.status === "ok"], ["Baza kechikishi", `${formatNumber(data?.database?.latencyMs)} ms`, true], ["Bildirishnoma workeri", HEALTH_LABELS[data?.notificationWorker?.status] ?? data?.notificationWorker?.status, data?.notificationWorker?.status === "running"], ["Muhit", ENV_LABELS[data?.environment] ?? data?.environment, true], ["Ishlash vaqti", formatUptime(data?.uptimeSeconds), true], ["Migratsiyalar", "Prisma orqali boshqariladi", true]].map(([label, value, healthy]) => <div key={label as string}><span>{label}</span><b className={healthy ? "is-healthy" : ""}>{String(value ?? "—")}</b></div>)}</div></section><section className="admin-card"><CardHeading title="Integratsiya holati" detail="Hech qanday ma'lumot ochilmaydi" /><ConnectionCard label="Telegram" data={data?.integrations?.telegram} icon={<Zap size={21} />} /><ConnectionCard label="Google" data={data?.integrations?.google} icon={<Globe2 size={21} />} /></section></div>;
@@ -222,19 +270,45 @@ const SettingsRow = ({ label, value, healthy }: { label: string; value: ReactNod
 const SettingsMissing = () => <div className="admin-settings-missing">Ma'lumot mavjud emas.</div>;
 const SettingsSection = ({ title, detail, missing, children }: { title: string; detail: string; missing: boolean; children: ReactNode }) => <section className="admin-card"><CardHeading title={title} detail={detail} />{missing ? <SettingsMissing /> : <div className="admin-health-list">{children}</div>}</section>;
 export const SettingsView = ({ data }: { data: NormalizedAdminSettings | null }) => {
+  const [platformName, setPlatformName] = useState("Qulay AI");
+  const [registrationEnabled, setRegistrationEnabled] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!data) return;
+    setPlatformName(data.data.platform.name || "Qulay AI");
+    setRegistrationEnabled(data.data.platform.registrationEnabled);
+  }, [data]);
+
   if (!data) return null;
   const { data: settings, missingSections } = data;
   const isMissing = (section: AdminSettingsSection) => missingSections.includes(section);
+  const savePlatform = async () => {
+    const name = platformName.trim();
+    if (name.length < 2 || saving) return;
+    setSaving(true); setSaveMessage(null);
+    try {
+      const result = await adminApi.updatePlatformSettings({ name, registrationEnabled });
+      setPlatformName(result.name);
+      setRegistrationEnabled(result.registrationEnabled);
+      notifyPlatformNameChanged(result.name);
+      setSaveMessage("Platforma sozlamalari saqlandi");
+    } catch (error) {
+      setSaveMessage(getApiErrorMessage(error));
+    } finally { setSaving(false); }
+  };
+
   return <div className="admin-grid admin-grid--settings">
-    <section className="admin-card"><CardHeading title="Platforma sozlamalari" detail="Asosiy platforma konfiguratsiyasi" /><div className="admin-health-list">
-      <SettingsRow label="Platforma nomi" value={settings.platform.name || "Qulay AI"} />
-      {isMissing("platform") ? <SettingsMissing /> : <>
-        <SettingsRow label="Standart foydalanuvchi holati" value={STATUS_LABELS[settings.platform.defaultUserStatus] ?? settings.platform.defaultUserStatus} />
-        <SettingsRow label="Ro'yxatdan o'tish" value={settings.platform.registrationEnabled ? "Yoqilgan" : "O'chirilgan"} healthy={settings.platform.registrationEnabled} />
-        <SettingsRow label="Texnik profilaktika rejimi" value={settings.platform.maintenanceMode ? "Yoqilgan" : "O'chirilgan (asos qo'yilgan)"} healthy={!settings.platform.maintenanceMode} />
-      </>}
-    </div></section>
-    <SettingsSection title="Xavfsizlik" detail="Real, hozirda amal qiluvchi qiymatlar" missing={isMissing("security")}>
+    <section className="admin-card admin-settings-editable"><CardHeading title="Platforma sozlamalari" detail="O'zgarishlar real platformaga qo'llanadi" />
+      <div className="admin-settings-form">
+        <label><span>Platforma nomi</span><input value={platformName} maxLength={100} onChange={(event) => setPlatformName(event.target.value)} /></label>
+        <div className="admin-settings-toggle-row"><div><strong>Yangi ro'yxatdan o'tish</strong><small>O'chirilsa yangi foydalanuvchilar akkaunt yarata olmaydi.</small></div><button type="button" role="switch" aria-checked={registrationEnabled} className={`admin-switch ${registrationEnabled ? "is-on" : ""}`} onClick={() => setRegistrationEnabled((value) => !value)}><i /></button></div>
+        <div className="admin-settings-readonly"><span>Standart holat</span><b>{STATUS_LABELS[settings.platform.defaultUserStatus] ?? settings.platform.defaultUserStatus}</b></div>
+        <div className="admin-settings-save-row"><button type="button" className="admin-button" disabled={saving || platformName.trim().length < 2} onClick={() => void savePlatform()}>{saving ? "Saqlanmoqda..." : "Saqlash"}</button>{saveMessage && <span>{saveMessage}</span>}</div>
+      </div>
+    </section>
+    <SettingsSection title="Xavfsizlik" detail="Real, hozirda amal qiluvchi qiymatlar (read-only)" missing={isMissing("security")}>
       <SettingsRow label="Access token muddati" value={settings.security.accessTokenExpiresIn} />
       <SettingsRow label="Refresh token muddati" value={settings.security.refreshTokenExpiresIn} />
       <SettingsRow label="Login urinishlari (IP)" value={`${settings.security.rateLimits.loginPerIp.max} / ${settings.security.rateLimits.loginPerIp.windowMinutes} daqiqa`} />
@@ -244,7 +318,7 @@ export const SettingsView = ({ data }: { data: NormalizedAdminSettings | null })
       <SettingsRow label="Umumiy so'rov chegarasi" value={`${settings.security.rateLimits.globalPerIp.max} / ${settings.security.rateLimits.globalPerIp.windowSeconds} soniya (IP)`} />
       <SettingsRow label="Login qo'pol kuch himoyasi" value={`${settings.security.loginBruteForce.maxFailures} xato → ${settings.security.loginBruteForce.lockMinutes} daqiqa bloklash`} />
     </SettingsSection>
-    <SettingsSection title="Bildirishnomalar" detail="Worker konfiguratsiyasi" missing={isMissing("notifications")}>
+    <SettingsSection title="Bildirishnomalar" detail="Worker konfiguratsiyasi (read-only)" missing={isMissing("notifications")}>
       <SettingsRow label="Worker holati" value={HEALTH_LABELS[settings.notifications.workerStatus] ?? settings.notifications.workerStatus} healthy={settings.notifications.workerStatus === "running"} />
       <SettingsRow label="Tekshirish oralig'i" value={`${settings.notifications.intervalSeconds} soniya`} />
       <SettingsRow label="Partiya hajmi" value={settings.notifications.batchSize} />
@@ -255,11 +329,11 @@ export const SettingsView = ({ data }: { data: NormalizedAdminSettings | null })
       <SettingsRow label="Google" value={settings.integrations.google.configured ? "Sozlangan" : "Sozlanmagan"} healthy={settings.integrations.google.configured} />
       <SettingsRow label="OpenAI" value={settings.integrations.openai.configured ? "Sozlangan" : "Sozlanmagan"} healthy={settings.integrations.openai.configured} />
     </SettingsSection>
-    <section className="admin-card"><CardHeading title="Saqlash joyi" detail="Fayl saqlash konfiguratsiyasi" />{isMissing("storage") ? <SettingsMissing /> : <><div className="admin-health-list">
+    <section className="admin-card"><CardHeading title="Saqlash joyi" detail="Fayl saqlash konfiguratsiyasi (read-only)" />{isMissing("storage") ? <SettingsMissing /> : <><div className="admin-health-list">
       <SettingsRow label="Joriy provayder" value={STORAGE_PROVIDER_LABELS[settings.storage.provider] ?? settings.storage.provider} />
       <SettingsRow label="Fayl hajmi chegarasi" value={formatBytes(settings.storage.maxFileSizeBytes)} />
     </div>{settings.storage.localWarning && <div className="admin-settings-warning">{settings.storage.localWarning}</div>}</>}</section>
-    <SettingsSection title="Tizim" detail="Muhit va backend holati" missing={isMissing("system")}>
+    <SettingsSection title="Tizim" detail="Muhit va backend holati (read-only)" missing={isMissing("system")}>
       <SettingsRow label="Muhit" value={ENV_LABELS[settings.system.environment] ?? settings.system.environment} />
       <SettingsRow label="Versiya" value={settings.system.version ?? "Noma'lum"} />
       <SettingsRow label="Backend holati" value={HEALTH_LABELS[settings.system.api.status] ?? settings.system.api.status} healthy={settings.system.api.status === "ok"} />
@@ -271,12 +345,12 @@ export const SettingsView = ({ data }: { data: NormalizedAdminSettings | null })
 const Pagination = ({ meta, page, onPage }: { meta?: { page: number; total: number; totalPages: number }; page: number; onPage: (page: number) => void }) => !meta || !meta.totalPages ? null : <div className="admin-pagination"><span>{formatNumber(meta.total)} ta yozuv</span><div><button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)}><ChevronLeft size={16} /></button><strong>{page} / {meta.totalPages}</strong><button type="button" disabled={page >= meta.totalPages} onClick={() => onPage(page + 1)}><ChevronRight size={16} /></button></div></div>;
 
 const AdminConsole = () => {
-  const location = useLocation(); const navigate = useNavigate(); const { user, logout } = useAuth(); const [theme, setTheme] = useState(document.documentElement.dataset.theme === "dark"); const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation(); const navigate = useNavigate(); const { user, logout } = useAuth(); const { name: platformName } = usePlatform(); const [theme, setTheme] = useState(document.documentElement.dataset.theme === "dark"); const [mobileOpen, setMobileOpen] = useState(false);
   useEffect(() => { if (user?.role !== "ADMIN") navigate("/admin/login", { replace: true, state: { accessDenied: true } }); }, [user, navigate]);
   if (!user || user.role !== "ADMIN") return null;
   const path = location.pathname; const detailMatch = path.match(/^\/admin\/users\/([^/]+)/); const section = detailMatch ? "user" : path === "/admin" ? "overview" : path.split("/")[2] ?? "overview";
   const content = section === "overview" ? <AdminOverviewPage /> : section === "users" && !detailMatch ? <UsersPage /> : section === "user" && detailMatch ? <UserDetailPage id={detailMatch[1]} key={detailMatch[1]} /> : section === "activity" ? <ActivityPage key={section} /> : ["usage", "integrations", "notifications", "files", "system", "settings"].includes(section) ? <DataPage kind={section as "usage"} key={section} /> : <AdminOverviewPage />;
   const toggleTheme = () => { const next = !theme; document.documentElement.dataset.theme = next ? "dark" : "light"; setTheme(next); };
-  return <div className="admin-console"><aside className={`admin-sidebar ${mobileOpen ? "is-open" : ""}`}><div className="admin-brand"><span className="admin-brand__mark">Q</span><div><strong>Qulay AI</strong><small>Administrator paneli</small></div><button className="admin-mobile-close" type="button" onClick={() => setMobileOpen(false)}><X size={18} /></button></div><nav>{navItems.map(({ label, path: itemPath, icon: Icon, exact }) => <Link key={itemPath} onClick={() => setMobileOpen(false)} className={`admin-nav-item ${exact ? path === itemPath : path.startsWith(itemPath) ? "is-active" : ""}`} to={itemPath}><Icon size={17} /><span>{label}</span></Link>)}</nav><div className="admin-sidebar__bottom"><Link className="admin-back-app" to="/dashboard"><ArrowLeft size={15} /> Asosiy ilovaga qaytish</Link><div className="admin-sidebar__user"><span className="admin-avatar">{initials(user)}</span><span><strong>{user.firstName} {user.lastName}</strong><small>{user.email}</small></span><button type="button" aria-label="Chiqish" title="Chiqish" onClick={() => { void logout().then(() => navigate("/login")); }}><LogOut size={15} /></button></div></div></aside><main className="admin-main"><header className="admin-topbar"><button className="admin-menu-button" type="button" onClick={() => setMobileOpen(true)}><Menu size={19} /></button><div className="admin-breadcrumb"><span>Qulay AI</span><b>/</b><strong>{titleFor(section)}</strong></div><div className="admin-topbar__actions"><button type="button" className="admin-icon-button" onClick={toggleTheme} aria-label="Mavzuni almashtirish">{theme ? <Sun size={17} /> : <Moon size={17} />}</button></div></header>{content}</main></div>;
+  return <div className="admin-console"><aside className={`admin-sidebar ${mobileOpen ? "is-open" : ""}`}><div className="admin-brand"><span className="admin-brand__mark">Q</span><div><strong>{platformName}</strong><small>Administrator paneli</small></div><button className="admin-mobile-close" type="button" onClick={() => setMobileOpen(false)}><X size={18} /></button></div><nav>{navGroups.map((group) => <div className="admin-nav-group" key={group.label}><span className="admin-nav-group__label">{group.label}</span>{group.items.map(({ label, path: itemPath, icon: Icon, exact }) => <Link key={itemPath} onClick={() => setMobileOpen(false)} className={`admin-nav-item ${exact ? path === itemPath : path.startsWith(itemPath) ? "is-active" : ""}`} to={itemPath}><Icon size={17} /><span>{label}</span></Link>)}</div>)}</nav><div className="admin-sidebar__bottom"><Link className="admin-back-app" to="/dashboard"><ArrowLeft size={15} /> Asosiy ilovaga qaytish</Link><div className="admin-sidebar__user"><span className="admin-avatar">{initials(user)}</span><span><strong>{user.firstName} {user.lastName}</strong><small>{user.email}</small></span><button type="button" aria-label="Chiqish" title="Chiqish" onClick={() => { void logout().then(() => navigate("/login")); }}><LogOut size={15} /></button></div></div></aside><main className="admin-main"><header className="admin-topbar"><button className="admin-menu-button" type="button" onClick={() => setMobileOpen(true)}><Menu size={19} /></button><div className="admin-breadcrumb"><span>{platformName}</span><b>/</b><strong>{titleFor(section)}</strong></div><div className="admin-topbar__actions"><button type="button" className="admin-icon-button" onClick={toggleTheme} aria-label="Mavzuni almashtirish">{theme ? <Sun size={17} /> : <Moon size={17} />}</button></div></header>{content}</main></div>;
 };
 export default AdminConsole;

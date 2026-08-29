@@ -32,6 +32,7 @@ export const taskFromApi = (item: ApiTask): Task => {
     category: "Ish",
     priority: priorityFromApi(item.priority),
     completed: item.status === "COMPLETED",
+    status: item.status,
     date: item.dueDate ? parts.date : undefined,
   };
 };
@@ -52,14 +53,17 @@ export const reminderFromApi = (item: ApiReminder): Reminder => {
 
 export const meetingFromApi = (item: ApiMeeting): CalendarEvent => {
   const parts = isoToLocalParts(item.startsAt);
+  const endParts = isoToLocalParts(item.endsAt);
   const reminder = item.reminderMinutesBefore > 0 ? `${item.reminderMinutesBefore} daqiqa oldin` : undefined;
   return {
     id: item.id,
     title: item.title,
     date: parts.date,
     time: parts.time,
+    endTime: endParts.time,
     type: "meeting",
     participant: item.participant ?? undefined,
+    location: item.location ?? undefined,
     description: item.description ?? undefined,
     reminder,
   };

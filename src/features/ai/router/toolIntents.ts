@@ -32,3 +32,33 @@ export const detectMemoryLookup = (raw: string): { query: string } | null => {
   const query = match[1].trim();
   return query ? { query } : null;
 };
+
+
+export const detectGoogleCalendarLookup = (raw: string): { range: "today" | "tomorrow" | "week" } | null => {
+  const normalized = normalize(raw);
+  const mentionsCalendar = /(?:\bgoogle\s+calendar\b|\bcalendar\b|\bkalendar\b|\btaqvim\b)/u.test(normalized);
+  if (!mentionsCalendar) return null;
+  if (!/(ko['’]?rsat|ayt|ber|nima|qanday|bor|reja|uchrashuv|meeting|event)/u.test(normalized)) return null;
+  if (/\bertaga\b/u.test(normalized)) return { range: "tomorrow" };
+  if (/\b(hafta|7\s*kun|keyingi\s+hafta)\b/u.test(normalized)) return { range: "week" };
+  if (/\b(bugun|bugungi|hozir)\b/u.test(normalized) || mentionsCalendar) return { range: "today" };
+  return null;
+};
+
+export const detectGoogleDriveSearch = (raw: string): { query: string } | null => {
+  const normalized = normalize(raw);
+  if (!/\b(google\s*)?(drive|docs?|dokument|hujjat)\b/u.test(normalized)) return null;
+
+  const patterns = [
+    /(?:google\s*)?(?:drive|docs?|dokument|hujjat)(?:dan|da)?\s+(.+?)\s+(?:fayl(?:ini)?|hujjat(?:ni)?|dokument(?:ni)?)?\s*(?:top|qidir|izla)(?:ib\s+ber|ing)?$/u,
+    /(.+?)\s+(?:fayl(?:ini)?|hujjat(?:ni)?|dokument(?:ni)?)\s+(?:google\s*)?(?:drive|docs?|dokument)(?:dan|da)?\s*(?:top|qidir|izla)(?:ib\s+ber|ing)?$/u,
+  ];
+
+  for (const pattern of patterns) {
+    const match = normalized.match(pattern);
+    const query = match?.[1]?.trim().replace(/^["'“”]+|["'“”]+$/g, "");
+    if (query) return { query };
+  }
+
+  return null;
+};

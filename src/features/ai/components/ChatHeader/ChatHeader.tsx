@@ -1,5 +1,8 @@
 import { Mic, Minus, Sparkles, Trash2, X } from "lucide-react";
 
+import { usePlatform } from "../../../../context/PlatformContext";
+import { useI18n } from "../../../../i18n/useI18n";
+
 import "./ChatHeader.scss";
 
 type ChatHeaderProps = {
@@ -10,6 +13,8 @@ type ChatHeaderProps = {
 };
 
 const ChatHeader = ({ onClose, onMinimize, onClear, onVoice }: ChatHeaderProps) => {
+  const { name: platformName } = usePlatform();
+  const { t } = useI18n();
   return (
     <header className="chat-header">
       <div className="chat-header__identity">
@@ -19,11 +24,11 @@ const ChatHeader = ({ onClose, onMinimize, onClear, onVoice }: ChatHeaderProps) 
         </div>
 
         <div className="chat-header__text">
-          <strong>Qulay AI</strong>
+          <strong>{platformName}</strong>
 
           <span className="chat-header__status">
             <i />
-            Onlayn · Tayyor
+            {t("ai.online", "Onlayn · Tayyor")}
           </span>
         </div>
       </div>

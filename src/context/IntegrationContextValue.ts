@@ -12,6 +12,7 @@ export type IntegrationContextValue = {
   connectedCount: number;
   connect: (id: IntegrationId, username: string) => void;
   disconnect: (id: IntegrationId) => void;
+  sync: (id: IntegrationId, connected: boolean, username?: string) => void;
 };
 
 export const IntegrationContext = createContext<IntegrationContextValue | null>(null);

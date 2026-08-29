@@ -21,7 +21,7 @@ const Dashboard = () => {
 
       <MobileHomeDetails />
 
-      <Integrations/>
+      <Integrations dashboard />
 
       <RecentFiles />
 

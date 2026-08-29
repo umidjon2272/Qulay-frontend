@@ -47,6 +47,7 @@ export type ApiMeeting = {
   title: string;
   description: string | null;
   participant: string | null;
+  location: string | null;
   startsAt: string;
   endsAt: string;
   reminderMinutesBefore: number;

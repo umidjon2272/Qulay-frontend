@@ -99,3 +99,33 @@ h1, h2, h3, h4, h5, h6 { line-height: 1.18; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+/* Shared product-quality motion/contrast layer */
+html[data-theme="dark"] { --text-secondary: #b4bfd1; --text-muted: #8795aa; }
+:where(button, a, [role="button"]) { touch-action: manipulation; }
+@media (max-width: 700px) {
+  :where(button, a, input, select, textarea) { min-height: 44px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .app-content > * { animation: appPageIn 180ms ease both; }
+}
+@keyframes appPageIn { from { opacity: .72; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+.route-loading {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary, #b8c2d1);
+  font-size: 14px;
+}
+.route-loading__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: var(--accent, #8b5cf6);
+  animation: route-loading-pulse 1s ease-in-out infinite;
+}
+@keyframes route-loading-pulse { 50% { opacity: .45; transform: scale(.72); } }
+@media (prefers-reduced-motion: reduce) { .route-loading__dot { animation: none; } }

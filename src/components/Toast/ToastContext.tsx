@@ -29,6 +29,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const idRef = useRef(0);
   const timersRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const recentRef = useRef(new Map<string, number>());
 
   useEffect(() => {
     const timers = timersRef.current;
@@ -43,13 +44,20 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const showToast = useCallback((message: string, variant: ToastVariant = "info") => {
+    const normalized = message.trim();
+    if (!normalized) return;
+    const key = `${variant}:${normalized}`;
+    const now = Date.now();
+    if (now - (recentRef.current.get(key) ?? 0) < 1500) return;
+    recentRef.current.set(key, now);
+
     idRef.current += 1;
     const id = idRef.current;
-
-    setToasts((current) => [...current, { id, message, variant }]);
+    setToasts((current) => [...current, { id, message: normalized, variant }]);
 
     const timer = setTimeout(() => {
       timersRef.current.delete(id);
+      recentRef.current.delete(key);
       setToasts((current) => current.filter((toast) => toast.id !== id));
     }, 3200);
 

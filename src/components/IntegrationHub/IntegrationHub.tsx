@@ -1,5 +1,6 @@
 import { ArrowUpRight, Check, ExternalLink, ShieldCheck, Unlink, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useIntegrations } from "../../hooks/useIntegrations";
 import { ApiError } from "../../services/api/apiClient";
@@ -16,9 +17,11 @@ import {
   type TelegramDeliveryType,
 } from "../../services/integrationService";
 
+import { useI18n } from "../../i18n/useI18n";
+
 import "./IntegrationHub.scss";
 
-type IntegrationHubProps = { limit?: number; columns?: number };
+type IntegrationHubProps = { limit?: number; columns?: number; navigateOnSelect?: boolean };
 type TelegramStep = "phone" | "code" | "password";
 
 const errorMessage = (error: unknown) => error instanceof ApiError ? error.message : "Telegram bilan ulanishda xatolik yuz berdi.";
@@ -35,8 +38,12 @@ const telegramDeliveryMessage = (delivery: TelegramDeliveryType | null): string 
   }
 };
 
-const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
-  const { integrations, connect, disconnect } = useIntegrations();
+const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: IntegrationHubProps) => {
+  const navigate = useNavigate();
+  const { t } = useI18n();
+  const [searchParams] = useSearchParams();
+  const focusedIntegration = searchParams.get("focus");
+  const { integrations, connect, disconnect, sync } = useIntegrations();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [username, setUsername] = useState("");
   const [telegramPhone, setTelegramPhone] = useState("");
@@ -64,27 +71,21 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
     void getTelegramStatus().then((status) => {
       if (!active) return;
       setTelegramTemporaryError(Boolean(status.temporaryError));
-      if (status.connected) connect("telegram", status.username ?? status.displayName ?? "Telegram");
-      else disconnect("telegram");
+      sync("telegram", status.connected, status.username ?? status.displayName ?? "Telegram");
     }).catch(() => { if (active) setTelegramTemporaryError(true); });
     return () => { active = false; };
-  }, [connect, disconnect, selectedId]);
+  }, [selectedId, sync]);
 
   useEffect(() => {
     let active = true;
     void getGoogleStatus().then((status) => {
       if (!active) return;
-      if (status.connected) {
-        const account = status.email ?? status.displayName ?? "Google";
-        connect("google-calendar", account);
-        connect("google-drive", account);
-      } else {
-        disconnect("google-calendar");
-        disconnect("google-drive");
-      }
+      const account = status.email ?? status.displayName ?? "Google";
+      sync("google-calendar", Boolean(status.connected && status.calendarEnabled), account);
+      sync("google-drive", Boolean(status.connected && status.driveEnabled), account);
     }).catch(() => undefined);
     return () => { active = false; };
-  }, [connect, disconnect]);
+  }, [sync]);
 
   useEffect(() => () => {
     if (connectTimerRef.current !== null) window.clearTimeout(connectTimerRef.current);
@@ -171,10 +172,10 @@ const IntegrationHub = ({ limit, columns = 5 }: IntegrationHubProps) => {
       <div className="integration-hub__grid" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
         {visible.map((item) => {
           const Icon = item.icon;
-          return <article key={item.id} className={`integration-card integration-card--${item.color}`}>
-            <div className="integration-card__top"><div className="integration-card__icon"><Icon size={20} /></div>{item.connected && <span className="integration-card__connected"><Check size={10} /> Ulangan</span>}</div>
+          return <article key={item.id} className={`integration-card integration-card--${item.color} ${focusedIntegration === item.id ? "integration-card--focused" : ""}`}>
+            <div className="integration-card__top"><div className="integration-card__icon"><Icon size={20} /></div>{item.comingSoon ? <span className="integration-card__soon">{t("integrations.soon", "Tez kunda")}</span> : item.connected && <span className="integration-card__connected"><Check size={10} /> {t("integrations.connected", "Ulangan")}</span>}</div>
             <div className="integration-card__info"><h3>{item.name}</h3><p>{item.description}</p></div>
-            <button type="button" className={`integration-card__button ${item.connected ? "integration-card__button--connected" : ""}`} onClick={() => setSelectedId(item.id)}>{item.connected ? "Boshqarish" : connectingId === item.id ? "Ulanmoqda..." : "Ulash"}<ArrowUpRight size={13} /></button>
+            <button type="button" className={`integration-card__button ${item.connected ? "integration-card__button--connected" : ""}`} disabled={item.comingSoon} onClick={() => { if (item.comingSoon) return; if (navigateOnSelect) { navigate(`/settings?tab=integrations&focus=${item.id}`); return; } setSelectedId(item.id); }}>{item.comingSoon ? t("integrations.unavailable", "Hozircha mavjud emas") : item.connected ? t("integrations.manage", "Boshqarish") : connectingId === item.id ? "Ulanmoqda..." : t("integrations.connect", "Ulash")}{!item.comingSoon && <ArrowUpRight size={13} />}</button>
           </article>;
         })}
       </div>

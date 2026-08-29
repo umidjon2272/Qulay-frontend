@@ -12,6 +12,7 @@ type UseSpeechRecognitionReturn = {
   interimTranscript: string;
   start: () => void;
   stop: () => void;
+  requestPermission: () => Promise<boolean>;
 };
 
 const getRecognitionConstructor = () => {
@@ -82,6 +83,22 @@ export const useSpeechRecognition = (
     if (mountedRef.current) {
       setIsListening(false);
       setInterimTranscript("");
+    }
+  }, []);
+
+
+  const requestPermission = useCallback(async (): Promise<boolean> => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      onErrorRef.current?.("Bu brauzer mikrofonga ruxsat so'rashni qo'llab-quvvatlamaydi.");
+      return false;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+      return true;
+    } catch {
+      onErrorRef.current?.("Mikrofonga ruxsat berilmadi. Brauzer sozlamalaridan mikrofonni yoqing.");
+      return false;
     }
   }, []);
 
@@ -175,5 +192,5 @@ export const useSpeechRecognition = (
     }
   }, [lang]);
 
-  return { isSupported, isListening, interimTranscript, start, stop };
+  return { isSupported, isListening, interimTranscript, start, stop, requestPermission };
 };

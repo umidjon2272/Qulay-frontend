@@ -24,7 +24,7 @@ export type AdminPage<T> = { items: T[]; meta: { page: number; limit: number; to
 
 type RateLimitInfo = { max: number; windowMinutes: number };
 export type AdminSettings = {
-  platform: { name: string; defaultUserStatus: "ACTIVE" | "BLOCKED"; registrationEnabled: boolean; maintenanceMode: boolean };
+  platform: { name: string; defaultUserStatus: "ACTIVE" | "BLOCKED"; registrationEnabled: boolean; updatedAt?: string | null };
   security: {
     accessTokenExpiresIn: string;
     refreshTokenExpiresIn: string;
@@ -40,7 +40,7 @@ export type AdminSettingsSection = keyof AdminSettings;
 export type NormalizedAdminSettings = { data: AdminSettings; missingSections: AdminSettingsSection[] };
 
 const emptyAdminSettings = (): AdminSettings => ({
-  platform: { name: "Qulay AI", defaultUserStatus: "ACTIVE", registrationEnabled: false, maintenanceMode: false },
+  platform: { name: "Qulay AI", defaultUserStatus: "ACTIVE", registrationEnabled: false },
   security: {
     accessTokenExpiresIn: "", refreshTokenExpiresIn: "",
     loginBruteForce: { maxFailures: 0, lockMinutes: 0 },
@@ -80,7 +80,16 @@ export type AdminUsage = {
   tools: Array<{ tool: string | null; count: number }>;
 };
 export type AdminConnectionCounts = { connected: number; disconnected: number; error: number };
-export type AdminIntegrations = { telegram: AdminConnectionCounts; google: AdminConnectionCounts };
+export type AdminIntegrationWarning = { provider: "telegram" | "google"; userId: string; email: string; code: string; at: string | null };
+export type AdminIntegrations = {
+  telegram: AdminConnectionCounts;
+  google: AdminConnectionCounts;
+  health?: {
+    telegram?: { lastValidatedAt: string | null; recentErrors: number };
+    google?: { calendarEnabledUsers: number; driveEnabledUsers: number; recentErrors: number };
+  };
+  warnings?: AdminIntegrationWarning[];
+};
 export type AdminNotifications = {
   range: number;
   totals: { total: number; pending: number; sent: number; failed: number; read: number };
@@ -110,8 +119,10 @@ export const adminApi = {
   usage: (range: AdminRange) => request<AdminUsage>(`/admin/usage?range=${range}`),
   integrations: () => request<AdminIntegrations>("/admin/integrations"),
   notifications: (range: AdminRange) => request<AdminNotifications>(`/admin/notifications?range=${range}`),
-  files: (page: number) => request<AdminFiles>(`/admin/files?page=${page}&limit=20`),
+  retryNotification: (id: string) => request<{ id: string; status: string }>(`/admin/notifications/${id}/retry`, { method: "PATCH" }),
+  files: (params: { page: number; search?: string; source?: string; storageProvider?: string; type?: string }) => request<AdminFiles>(`/admin/files?limit=20&${new URLSearchParams(Object.entries(params).filter(([, value]) => Boolean(value)) as string[][])}`),
   activity: (params: { page: number; userId?: string; action?: string; entityType?: string; from?: string; to?: string }) => request<AdminActivity>(`/admin/activity?limit=25&${new URLSearchParams(Object.entries({ ...params }).filter(([, value]) => Boolean(value)) as string[][])}`),
   system: () => request<AdminSystem>("/admin/system"),
   settings: () => request<unknown>("/admin/settings").then(normalizeAdminSettings),
+  updatePlatformSettings: (input: { name?: string; registrationEnabled?: boolean }) => request<{ name: string; registrationEnabled: boolean; updatedAt: string }>("/admin/settings/platform", { method: "PATCH", body: JSON.stringify(input) }),
 };

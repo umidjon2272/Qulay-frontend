@@ -17,6 +17,10 @@ export type AppSettings = {
     email: boolean;
     weekly: boolean;
     webPush: boolean;
+    sound: boolean;
+    quietHoursEnabled: boolean;
+    quietHoursStart: string;
+    quietHoursEnd: string;
   };
   replyStyle: string;
   replyLength: string;
@@ -24,6 +28,7 @@ export type AppSettings = {
     voiceReply: boolean;
     autoSpeak: boolean;
     saveHistory: boolean;
+    confirmExternalActions: boolean;
   };
   twoFactor: boolean;
 };
@@ -43,10 +48,14 @@ export const defaultSettings: AppSettings = {
     email: true,
     weekly: true,
     webPush: false,
+    sound: true,
+    quietHoursEnabled: false,
+    quietHoursStart: "22:00",
+    quietHoursEnd: "08:00",
   },
   replyStyle: "Professional",
   replyLength: "O'rta",
-  ai: { voiceReply: true, autoSpeak: false, saveHistory: true },
+  ai: { voiceReply: true, autoSpeak: false, saveHistory: true, confirmExternalActions: true },
   twoFactor: false,
 };
 
@@ -71,24 +80,26 @@ const normalizeSettings = (value: unknown): AppSettings => {
     dateFormat: typeof stored.dateFormat === "string" ? stored.dateFormat : defaultSettings.dateFormat,
     defaultPage: typeof stored.defaultPage === "string" ? stored.defaultPage : defaultSettings.defaultPage,
     notifications: {
-      ...defaultSettings.notifications,
-      ...Object.fromEntries(
-        Object.entries(defaultSettings.notifications).map(([key, fallback]) => [
-          key,
-          typeof storedNotifications[key] === "boolean" ? storedNotifications[key] : fallback,
-        ]),
-      ) as AppSettings["notifications"],
+      aiReplies: typeof storedNotifications.aiReplies === "boolean" ? storedNotifications.aiReplies : defaultSettings.notifications.aiReplies,
+      newTasks: typeof storedNotifications.newTasks === "boolean" ? storedNotifications.newTasks : defaultSettings.notifications.newTasks,
+      reminders: typeof storedNotifications.reminders === "boolean" ? storedNotifications.reminders : defaultSettings.notifications.reminders,
+      meetingReminders: typeof storedNotifications.meetingReminders === "boolean" ? storedNotifications.meetingReminders : defaultSettings.notifications.meetingReminders,
+      telegram: typeof storedNotifications.telegram === "boolean" ? storedNotifications.telegram : defaultSettings.notifications.telegram,
+      email: typeof storedNotifications.email === "boolean" ? storedNotifications.email : defaultSettings.notifications.email,
+      weekly: typeof storedNotifications.weekly === "boolean" ? storedNotifications.weekly : defaultSettings.notifications.weekly,
+      webPush: typeof storedNotifications.webPush === "boolean" ? storedNotifications.webPush : defaultSettings.notifications.webPush,
+      sound: typeof storedNotifications.sound === "boolean" ? storedNotifications.sound : defaultSettings.notifications.sound,
+      quietHoursEnabled: typeof storedNotifications.quietHoursEnabled === "boolean" ? storedNotifications.quietHoursEnabled : defaultSettings.notifications.quietHoursEnabled,
+      quietHoursStart: typeof storedNotifications.quietHoursStart === "string" ? storedNotifications.quietHoursStart : defaultSettings.notifications.quietHoursStart,
+      quietHoursEnd: typeof storedNotifications.quietHoursEnd === "string" ? storedNotifications.quietHoursEnd : defaultSettings.notifications.quietHoursEnd,
     },
     replyStyle: typeof stored.replyStyle === "string" ? stored.replyStyle : defaultSettings.replyStyle,
     replyLength: typeof stored.replyLength === "string" ? stored.replyLength : defaultSettings.replyLength,
     ai: {
-      ...defaultSettings.ai,
-      ...Object.fromEntries(
-        Object.entries(defaultSettings.ai).map(([key, fallback]) => [
-          key,
-          typeof storedAi[key] === "boolean" ? storedAi[key] : fallback,
-        ]),
-      ) as AppSettings["ai"],
+      voiceReply: typeof storedAi.voiceReply === "boolean" ? storedAi.voiceReply : defaultSettings.ai.voiceReply,
+      autoSpeak: typeof storedAi.autoSpeak === "boolean" ? storedAi.autoSpeak : defaultSettings.ai.autoSpeak,
+      saveHistory: typeof storedAi.saveHistory === "boolean" ? storedAi.saveHistory : defaultSettings.ai.saveHistory,
+      confirmExternalActions: typeof storedAi.confirmExternalActions === "boolean" ? storedAi.confirmExternalActions : defaultSettings.ai.confirmExternalActions,
     },
     twoFactor: typeof stored.twoFactor === "boolean" ? stored.twoFactor : defaultSettings.twoFactor,
   };

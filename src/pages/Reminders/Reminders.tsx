@@ -11,8 +11,10 @@ import {
   AlarmClock,
   Trash2,
   Pencil,
+  TimerReset,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { useCloseOnOutsideClick } from "../../hooks/useCloseOnOutsideClick";
 import { getDateKey, getDateLabel } from "../../services/dateUtils";
@@ -26,6 +28,7 @@ import {
 import { subscribeToWorkspaceData } from "../../services/workspaceEvents";
 import type { Reminder, TaskPriority } from "../../types/workspace";
 import { useToast } from "../../hooks/useToast";
+import { useI18n } from "../../i18n/useI18n";
 
 import "./Reminders.scss";
 
@@ -36,6 +39,7 @@ const priorities: TaskPriority[] = [
 ];
 
 const Reminders = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [reminders, setReminders] =
     useState<Reminder[]>(getReminders);
 
@@ -79,6 +83,9 @@ const Reminders = () => {
   const savingRef = useRef(false);
 
   const { showToast } = useToast();
+  const { t, locale } = useI18n();
+  const filterLabel = (value: string) => ({ Barchasi: t("reminders.all", "Barchasi"), Faol: t("reminders.active", "Faol"), Kechikkan: t("reminders.overdue", "Kechikkan"), Bajarilgan: t("reminders.done", "Bajarilgan") }[value] ?? value);
+  const priorityLabel = (value: TaskPriority) => locale === "ru" ? ({ "Muhim": "Важный", "O‘rta": "Средний", "Oddiy": "Обычный" }[value] ?? value) : value;
 
   useEffect(
     () =>
@@ -205,6 +212,15 @@ const Reminders = () => {
     setShowModal(true);
   };
 
+  useEffect(() => {
+    if (searchParams.get("create") !== "1") return;
+    openCreateModal();
+    const next = new URLSearchParams(searchParams);
+    next.delete("create");
+    setSearchParams(next, { replace: true });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, setSearchParams]);
+
   const closeReminderModal = () => {
     setShowModal(false);
 
@@ -222,14 +238,36 @@ const Reminders = () => {
      FILTER
   ========================= */
 
+  const reminderDateTime = (reminder: Reminder) => {
+    const dateKey = reminder.dateKey ?? getDateKey();
+    const value = new Date(`${dateKey}T${reminder.time}:00`);
+    return Number.isNaN(value.getTime()) ? null : value;
+  };
+
+  const isOverdue = (reminder: Reminder) => {
+    const date = reminderDateTime(reminder);
+    return Boolean(date && !reminder.completed && date.getTime() < Date.now());
+  };
+
+  const snoozeReminder = async (reminder: Reminder, minutes = 10) => {
+    const next = new Date(Date.now() + minutes * 60_000);
+    const dateKey = getDateKey(next);
+    const time = next.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+    try {
+      await updateReminderRecord(reminder.id, { dateKey, date: getDateLabel(dateKey), time, completed: false });
+      setReminders(getReminders());
+      setOpenMenuId(null);
+      showToast(`Eslatma ${minutes} daqiqaga kechiktirildi`, "success");
+    } catch { showToast("Eslatmani kechiktirib bo'lmadi", "error"); }
+  };
+
   const filteredReminders =
     reminders.filter((reminder) => {
       const matchesFilter =
         filter === "Barchasi" ||
-        (filter === "Faol" &&
-          !reminder.completed) ||
-        (filter === "Bajarilgan" &&
-          reminder.completed);
+        (filter === "Faol" && !reminder.completed && !isOverdue(reminder)) ||
+        (filter === "Kechikkan" && isOverdue(reminder)) ||
+        (filter === "Bajarilgan" && reminder.completed);
 
       const query =
         search.toLowerCase().trim();
@@ -258,6 +296,8 @@ const Reminders = () => {
       (item) => item.completed
     ).length;
 
+  const overdueCount = reminders.filter(isOverdue).length;
+
   const todayCount =
     reminders.filter(
       (item) =>
@@ -266,7 +306,7 @@ const Reminders = () => {
     ).length;
 
   const nextReminder = reminders
-    .filter((item) => !item.completed)
+    .filter((item) => !item.completed && !isOverdue(item))
     .sort((a, b) => `${a.dateKey ?? "9999"}${a.time}`.localeCompare(`${b.dateKey ?? "9999"}${b.time}`))[0];
 
   return (
@@ -289,12 +329,9 @@ const Reminders = () => {
             PERSONAL REMINDERS
           </span>
 
-          <h1>Eslatmalar</h1>
+          <h1>{t("reminders.title", "Eslatmalar")}</h1>
 
-          <p>
-            Muhim ishlarni o‘z vaqtida
-            eslab qoling.
-          </p>
+          <p>{t("reminders.subtitle", "Muhim ishlarni o‘z vaqtida eslab qoling.")}</p>
         </div>
 
         <button
@@ -306,7 +343,7 @@ const Reminders = () => {
         >
           <Plus size={16} />
 
-          Yangi eslatma
+          {t("reminders.new", "Yangi eslatma")}
         </button>
       </header>
 
@@ -355,6 +392,11 @@ const Reminders = () => {
         </div>
 
         <div className="reminders-stat">
+          <div className="reminders-stat__small-icon reminders-stat__small-icon--danger"><Clock3 size={16} /></div>
+          <div><span>KECHIKKAN</span><strong>{overdueCount}</strong><p>Vaqti o'tgan, hali bajarilmagan</p></div>
+        </div>
+
+        <div className="reminders-stat">
           <div className="reminders-stat__small-icon reminders-stat__small-icon--green">
             <Check size={16} />
           </div>
@@ -381,11 +423,7 @@ const Reminders = () => {
 
       <section className="reminders-toolbar">
         <div className="reminders-filters">
-          {[
-            "Barchasi",
-            "Faol",
-            "Bajarilgan",
-          ].map((item) => (
+          {["Barchasi", "Faol", "Kechikkan", "Bajarilgan"].map((item) => (
             <button
               type="button"
               key={item}
@@ -398,7 +436,7 @@ const Reminders = () => {
                 setFilter(item)
               }
             >
-              {item}
+              {filterLabel(item)}
             </button>
           ))}
         </div>
@@ -408,7 +446,7 @@ const Reminders = () => {
 
           <input
             type="text"
-            placeholder="Eslatma qidirish..."
+            placeholder={t("reminders.search", "Eslatma qidirish...")}
             aria-label="Eslatmalardan qidirish"
             value={search}
             onChange={(event) =>
@@ -437,7 +475,7 @@ const Reminders = () => {
               </span>
 
               <h2>
-                Barcha eslatmalar
+                {t("reminders.title", "Barcha eslatmalar")}
               </h2>
             </div>
 
@@ -454,10 +492,8 @@ const Reminders = () => {
             <article
   key={reminder.id}
   className={`reminder-card ${
-    reminder.completed
-      ? "reminder-card--completed"
-      : ""
-  } ${
+    reminder.completed ? "reminder-card--completed" : ""
+  } ${isOverdue(reminder) ? "reminder-card--overdue" : ""} ${
     openMenuId === reminder.id
       ? "reminder-card--menu-open"
       : ""
@@ -502,8 +538,10 @@ const Reminders = () => {
                             ""
                           )}`}
                       >
-                        {reminder.priority}
+                        {priorityLabel(reminder.priority)}
                       </span>
+                      {!reminder.completed && isOverdue(reminder) && <span className="reminder-status reminder-status--overdue">{t("reminders.overdue", "Kechikkan")}</span>}
+                      {!reminder.completed && !isOverdue(reminder) && <span className="reminder-status">{t("reminders.scheduled", "Rejalashtirilgan")}</span>}
                     </div>
 
                     <p>
@@ -526,7 +564,7 @@ const Reminders = () => {
                           size={11}
                         />
 
-                        {reminder.date}
+                        {reminder.dateKey ? getDateLabel(reminder.dateKey, new Date(), locale) : reminder.date}
                       </span>
                     </div>
                   </div>
@@ -575,8 +613,10 @@ const Reminders = () => {
                             size={12}
                           />
 
-                          Tahrirlash
+                          {t("common.edit", "Tahrirlash")}
                         </button>
+
+                        {!reminder.completed && <button type="button" onClick={() => void snoozeReminder(reminder, 10)}><TimerReset size={12} />{t("reminders.snooze", "10 daqiqaga kechiktirish")}</button>}
 
                         <button
                           type="button"
@@ -616,7 +656,7 @@ const Reminders = () => {
                             size={12}
                           />
 
-                          O‘chirish
+                          {t("common.delete", "O‘chirish")}
                         </button>
                       </div>
                     )}
@@ -636,7 +676,7 @@ const Reminders = () => {
               </div>
 
               <h3>
-                {reminders.length === 0 ? "Eslatmalar yo'q" : "Eslatma topilmadi"}
+                {reminders.length === 0 ? t("reminders.noItems", "Eslatmalar yo'q") : t("reminders.notFound", "Eslatma topilmadi")}
               </h3>
 
               <p>
@@ -683,7 +723,7 @@ const Reminders = () => {
                   </strong>
 
                   <span>
-                    {nextReminder.date} ·
+                    {nextReminder.dateKey ? getDateLabel(nextReminder.dateKey, new Date(), locale) : nextReminder.date} ·
                     eslatma
                   </span>
                 </div>
@@ -765,8 +805,8 @@ const Reminders = () => {
 
             <h2>
               {editId !== null
-                ? "Eslatmani tahrirlash"
-                : "Yangi eslatma"}
+                ? t("reminders.edit", "Eslatmani tahrirlash")
+                : t("reminders.new", "Yangi eslatma")}
             </h2>
 
             <p>
@@ -777,7 +817,7 @@ const Reminders = () => {
 
             <input
               type="text"
-              placeholder="Eslatma nomi"
+              placeholder={t("reminders.name", "Eslatma nomi")}
               aria-label="Eslatma nomi"
               value={newTitle}
               onChange={(event) =>
@@ -789,7 +829,7 @@ const Reminders = () => {
 
             <textarea
               rows={3}
-              placeholder="Qisqacha tavsif..."
+              placeholder={t("reminders.description", "Qisqacha tavsif...")}
               aria-label="Eslatma tavsifi"
               value={newDescription}
               onChange={(event) =>
@@ -881,7 +921,7 @@ const Reminders = () => {
                         />
 
                         <span>
-                          {item}
+                          {priorityLabel(item)}
                         </span>
 
                         {priority ===
@@ -908,13 +948,13 @@ const Reminders = () => {
                 <>
                   <Check size={15} />
 
-                  Saqlash
+                  {t("common.save", "Saqlash")}
                 </>
               ) : (
                 <>
                   <Plus size={15} />
 
-                  Eslatma yaratish
+                  {t("reminders.create", "Eslatma yaratish")}
                 </>
               )}
             </button>
@@ -959,7 +999,7 @@ const Reminders = () => {
                   setDeleteId(null)
                 }
               >
-                Bekor qilish
+                {t("common.cancel", "Bekor qilish")}
               </button>
 
               <button
@@ -969,7 +1009,7 @@ const Reminders = () => {
                   confirmDelete
                 }
               >
-                O‘chirish
+                {t("common.delete", "O‘chirish")}
               </button>
             </div>
           </div>

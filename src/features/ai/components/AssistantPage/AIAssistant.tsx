@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,10 +9,15 @@ import {
   MessageSquareText,
   Mic,
   Sparkles,
-  MoreHorizontal,
+  Plus,
+  Trash2,
+  Pencil,
+  Search,
 } from "lucide-react";
 
 import { useAIChat } from "../../hooks/useAIChat";
+import { useI18n } from "../../../../i18n/useI18n";
+import { usePlatform } from "../../../../context/PlatformContext";
 
 import ChatHeader from "../ChatHeader/ChatHeader";
 import ChatInput from "../ChatInput/ChatInput";
@@ -22,24 +27,13 @@ const VoiceMode = lazy(() => import("../VoiceMode/VoiceMode"));
 
 import "./AIAssistant.scss";
 
-const suggestedPrompts = [
-  "Bugungi rejamni ayt",
-  "Yangi vazifa yarat",
-  "Eslatma qo'sh",
-];
-
 const quickActions = [
-  { label: "Kalendar", icon: CalendarDays, route: "/calendar" },
-  { label: "Vazifalar", icon: ListTodo, route: "/tasks" },
-  { label: "Eslatmalar", icon: BellPlus, route: "/reminders" },
-  { label: "Fayllar", icon: FolderSearch, route: "/files" },
+  { key: "nav.calendar", label: "Kalendar", icon: CalendarDays, route: "/calendar" },
+  { key: "nav.tasks", label: "Vazifalar", icon: ListTodo, route: "/tasks" },
+  { key: "nav.reminders", label: "Eslatmalar", icon: BellPlus, route: "/reminders" },
+  { key: "nav.files", label: "Fayllar", icon: FolderSearch, route: "/files" },
 ];
 
-const recentConversations = [
-  "Bugungi rejalarim nima?",
-  "Ertangi uchrashuvni tashkil qil",
-  "Loyiha uchun g'oya taklif qil",
-];
 
 const AIAssistant = () => {
   const {
@@ -48,14 +42,38 @@ const AIAssistant = () => {
     sendMessage,
     executeAction,
     clearChat,
+    conversations,
+    activeConversationId,
+    historyLoading,
+    newChat,
+    loadConversation,
+    deleteConversation,
+    renameConversation,
     speakingId,
     speak,
     stopSpeaking,
   } = useAIChat();
   const [input, setInput] = useState("");
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
+  const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const { t } = useI18n();
+  const { name: platformName } = usePlatform();
+  const suggestedPrompts = [t("ai.todayPlan", "Bugungi rejamni ayt"), t("ai.newTask", "Yangi vazifa yarat"), t("ai.newReminder", "Eslatma qo'sh")];
   const navigate = useNavigate();
   const hasConversation = messages.length > 1;
+  const filteredConversations = useMemo(() => {
+    const query = historySearch.trim().toLocaleLowerCase();
+    return query ? conversations.filter((item) => item.title.toLocaleLowerCase().includes(query)) : conversations;
+  }, [conversations, historySearch]);
+
+  const commitConversationRename = async (id: string) => {
+    const title = editingTitle.trim();
+    setEditingConversationId(null);
+    if (!title) return;
+    await renameConversation(id, title);
+  };
 
   const handleSend = () => {
     if (!input.trim()) return;
@@ -86,15 +104,15 @@ const AIAssistant = () => {
           <div className="ai-page__rail-heading">
             <div className="ai-page__rail-mark"><Sparkles size={15} /></div>
             <div>
-              <strong>Qulay AI</strong>
-              <span>AI ish maydoni</span>
+              <strong>{platformName}</strong>
+              <span>{t("ai.workspace", "AI ish maydoni")}</span>
             </div>
           </div>
 
           <div className="ai-side-card">
             <div className="ai-side-card__title">
               <div className="ai-side-card__icon"><Sparkles size={15} /></div>
-              <h2>Tezkor amallar</h2>
+              <h2>{t("ai.quick", "Tezkor amallar")}</h2>
             </div>
 
             <div className="ai-side-card__actions">
@@ -103,7 +121,7 @@ const AIAssistant = () => {
                 return (
                   <button type="button" key={action.label} onClick={() => navigate(action.route)}>
                     <Icon size={15} />
-                    {action.label}
+                    {t(action.key, action.label)}
                   </button>
                 );
               })}
@@ -111,15 +129,47 @@ const AIAssistant = () => {
           </div>
 
           <div className="ai-side-card ai-side-card--history">
-            <div className="ai-side-card__title">
+            <div className="ai-side-card__title ai-side-card__title--history">
               <div className="ai-side-card__icon ai-side-card__icon--soft"><MessageSquareText size={15} /></div>
-              <h2>So'nggi suhbatlar</h2>
+              <h2>{t("ai.history", "So'nggi suhbatlar")}</h2>
+              <button type="button" className="ai-history__new" onClick={newChat} aria-label={t("ai.newChat", "Yangi chat")}><Plus size={14} /></button>
             </div>
 
+            <label className="ai-history__search">
+              <Search size={13} />
+              <input value={historySearch} onChange={(event) => setHistorySearch(event.target.value)} placeholder={t("ai.historySearch", "Chat tarixidan qidirish...")} aria-label={t("ai.historySearch", "Chat tarixidan qidirish...")} />
+            </label>
+
             <div className="ai-side-card__conversations">
-              {recentConversations.map((item) => (
-                <button type="button" key={item} onClick={() => sendMessage(item)}>{item}</button>
+              {historyLoading && <span className="ai-history__empty">{t("ai.historyLoading", "Tarix yuklanmoqda…")}</span>}
+              {!historyLoading && filteredConversations.slice(0, 20).map((item) => (
+                <div className={`ai-history__row ${activeConversationId === item.id ? "is-active" : ""}`} key={item.id}>
+                  {editingConversationId === item.id ? (
+                    <input
+                      className="ai-history__rename"
+                      autoFocus
+                      maxLength={200}
+                      value={editingTitle}
+                      onChange={(event) => setEditingTitle(event.target.value)}
+                      onBlur={() => void commitConversationRename(item.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") { event.preventDefault(); void commitConversationRename(item.id); }
+                        if (event.key === "Escape") { setEditingConversationId(null); setEditingTitle(""); }
+                      }}
+                      aria-label={t("ai.renameChat", "Chat nomini o'zgartirish")}
+                    />
+                  ) : (
+                    <button type="button" className="ai-history__open" onClick={() => void loadConversation(item.id)} title={item.title}>
+                      <span>{item.title}</span><small>{item.messageCount ?? 0} {t("ai.messages", "xabar")}</small>
+                    </button>
+                  )}
+                  <span className="ai-history__actions">
+                    <button type="button" className="ai-history__edit" onClick={() => { setEditingConversationId(item.id); setEditingTitle(item.title); }} aria-label={t("ai.renameChat", "Chat nomini o'zgartirish")}><Pencil size={12} /></button>
+                    <button type="button" className="ai-history__delete" onClick={() => void deleteConversation(item.id)} aria-label={`${item.title} suhbatini o'chirish`}><Trash2 size={13} /></button>
+                  </span>
+                </div>
               ))}
+              {!historyLoading && filteredConversations.length === 0 && <span className="ai-history__empty">{historySearch.trim() ? t("ai.historyNotFound", "Mos chat topilmadi.") : t("ai.noHistory", "Hali saqlangan suhbat yo'q.")}</span>}
             </div>
           </div>
         </aside>
@@ -135,9 +185,9 @@ const AIAssistant = () => {
                   <Sparkles size={28} />
                 </div>
 
-                <span className="ai-welcome__small">SALOM, MEN QULAY AI</span>
-                <h1>Bugun sizga qanday yordam beray?</h1>
-                <p>Reja tuzing, vazifa yarating yoki shunchaki gaplashishni boshlang.</p>
+                <span className="ai-welcome__small">{t("ai.greeting", `SALOM, MEN ${platformName.toUpperCase()}`)}</span>
+                <h1>{t("ai.question", "Bugun sizga qanday yordam beray?")}</h1>
+                <p>{t("ai.subtitle", "Reja tuzing, vazifa yarating yoki shunchaki gaplashishni boshlang.")}</p>
 
                 <div className="ai-prompts">
                   {suggestedPrompts.map((prompt) => (
@@ -150,7 +200,7 @@ const AIAssistant = () => {
 
                 <button type="button" className="ai-welcome__voice" onClick={openVoiceMode}>
                   <Mic size={15} />
-                  Voice Mode'ni ochish
+                  {t("ai.voice", "Voice Mode'ni ochish")}
                 </button>
               </div>
             </div>
@@ -171,9 +221,9 @@ const AIAssistant = () => {
 
       <header className="ai-page__mobile-bar">
         <button type="button" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={18} /></button>
-        <div><strong>Qulay AI</strong><span><i /> Onlayn · Tayyor</span></div>
-        <button type="button" className="ai-page__mobile-voice" onClick={openVoiceMode} aria-label="Voice Mode'ni ochish"><Mic size={17} /></button>
-        <button type="button" onClick={clearChat} aria-label="Suhbat sozlamalari"><MoreHorizontal size={18} /></button>
+        <div><strong>{platformName}</strong><span><i /> {t("ai.online", "Onlayn · Tayyor")}</span></div>
+        <button type="button" className="ai-page__mobile-voice" onClick={openVoiceMode} aria-label={t("ai.voice", "Voice Mode'ni ochish")}><Mic size={17} /></button>
+        <button type="button" onClick={newChat} aria-label={t("ai.newChat", "Yangi chat")}><Plus size={18} /></button>
       </header>
 
       {isVoiceModeOpen && (

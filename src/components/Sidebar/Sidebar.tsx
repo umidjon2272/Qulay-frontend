@@ -17,15 +17,17 @@ import { useAIChat } from "../../features/ai/hooks/useAIChat";
 import { useProfile } from "../../hooks/useProfile";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
+import { useI18n } from "../../i18n/useI18n";
+import { usePlatform } from "../../context/PlatformContext";
 import "./Sidebar.scss";
 
 const menuItems = [
-  { label: "Bosh sahifa", path: "/dashboard", icon: LayoutDashboard },
-  { label: "AI yordamchi", path: "/ai-assistant", icon: Sparkles },
-  { label: "Kalendar", path: "/calendar", icon: CalendarDays },
-  { label: "Vazifalar", path: "/tasks", icon: CheckSquare },
-  { label: "Eslatmalar", path: "/reminders", icon: Bell },
-  { label: "Fayllar", path: "/files", icon: FolderOpen },
+  { key: "nav.home", label: "Bosh sahifa", path: "/dashboard", icon: LayoutDashboard },
+  { key: "nav.ai", label: "AI yordamchi", path: "/ai-assistant", icon: Sparkles },
+  { key: "nav.calendar", label: "Kalendar", path: "/calendar", icon: CalendarDays },
+  { key: "nav.tasks", label: "Vazifalar", path: "/tasks", icon: CheckSquare },
+  { key: "nav.reminders", label: "Eslatmalar", path: "/reminders", icon: Bell },
+  { key: "nav.files", label: "Fayllar", path: "/files", icon: FolderOpen },
 ];
 
 const Sidebar = () => {
@@ -36,6 +38,8 @@ const Sidebar = () => {
   const { logout } = useAuth();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const { t } = useI18n();
+  const { name: platformName } = usePlatform();
   const isSettingsHub = location.pathname === "/settings";
 
   const handleMobileAI = () => {
@@ -50,39 +54,32 @@ const Sidebar = () => {
     <aside className="sidebar">
       <div className="sidebar__brand">
         <div className="sidebar__logo"><Sparkles size={20} /></div>
-        <div className="sidebar__brand-text"><strong>Qulay AI</strong><span>AI ish maydoni</span></div>
+        <div className="sidebar__brand-text"><strong>{platformName}</strong><span>{t("nav.workspace", "AI ish maydoni")}</span></div>
       </div>
 
       <nav className="sidebar__nav">
-        <div className="sidebar__section-title">ASOSIY</div>
+        <div className="sidebar__section-title">{t("nav.main", "ASOSIY")}</div>
         {menuItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink key={item.path} to={item.path} className={`sidebar__link ${location.pathname === item.path ? "sidebar__link--active" : ""}`}>
               <span className="sidebar__link-icon"><Icon size={19} /></span>
-              <span className="sidebar__link-text">{item.label}</span>
+              <span className="sidebar__link-text">{t(item.key, item.label)}</span>
               <ChevronRight className="sidebar__arrow" size={15} />
             </NavLink>
           );
         })}
-        <div className="sidebar__section-title sidebar__section-title--bottom">TIZIM</div>
+        <div className="sidebar__section-title sidebar__section-title--bottom">{t("nav.system", "TIZIM")}</div>
         <NavLink to="/settings" className={({ isActive }) => `sidebar__link ${isActive ? "sidebar__link--active" : ""}`}>
           <span className="sidebar__link-icon"><Settings size={19} /></span>
-          <span className="sidebar__link-text">Sozlamalar</span>
+          <span className="sidebar__link-text">{t("nav.settings", "Sozlamalar")}</span>
           <ChevronRight className="sidebar__arrow" size={15} />
         </NavLink>
       </nav>
 
-      <button type="button" className="sidebar__ai-card" onClick={openAIChat} aria-label="AI yordamchini ochish">
-        <div className="sidebar__ai-glow" />
-        <div className="sidebar__ai-icon"><Sparkles size={18} /></div>
-        <div className="sidebar__ai-content"><strong>AI yordamchi</strong><span>Gaplashishga tayyor</span></div>
-        <div className="sidebar__ai-status"><i /></div>
-      </button>
-
       <button type="button" className="sidebar__user" onClick={() => setProfileMenuOpen((value) => !value)} aria-expanded={profileMenuOpen} aria-label="Profil menyusini ochish">
         <div className="sidebar__avatar">{avatar ? <img src={avatar} alt={`${name} avatari`} /> : name.charAt(0).toUpperCase()}</div>
-        <div className="sidebar__user-info"><strong>{name}</strong><span>Profil</span></div>
+        <div className="sidebar__user-info"><strong>{name}</strong><span>{t("nav.profile", "Profil")}</span></div>
         <ChevronRight size={15} className="sidebar__user-arrow" />
       </button>
 
@@ -92,23 +89,23 @@ const Sidebar = () => {
             <div className="sidebar__profile-menu-avatar">{avatar ? <img src={avatar} alt="" /> : name.charAt(0).toUpperCase()}</div>
             <div>
               <strong>{name}</strong>
-              <span>{email || "Qulay AI foydalanuvchisi"}</span>
+              <span>{email || `${platformName} foydalanuvchisi`}</span>
             </div>
           </div>
           <div className="sidebar__profile-menu-divider" />
-          <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/settings?tab=profile"); }}><UserRound size={16} /><span>Profil</span></button>
-          <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/settings"); }}><Settings size={16} /><span>Sozlamalar</span></button>
+          <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/settings?tab=profile"); }}><UserRound size={16} /><span>{t("nav.profile", "Profil")}</span></button>
+          <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/settings"); }}><Settings size={16} /><span>{t("nav.settings", "Sozlamalar")}</span></button>
           <div className="sidebar__profile-menu-divider" />
-          <button type="button" className="is-danger" onClick={() => setConfirmLogout(true)}><LogOut size={16} /><span>Chiqish</span></button>
+          <button type="button" className="is-danger" onClick={() => setConfirmLogout(true)}><LogOut size={16} /><span>{t("nav.logout", "Chiqish")}</span></button>
         </div>
       )}
 
       <nav className="sidebar__mobile-dock" aria-label="Mobil navigatsiya">
-        <NavLink to="/dashboard" className="sidebar__mobile-item" aria-label="Bosh sahifa"><LayoutDashboard size={19} /><span>Bosh sahifa</span></NavLink>
-        <NavLink to="/tasks" className="sidebar__mobile-item" aria-label="Vazifalar"><CheckSquare size={19} /><span>Vazifalar</span></NavLink>
+        <NavLink to="/dashboard" className={({ isActive }) => `sidebar__mobile-item ${isActive ? "is-active" : ""}`} aria-label="Bosh sahifa"><LayoutDashboard size={19} /><span>{t("nav.home", "Bosh sahifa")}</span></NavLink>
+        <NavLink to="/tasks" className={({ isActive }) => `sidebar__mobile-item ${isActive ? "is-active" : ""}`} aria-label="Vazifalar"><CheckSquare size={19} /><span>{t("nav.tasks", "Vazifalar")}</span></NavLink>
         <button type="button" className="sidebar__mobile-item sidebar__mobile-item--ai" onClick={handleMobileAI} aria-label="AI yordamchi"><Sparkles size={20} /><span>AI</span></button>
-        <NavLink to="/calendar" className="sidebar__mobile-item" aria-label="Kalendar"><CalendarDays size={19} /><span>Kalendar</span></NavLink>
-        <button type="button" className={`sidebar__mobile-item ${isSettingsHub ? "is-active" : ""}`} onClick={() => navigate("/settings")} aria-label="Sozlamalarni ochish" aria-current={isSettingsHub ? "page" : undefined}><span className="sidebar__mobile-avatar">{avatar ? <img src={avatar} alt="" /> : name.charAt(0).toUpperCase()}</span><span>Profil</span></button>
+        <NavLink to="/calendar" className={({ isActive }) => `sidebar__mobile-item ${isActive ? "is-active" : ""}`} aria-label="Kalendar"><CalendarDays size={19} /><span>{t("nav.calendar", "Kalendar")}</span></NavLink>
+        <button type="button" className={`sidebar__mobile-item ${isSettingsHub ? "is-active" : ""}`} onClick={() => navigate("/settings")} aria-label="Sozlamalarni ochish" aria-current={isSettingsHub ? "page" : undefined}><span className="sidebar__mobile-avatar">{avatar ? <img src={avatar} alt="" /> : name.charAt(0).toUpperCase()}</span><span>{t("nav.profile", "Profil")}</span></button>
       </nav>
 
       {confirmLogout && (

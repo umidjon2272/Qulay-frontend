@@ -116,7 +116,7 @@
   body #root .app-layout--ai {
     --bottom-nav-height: 0px;
     position: fixed;
-    top: 0;
+    top: var(--app-visible-top, 0px);
     right: 0;
     bottom: auto;
     left: 0;
@@ -155,4 +155,29 @@
 
 @media (max-width: 380px) {
   body #root .app-layout:not(.app-layout--ai) .app-layout__content { padding-inline: 10px; }
+}
+
+.app-offline-banner {
+  position: fixed;
+  z-index: 1400;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(92vw, 520px);
+  min-height: 38px;
+  padding: 8px 13px;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 12px;
+  background: rgba(147, 93, 27, .94);
+  box-shadow: 0 14px 36px rgba(4, 10, 22, .28);
+  transform: translateX(-50%);
+  backdrop-filter: blur(14px);
+  font-size: 12px;
+  font-weight: 650;
+}
+@media (max-width: 700px) {
+  .app-offline-banner { top: max(8px, env(safe-area-inset-top)); width: calc(100% - 24px); justify-content: center; text-align: center; }
 }

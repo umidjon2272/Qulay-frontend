@@ -17,9 +17,20 @@ export class ApiError extends Error {
   }
 }
 
+const safeValidationMessage = (details: unknown): string | null => {
+  if (typeof details !== "object" || details === null || !("message" in details)) return null;
+  const message = (details as { message?: unknown }).message;
+  if (Array.isArray(message)) {
+    const first = message.find((item): item is string => typeof item === "string" && item.trim().length > 0);
+    return first ? `Ma'lumot formati xato: ${first}` : null;
+  }
+  if (typeof message === "string" && message.trim() && !/^bad request$/i.test(message.trim())) return message.trim();
+  return null;
+};
+
 export const getApiErrorMessage = (error: unknown, fallback = "Server bilan bog'lanib bo'lmadi."): string => {
   if (!(error instanceof ApiError)) return fallback;
-  if (error.status === 400) return "Kiritilgan ma'lumotlarni tekshiring.";
+  if (error.status === 400) return safeValidationMessage(error.details) ?? "Kiritilgan ma'lumotlarni tekshiring.";
   if (error.status === 401) return "Email yoki parol noto'g'ri.";
   if (error.status === 403) return "Akkauntingiz bloklangan yoki bu amal uchun ruxsatingiz yo'q.";
   if (error.status === 404) return "So'ralgan ma'lumot topilmadi.";

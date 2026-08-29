@@ -5,7 +5,7 @@ import { parseAIAction } from "../actions/aiActions";
 import type { AIAction } from "../actions/actionTypes";
 import { logRouter } from "./debugLog";
 import { detectTelegramSearch, detectTelegramSend } from "./telegramIntent";
-import { detectContactLookup, detectMemoryLookup, isFinanceSummaryIntent } from "./toolIntents";
+import { detectContactLookup, detectGoogleCalendarLookup, detectGoogleDriveSearch, detectMemoryLookup, isFinanceSummaryIntent } from "./toolIntents";
 import { describeTelegramError } from "./telegramError";
 import type { TelegramCandidate, TelegramSelection } from "./routerTypes";
 
@@ -128,6 +128,99 @@ const handleTelegramSearch = async (query: string): Promise<RouterReply> => {
   }
 };
 
+
+
+type GoogleCalendarEvent = {
+  id: string;
+  title: string;
+  start: string | null;
+  end: string | null;
+  location: string | null;
+};
+
+type GoogleDriveFile = {
+  id: string;
+  name: string;
+  mimeType: string;
+  modifiedTime: string | null;
+  webViewLink: string | null;
+};
+
+const dayRangeIso = (offsetDays = 0): { from: string; to: string } => {
+  const from = new Date();
+  from.setDate(from.getDate() + offsetDays);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(from);
+  to.setDate(to.getDate() + 1);
+  return { from: from.toISOString(), to: to.toISOString() };
+};
+
+const calendarRangeIso = (range: "today" | "tomorrow" | "week"): { from: string; to: string } => {
+  if (range === "tomorrow") return dayRangeIso(1);
+  if (range === "week") {
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 7);
+    return { from: from.toISOString(), to: to.toISOString() };
+  }
+  return dayRangeIso(0);
+};
+
+const formatCalendarTime = (value: string | null): string => {
+  if (!value) return "Vaqt ko‘rsatilmagan";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(date);
+};
+
+const handleGoogleCalendarLookup = async (range: "today" | "tomorrow" | "week"): Promise<RouterReply> => {
+  logRouter("intent_detected", { intent: "google_calendar_events", range });
+  try {
+    const period = calendarRangeIso(range);
+    logRouter("tool_call", { tool: "get_google_calendar_events", confirmed: true });
+    const result = await executeAiTool<GoogleCalendarEvent[]>("get_google_calendar_events", period, true);
+    logRouter("tool_result", { tool: "get_google_calendar_events", status: result.status });
+    if (!isToolSuccess(result)) throw new Error("Unexpected confirmation_required for get_google_calendar_events");
+    if (result.data.length === 0) {
+      const label = range === "tomorrow" ? "Ertaga" : range === "week" ? "Keyingi 7 kunda" : "Bugun";
+      return { text: `${label} Google Calendar’da uchrashuv topilmadi.` };
+    }
+    const lines = result.data.slice(0, 10).map((event) => {
+      const location = event.location ? ` · ${event.location}` : "";
+      return `• ${formatCalendarTime(event.start)} — ${event.title || "Nomsiz uchrashuv"}${location}`;
+    });
+    const label = range === "tomorrow" ? "Ertangi" : range === "week" ? "Keyingi 7 kundagi" : "Bugungi";
+    return { text: `${label} Google Calendar uchrashuvlari:
+${lines.join("\n")}` };
+  } catch (error) {
+    logRouter("tool_error", { tool: "get_google_calendar_events" });
+    return { text: getApiErrorMessage(error, "Google Calendar ma’lumotlarini olishda xatolik yuz berdi.") };
+  }
+};
+
+const handleGoogleDriveSearch = async (query: string): Promise<RouterReply> => {
+  logRouter("intent_detected", { intent: "google_drive_search" });
+  try {
+    logRouter("tool_call", { tool: "search_google_drive_files", confirmed: true });
+    const result = await executeAiTool<{ items: GoogleDriveFile[]; nextPageToken: string | null }>(
+      "search_google_drive_files",
+      { query, limit: 10 },
+      true,
+    );
+    logRouter("tool_result", { tool: "search_google_drive_files", status: result.status });
+    if (!isToolSuccess(result)) throw new Error("Unexpected confirmation_required for search_google_drive_files");
+    const items = Array.isArray(result.data.items) ? result.data.items : [];
+    if (items.length === 0) return { text: `Google Drive’da “${query}” bo‘yicha fayl topilmadi.` };
+    const lines = items.slice(0, 8).map((file) => `• ${file.name || "Nomsiz fayl"}`);
+    return { text: `Google Drive’dan topilgan fayllar:
+${lines.join("\n")}` };
+  } catch (error) {
+    logRouter("tool_error", { tool: "search_google_drive_files" });
+    return { text: getApiErrorMessage(error, "Google Drive fayllarini qidirishda xatolik yuz berdi.") };
+  }
+};
+
 const handleFinanceSummary = async (): Promise<RouterReply> => {
   logRouter("intent_detected", { intent: "finance_summary" });
   try {
@@ -191,6 +284,12 @@ const buildFallbackReply = (raw: string): string => {
   if (lower.includes("telegram")) {
     return "Telegram: kimni qidirishni yoki kimga nima yozishni ayting. Masalan: “Telegramdan Azizni top” yoki “Azizga 'Salom' deb yoz”.";
   }
+  if (lower.includes("drive") || lower.includes("google docs")) {
+    return "Google Drive’dan fayl qidirish uchun, masalan: “Drive’dan shartnoma faylini top” deb yozing.";
+  }
+  if (lower.includes("calendar") || lower.includes("kalendar")) {
+    return "Google Calendar uchun, masalan: “Bugungi Google Calendar uchrashuvlarimni ko‘rsat” deb yozing.";
+  }
   if (lower.includes("fayl") || lower.includes("hujjat")) {
     return "Fayllar bo‘limida so‘nggi hujjatlaringiz va papkalaringizni ko‘rishingiz mumkin.";
   }
@@ -218,6 +317,12 @@ export const routeMessage = async (input: string): Promise<RouterReply> => {
 
   const search = detectTelegramSearch(trimmed);
   if (search) return handleTelegramSearch(search.query);
+
+  const googleDrive = detectGoogleDriveSearch(trimmed);
+  if (googleDrive) return handleGoogleDriveSearch(googleDrive.query);
+
+  const googleCalendar = detectGoogleCalendarLookup(trimmed);
+  if (googleCalendar) return handleGoogleCalendarLookup(googleCalendar.range);
 
   if (isFinanceSummaryIntent(trimmed)) return handleFinanceSummary();
 

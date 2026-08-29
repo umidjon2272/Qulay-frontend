@@ -106,7 +106,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     sendMessage(transcript);
   }, [actionStatus, executeAction, pendingAction, sendMessage, showToast]);
 
-  const { isSupported, isListening, interimTranscript, start, stop } = useSpeechRecognition({
+  const { isSupported, isListening, interimTranscript, start, stop, requestPermission } = useSpeechRecognition({
     onResult: handleResult,
     onError: (message) => setVoiceError(message),
   });
@@ -192,10 +192,13 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     onClose();
   };
 
-  const handleRetry = () => {
+  const handleRetry = async () => {
+    if (!isSupported) { showToast("Bu brauzer ovozli kiritishni qo'llab-quvvatlamaydi.", "error"); return; }
+    const permissionGranted = await requestPermission();
+    if (!permissionGranted) return;
     setVoiceError("");
     setMuted(false);
-    if (!isSupported) showToast("Bu brauzer ovozli kiritishni qo'llab-quvvatlamaydi.", "error");
+    window.setTimeout(() => start(), 120);
   };
 
   const handleActionConfirm = async () => {
@@ -270,7 +273,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
           {voiceError && (
             <div className="voice-mode__error">
               <span>{voiceError}</span>
-              <button type="button" onClick={handleRetry}><RotateCcw size={14} /> Qayta urinish</button>
+              <button type="button" onClick={() => void handleRetry()}><RotateCcw size={14} /> Mikrofonni tekshirish</button>
             </div>
           )}
         </main>

@@ -20,11 +20,11 @@ export const createLocalId = (records: readonly { id: number }[] = []): number =
   return next;
 };
 
-export const getDateLabel = (dateKey: string, now = new Date()): string => {
-  if (dateKey === getDateKey(now)) return "Bugun";
-  if (dateKey === getDateKey(addDays(now, 1))) return "Ertaga";
+export const getDateLabel = (dateKey: string, now = new Date(), locale: "uz" | "ru" = "uz"): string => {
+  if (dateKey === getDateKey(now)) return locale === "ru" ? "Сегодня" : "Bugun";
+  if (dateKey === getDateKey(addDays(now, 1))) return locale === "ru" ? "Завтра" : "Ertaga";
 
-  return new Intl.DateTimeFormat("uz-UZ", {
+  return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "uz-UZ", {
     day: "numeric",
     month: "long",
   }).format(new Date(`${dateKey}T12:00:00`));

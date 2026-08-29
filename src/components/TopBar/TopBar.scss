@@ -173,3 +173,42 @@ body #root .topbar__actions .topbar__profile {
   body #root .topbar__actions { gap: 5px; }
   body #root .topbar__search { padding-inline: 11px; }
 }
+
+@media (max-width: 700px) {
+  .notification-panel {
+    position: fixed;
+    inset: 0;
+    top: 0;
+    right: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    background: color-mix(in srgb, var(--surface-solid) 96%, #11101a 4%);
+    box-shadow: none;
+    padding-top: env(safe-area-inset-top);
+    animation: notification-mobile-in 180ms ease both;
+  }
+  .notification-panel__header { padding: 14px 16px; min-height: 62px; }
+  .notification-panel__list { max-height: none; height: calc(100dvh - 126px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); }
+  .notification-item { padding: 15px 16px; min-height: 72px; }
+  .notification-item__body strong { font-size: 13px; }
+  .notification-item__body span { margin-top: 4px; font-size: 12px; white-space: normal; line-height: 1.45; }
+  .notification-panel__footer { position:absolute; left:0; right:0; bottom:0; min-height:54px; padding-bottom:calc(12px + env(safe-area-inset-bottom)); background:var(--surface-solid); }
+}
+
+@keyframes notification-mobile-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.topbar__search-wrap { position: relative; min-width: 0; }
+.topbar-search-results { position: absolute; top: calc(100% + 8px); right: 0; left: 0; z-index: 900; display: grid; gap: 3px; padding: 7px; border: 1px solid var(--border); border-radius: 15px; background: color-mix(in srgb, var(--surface-elevated) 96%, transparent); box-shadow: var(--shadow-soft); backdrop-filter: blur(20px); }
+.topbar-search-results button { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 42px; padding: 6px 9px; border: 0; border-radius: 10px; background: transparent; color: var(--text-secondary); text-align: left; cursor: pointer; }
+.topbar-search-results button:hover { background: var(--surface-hover); color: var(--text-primary); }
+.topbar-search-results button > span { display: grid; min-width: 0; }
+.topbar-search-results strong { overflow: hidden; color: var(--text-primary); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.topbar-search-results small { color: var(--text-muted); font-size: 10px; }
+.topbar-search-results p { margin: 0; padding: 12px; color: var(--text-secondary); font-size: 12px; text-align: center; }
+@media (max-width: 700px) { .topbar__search-wrap { display: none; } }

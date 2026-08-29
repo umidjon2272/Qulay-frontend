@@ -12,9 +12,11 @@ const dto = (input: Omit<CalendarEvent, "id" | "type"> | Partial<CalendarEvent>)
   const date = input.date ?? new Date().toISOString().slice(0, 10);
   const time = input.time ?? "09:00";
   const start = localDateTimeToIso(date, time);
-  const endDate = new Date(start);
-  endDate.setMinutes(endDate.getMinutes() + 60);
-  return { title: input.title, description: input.description || undefined, participant: input.participant || undefined, startsAt: start, endsAt: endDate.toISOString(), reminderMinutesBefore: reminderMinutesFromLabel(input.reminder) };
+  const end = input.endTime ? localDateTimeToIso(date, input.endTime) : undefined;
+  const endDate = end ? new Date(end) : new Date(start);
+  if (!end) endDate.setMinutes(endDate.getMinutes() + 60);
+  if (endDate.getTime() <= new Date(start).getTime()) endDate.setDate(endDate.getDate() + 1);
+  return { title: input.title, description: input.description || undefined, participant: input.participant || undefined, location: input.location || undefined, startsAt: start, endsAt: endDate.toISOString(), reminderMinutesBefore: reminderMinutesFromLabel(input.reminder) };
 };
 
 export const listMeetings = (query?: Record<string, string | number | undefined>) => request<PaginatedResponse<ApiMeeting>>(`/meetings${queryString({ limit: 100, ...query })}`).then((response) => response.items.map(meetingFromApi));
@@ -25,12 +27,15 @@ export const updateMeeting = (id: string | number, patch: Partial<CalendarEvent>
     title: patch.title,
     description: patch.description,
     participant: patch.participant,
+    location: patch.location,
     reminderMinutesBefore: patch.reminder === undefined ? undefined : reminderMinutesFromLabel(patch.reminder),
   };
   if (patch.date && patch.time) {
     const start = localDateTimeToIso(patch.date, patch.time);
-    const end = new Date(start);
-    end.setMinutes(end.getMinutes() + 60);
+    const endIso = patch.endTime ? localDateTimeToIso(patch.date, patch.endTime) : undefined;
+    const end = endIso ? new Date(endIso) : new Date(start);
+    if (!endIso) end.setMinutes(end.getMinutes() + 60);
+    if (end.getTime() <= new Date(start).getTime()) end.setDate(end.getDate() + 1);
     body.startsAt = start;
     body.endsAt = end.toISOString();
   }

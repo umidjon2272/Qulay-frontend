@@ -4,6 +4,7 @@ import { AIChatProvider } from "../../features/ai/context/AIChatContext";
 import { IntegrationProvider } from "../../context/IntegrationContext";
 import { ProfileProvider } from "../../context/ProfileContext";
 import { AuthProvider } from "../../context/AuthContext";
+import { PlatformProvider } from "../../context/PlatformContext";
 import { ToastProvider } from "../../components/Toast/ToastContext";
 import { getSettings } from "../../services/settingsService";
 import { initializeStorageSchema } from "../../services/storage";
@@ -45,8 +46,9 @@ const ThemeSync = ({ children }: ProvidersProps) => {
 };
 
 export const Providers = ({ children }: ProvidersProps) => (
-  <ToastProvider>
-    <AuthProvider>
+  <PlatformProvider>
+    <ToastProvider>
+      <AuthProvider>
       <ThemeSync>
         <ProfileProvider>
           <IntegrationProvider>
@@ -54,6 +56,7 @@ export const Providers = ({ children }: ProvidersProps) => (
           </IntegrationProvider>
         </ProfileProvider>
       </ThemeSync>
-    </AuthProvider>
-  </ToastProvider>
+      </AuthProvider>
+    </ToastProvider>
+  </PlatformProvider>
 );

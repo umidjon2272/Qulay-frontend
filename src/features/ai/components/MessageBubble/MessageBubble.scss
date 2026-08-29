@@ -217,3 +217,10 @@ html[data-theme="dark"] body #root .message-bubble__meta { color: rgba(220,228,2
 html[data-theme="dark"] body #root .message-bubble__speak { border: 1px solid rgba(164,181,221,.18); background: rgba(20,43,72,.72); color: rgba(235,240,255,.7); }
 html[data-theme="dark"] body #root .message-bubble__speak:hover,
 html[data-theme="dark"] body #root .message-bubble__speak.is-speaking { border-color: rgba(143,127,255,.48); background: rgba(115,96,226,.2); color: #d8d0ff; }
+
+.message-bubble__action-error {
+  margin: 8px 2px 0;
+  color: var(--danger, #ff7b86);
+  font-size: 12px;
+  line-height: 1.45;
+}

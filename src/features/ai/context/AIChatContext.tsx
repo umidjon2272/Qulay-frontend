@@ -18,6 +18,10 @@ import { buildTelegramSendConfirmation } from "../router/chatRouter";
 import { matchTelegramCandidate } from "../router/telegramCandidateSelection";
 import type { TelegramSelection } from "../router/routerTypes";
 import { getAIReply } from "../../../services/aiService";
+import { addMessage as addConversationMessage, createConversation, deleteConversation as removeConversation, listConversations, listMessages, updateConversation } from "../../../services/api/conversationApi";
+import type { Conversation } from "../../../services/api/conversationApi";
+import { usePlatform } from "../../../context/PlatformContext";
+import { useI18n, type AppLocale } from "../../../i18n/useI18n";
 import {
   AIChatContext,
   type ChatMessage,
@@ -30,12 +34,14 @@ const formatTime = () =>
     minute: "2-digit",
   });
 
-const welcomeMessage: ChatMessage = {
+const createWelcomeMessage = (platformName = "Qulay AI", locale: AppLocale = "uz"): ChatMessage => ({
   id: 0,
   role: "ai",
-  text: "Assalomu alaykum! Men Qulay AI. Vazifa, eslatma, uchrashuv va qayd yaratish yoki bugungi rejangizni ko‘rishda yordam beraman.",
+  text: locale === "ru"
+    ? `Здравствуйте! Я ${platformName}. Помогу с задачами, напоминаниями, встречами, заметками и планом на сегодня.`
+    : `Assalomu alaykum! Men ${platformName}. Vazifa, eslatma, uchrashuv va qayd yaratish yoki bugungi rejangizni ko‘rishda yordam beraman.`,
   time: formatTime(),
-};
+});
 
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_CHAT_MESSAGES = 200;
@@ -81,7 +87,7 @@ const isChatMessage = (value: unknown): value is ChatMessage => {
 const isChatHistory = (value: unknown): value is ChatMessage[] =>
   Array.isArray(value) && value.length > 0 && value.every(isChatMessage);
 
-const loadStoredMessages = (): ChatMessage[] => {
+const loadStoredMessages = (welcomeMessage = createWelcomeMessage()): ChatMessage[] => {
   if (!getSettings().ai.saveHistory) return [welcomeMessage];
 
   const stored = readStorage(STORAGE_KEYS.aiChatHistory, [welcomeMessage], isChatHistory);
@@ -98,12 +104,19 @@ const appendMessage = (messages: ChatMessage[], message: ChatMessage): ChatMessa
 };
 
 export const AIChatProvider = ({ children }: { children: ReactNode }) => {
+  const { name: platformName } = usePlatform();
+  const { locale } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>(loadStoredMessages);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadStoredMessages(createWelcomeMessage(platformName, locale)));
   const [isTyping, setIsTyping] = useState(false);
   const [saveHistory, setSaveHistory] = useState(() => getSettings().ai.saveHistory);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const historyLoadingRef = useRef(false);
   const previousSaveHistoryRef = useRef(saveHistory);
+  const activeConversationIdRef = useRef<string | null>(null);
 
   const mountedRef = useRef(true);
   const generationRef = useRef(0);
@@ -120,13 +133,17 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
     if (!nextSaveHistory) {
       removeStorage(STORAGE_KEYS.aiChatHistory);
-      setMessages([{ ...welcomeMessage, id: 0, time: formatTime() }]);
+      setMessages([{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }]);
     } else if (!previousSaveHistoryRef.current) {
-      setMessages(loadStoredMessages());
+      setMessages(loadStoredMessages(createWelcomeMessage(platformName, locale)));
     }
 
     previousSaveHistoryRef.current = nextSaveHistory;
-  }), []);
+  }), [platformName, locale]);
+
+  useEffect(() => {
+    setMessages((current) => current.map((message, index) => index === 0 && message.id === 0 ? { ...message, text: createWelcomeMessage(platformName, locale).text } : message));
+  }, [platformName, locale]);
 
   useEffect(() => {
     messageIdRef.current = messages.reduce(
@@ -139,10 +156,24 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       : null;
   }, [messages]);
 
+  useEffect(() => { activeConversationIdRef.current = activeConversationId; }, [activeConversationId]);
+
   useEffect(() => {
     if (saveHistory) writeStorage(STORAGE_KEYS.aiChatHistory, messages);
     else removeStorage(STORAGE_KEYS.aiChatHistory);
   }, [messages, saveHistory]);
+
+  const refreshConversations = useCallback(async () => {
+    if (!getAuthSession()) { setConversations([]); return; }
+    try {
+      const result = await listConversations();
+      if (mountedRef.current) setConversations(result.items);
+    } catch {
+      // Chat stays usable even if history API is temporarily unavailable.
+    }
+  }, []);
+
+  useEffect(() => { void refreshConversations(); }, [refreshConversations]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -166,22 +197,28 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const clearForSignedOutUser = () => {
-      if (getAuthSession()) return;
+    const handleAuthSessionChanged = () => {
+      if (getAuthSession()) {
+        void refreshConversations();
+        return;
+      }
       generationRef.current += 1;
       for (const controller of pendingRequestsRef.current.values()) controller.abort();
       pendingRequestsRef.current.clear();
       pendingTelegramSelectionRef.current = null;
       executedActionsRef.current.clear();
       executingActionsRef.current.clear();
-      setMessages([{ ...welcomeMessage, id: 0, time: formatTime() }]);
+      setMessages([{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }]);
+      setConversations([]);
+      setActiveConversationId(null);
+      activeConversationIdRef.current = null;
       setIsTyping(false);
       setSpeakingId(null);
     };
 
-    window.addEventListener(AUTH_SESSION_CHANGED, clearForSignedOutUser);
-    return () => window.removeEventListener(AUTH_SESSION_CHANGED, clearForSignedOutUser);
-  }, []);
+    window.addEventListener(AUTH_SESSION_CHANGED, handleAuthSessionChanged);
+    return () => window.removeEventListener(AUTH_SESSION_CHANGED, handleAuthSessionChanged);
+  }, [refreshConversations, platformName, locale]);
 
   const nextMessageId = () => {
     messageIdRef.current += 1;
@@ -191,6 +228,94 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
   const toggle = useCallback(() => setIsOpen((value) => !value), []);
+
+  const ensureConversation = useCallback(async (title: string): Promise<string | null> => {
+    if (!getSettings().ai.saveHistory || !getAuthSession()) return null;
+    if (activeConversationIdRef.current) return activeConversationIdRef.current;
+    try {
+      const conversation = await createConversation(title.slice(0, 80));
+      activeConversationIdRef.current = conversation.id;
+      if (mountedRef.current) {
+        setActiveConversationId(conversation.id);
+        setConversations((current) => [conversation, ...current.filter((item) => item.id !== conversation.id)]);
+      }
+      return conversation.id;
+    } catch { return null; }
+  }, []);
+
+  const persistConversationMessage = useCallback(async (conversationId: string | null, content: string, role: "USER" | "ASSISTANT") => {
+    if (!conversationId || !getSettings().ai.saveHistory) return;
+    try {
+      await addConversationMessage(conversationId, content, role);
+      void refreshConversations();
+    } catch { /* History persistence is best-effort. */ }
+  }, [refreshConversations]);
+
+  const newChat = useCallback(() => {
+    generationRef.current += 1;
+    for (const controller of pendingRequestsRef.current.values()) controller.abort();
+    pendingRequestsRef.current.clear();
+    pendingTelegramSelectionRef.current = null;
+    activeConversationIdRef.current = null;
+    setActiveConversationId(null);
+    executedActionsRef.current.clear();
+    executingActionsRef.current.clear();
+    setMessages([{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }]);
+    setIsTyping(false);
+    setSpeakingId(null);
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
+  }, [platformName, locale]);
+
+  const loadConversation = useCallback(async (id: string) => {
+    if (!id || historyLoadingRef.current) return;
+    historyLoadingRef.current = true;
+    setHistoryLoading(true);
+    generationRef.current += 1;
+    for (const controller of pendingRequestsRef.current.values()) controller.abort();
+    pendingRequestsRef.current.clear();
+    try {
+      const result = await listMessages(id, 1, 200);
+      if (!mountedRef.current) return;
+      const loaded: ChatMessage[] = result.items
+        .filter((message) => message.role === "USER" || message.role === "ASSISTANT")
+        .map((message, index) => ({
+          id: index + 1,
+          role: message.role === "USER" ? "user" as const : "ai" as const,
+          text: message.content,
+          time: new Date(message.createdAt).toLocaleTimeString(locale === "ru" ? "ru-RU" : "uz-UZ", { hour: "2-digit", minute: "2-digit" }),
+        }));
+      messageIdRef.current = loaded.length;
+      const nextMessages = loaded.length ? [{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }, ...loaded] : [{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }];
+      activeConversationIdRef.current = id;
+      setActiveConversationId(id);
+      setMessages(nextMessages);
+      pendingTelegramSelectionRef.current = null;
+      setIsTyping(false);
+    } finally {
+      historyLoadingRef.current = false;
+      if (mountedRef.current) setHistoryLoading(false);
+    }
+  }, [platformName, locale]);
+
+  const renameConversation = useCallback(async (id: string, title: string) => {
+    const cleanTitle = title.trim().slice(0, 200);
+    if (!cleanTitle) return;
+    try {
+      const updated = await updateConversation(id, cleanTitle);
+      if (mountedRef.current) setConversations((current) => current.map((item) => item.id === id ? { ...item, ...updated } : item));
+    } catch {
+      // Keep the current title if the API is temporarily unavailable.
+    }
+  }, []);
+
+  const deleteConversation = useCallback(async (id: string) => {
+    try {
+      await removeConversation(id);
+      setConversations((current) => current.filter((item) => item.id !== id));
+      if (activeConversationIdRef.current === id) newChat();
+    } catch { /* Keep current UI if delete failed. */ }
+  }, [newChat]);
+
 
   const resolveTelegramSelection = useCallback(async (
     messageId: number,
@@ -242,8 +367,10 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
     const pendingSelection = pendingTelegramSelectionRef.current;
     if (pendingSelection) {
+      const conversationPromise = ensureConversation(trimmed);
       const userMessage: ChatMessage = { id: nextMessageId(), role: "user", text: trimmed, time: formatTime() };
       setMessages((current) => appendMessage(current, userMessage));
+      void conversationPromise.then((id) => persistConversationMessage(id, trimmed, "USER"));
       const candidate = matchTelegramCandidate(trimmed, pendingSelection.selection.candidates);
       if (candidate) {
         void resolveTelegramSelection(pendingSelection.messageId, candidate, pendingSelection.selection);
@@ -261,6 +388,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     const controller = new AbortController();
     pendingRequestsRef.current.set(requestId, controller);
 
+    const conversationPromise = ensureConversation(trimmed);
     const userMessage: ChatMessage = {
       id: nextMessageId(),
       role: "user",
@@ -269,6 +397,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setMessages((current) => appendMessage(current, userMessage));
+    void conversationPromise.then((id) => persistConversationMessage(id, trimmed, "USER"));
     setIsTyping(true);
 
     void getAIReply(trimmed, { signal: controller.signal })
@@ -291,6 +420,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         };
 
         setMessages((current) => appendMessage(current, aiMessage));
+        void conversationPromise.then((id) => persistConversationMessage(id, reply.text, "ASSISTANT"));
       })
       .catch((error: unknown) => {
         if (
@@ -316,7 +446,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           setIsTyping(pendingRequestsRef.current.size > 0);
         }
       });
-  }, [resolveTelegramSelection]);
+  }, [ensureConversation, persistConversationMessage, resolveTelegramSelection]);
 
   const executeAction = useCallback(async (action: AIAction): Promise<AIActionExecutionResult> => {
     if (!mountedRef.current) {
@@ -340,55 +470,23 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       if (result.success) executedActionsRef.current.add(actionKey);
 
       if (mountedRef.current) {
-        setMessages((current) => appendMessage(current, {
-            id: nextMessageId(),
-            role: "ai",
-            text: result.message,
-            time: formatTime(),
-          }));
+        // The confirmation card is the visible result in the active chat.
+        // Persist the outcome for restored history without adding a duplicate success bubble.
+        void persistConversationMessage(activeConversationIdRef.current, result.message, "ASSISTANT");
       }
 
       return result;
     } catch {
-      const result = { success: false, message: action.error };
-
-      if (mountedRef.current) {
-        setMessages((current) => appendMessage(current, {
-            id: nextMessageId(),
-            role: "ai",
-            text: result.message,
-            time: formatTime(),
-          }));
-      }
-
-      return result;
+      return { success: false, message: action.error };
     } finally {
       executingActionsRef.current.delete(actionKey);
       if (mountedRef.current) {
         setIsTyping(pendingRequestsRef.current.size > 0);
       }
     }
-  }, []);
+  }, [persistConversationMessage]);
 
-  const clearChat = useCallback(() => {
-    generationRef.current += 1;
-
-    for (const controller of pendingRequestsRef.current.values()) {
-      controller.abort();
-    }
-
-    pendingRequestsRef.current.clear();
-    pendingTelegramSelectionRef.current = null;
-    executedActionsRef.current.clear();
-    executingActionsRef.current.clear();
-    setMessages([{ ...welcomeMessage, id: 0, time: formatTime() }]);
-    setIsTyping(false);
-    setSpeakingId(null);
-
-    if (typeof window !== "undefined") {
-      window.speechSynthesis?.cancel();
-    }
-  }, []);
+  const clearChat = newChat;
 
   const speak = useCallback((id: number, text: string) => {
     if (typeof window === "undefined" || !window.speechSynthesis) return;
@@ -396,7 +494,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "uz-UZ";
+    utterance.lang = locale === "ru" ? "ru-RU" : "uz-UZ";
     utterance.onend = () => {
       if (mountedRef.current) setSpeakingId(null);
     };
@@ -406,7 +504,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
     setSpeakingId(id);
     window.speechSynthesis.speak(utterance);
-  }, []);
+  }, [locale]);
 
   const stopSpeaking = useCallback(() => {
     if (typeof window !== "undefined") {
@@ -428,6 +526,13 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       executeAction,
       resolveTelegramSelection,
       clearChat,
+      conversations,
+      activeConversationId,
+      historyLoading,
+      newChat,
+      loadConversation,
+      deleteConversation,
+      renameConversation,
       speakingId,
       speak,
       stopSpeaking,
@@ -443,6 +548,13 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       executeAction,
       resolveTelegramSelection,
       clearChat,
+      conversations,
+      activeConversationId,
+      historyLoading,
+      newChat,
+      loadConversation,
+      deleteConversation,
+      renameConversation,
       speakingId,
       speak,
       stopSpeaking,

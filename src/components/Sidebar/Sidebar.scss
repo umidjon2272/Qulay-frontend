@@ -971,3 +971,27 @@
   body #root .sidebar { right: 8px; left: 8px; }
   body #root .sidebar__mobile-item { font-size: 8px; }
 }
+
+/* Keep destructive/session controls away from the viewport edge and hide the mobile dock behind modal sheets. */
+@media (min-width: 701px) {
+  .sidebar__ai-card { min-height: 54px; margin-top: 10px; padding: 10px 11px; }
+  .sidebar__user { margin-top: 10px; padding-bottom: 8px; }
+}
+
+@media (max-width: 700px) {
+  body:has(.task-modal__overlay) #root .sidebar,
+  body:has(.reminder-modal__overlay) #root .sidebar,
+  body:has(.calendar-modal__overlay) #root .sidebar,
+  body:has(.folder-dialog__overlay) #root .sidebar,
+  body:has(.integration-modal__overlay) #root .sidebar,
+  body:has(.delete-modal__overlay) #root .sidebar,
+  body:has(.voice-mode) #root .sidebar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(110%);
+  }
+
+  body #root .sidebar {
+    transition: opacity 180ms ease, transform 220ms cubic-bezier(.22,.8,.24,1);
+  }
+}

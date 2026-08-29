@@ -2,6 +2,7 @@ import {
   Send,
   CalendarDays,
   HardDrive,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ export type IntegrationDefinition = {
   description: string;
   icon: LucideIcon;
   color: string;
+  comingSoon?: boolean;
 };
 
 export const integrationCatalog: IntegrationDefinition[] = [
@@ -46,5 +48,13 @@ export const integrationCatalog: IntegrationDefinition[] = [
     description: "Hujjat va fayllaringiz",
     icon: HardDrive,
     color: "green",
+  },
+  {
+    id: "whatsapp",
+    name: "WhatsApp",
+    description: "AI orqali xabarlar — tez kunda",
+    icon: MessageCircle,
+    color: "green",
+    comingSoon: true,
   },
 ];

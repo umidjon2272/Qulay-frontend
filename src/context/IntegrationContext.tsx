@@ -75,6 +75,16 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
     [showToast],
   );
 
+
+  const sync = useCallback((id: IntegrationId, connected: boolean, username?: string) => {
+    const connection = { connected, username: connected ? username?.trim() || undefined : undefined };
+    setState((current) => {
+      const previous = current[id];
+      if (previous?.connected === connection.connected && previous?.username === connection.username) return current;
+      return { ...current, [id]: connection };
+    });
+  }, []);
+
   const integrations = useMemo<IntegrationView[]>(
     () =>
       integrationCatalog.map((item) => ({
@@ -88,8 +98,8 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const connectedCount = integrations.filter((item) => item.connected).length;
 
   const value = useMemo(
-    () => ({ integrations, connectedCount, connect, disconnect }),
-    [integrations, connectedCount, connect, disconnect],
+    () => ({ integrations, connectedCount, connect, disconnect, sync }),
+    [integrations, connectedCount, connect, disconnect, sync],
   );
 
   return <IntegrationContext.Provider value={value}>{children}</IntegrationContext.Provider>;

@@ -1885,3 +1885,32 @@ html[data-theme="dark"] body #root .tasks-side__button,
 html[data-theme="dark"] body #root .task-modal__submit { border-color: rgba(213,204,255,.32); background: linear-gradient(135deg, rgba(109,98,211,.76), rgba(74,135,197,.68)); color: #fff; }
 html[data-theme="dark"] body #root .task-card__more { border-color: rgba(179,198,235,.2); color: rgba(235,240,255,.72); background: rgba(20,43,72,.86); }
 html[data-theme="dark"] body #root .task-card__menu .danger { color: #e8a9b6; }
+
+.tasks-sort { display:flex; align-items:center; gap:8px; min-height:38px; padding:0 10px; border:1px solid var(--border,rgba(255,255,255,.1)); border-radius:11px; background:color-mix(in srgb,var(--surface-solid,#fff) 82%,transparent); color:var(--text-secondary,#8e8994); font-size:10px; font-weight:700; }
+.tasks-sort select { border:0; outline:0; background:transparent; color:var(--text-primary,#34303b); font:inherit; font-size:11px; cursor:pointer; }
+.task-overdue { display:inline-flex; align-items:center; min-height:20px; padding:0 7px; border-radius:999px; background:rgba(225,83,102,.1); color:#d65267; font-size:9px; font-weight:800; }
+html[data-theme="dark"] body #root .tasks-sort { border-color:rgba(160,177,220,.16); background:rgba(13,31,53,.76); color:rgba(235,240,255,.58); }
+html[data-theme="dark"] body #root .tasks-sort select { color:#f6f8ff; }
+html[data-theme="dark"] body #root .task-overdue { color:#ffabb6; background:rgba(225,83,102,.16); }
+@media (max-width:700px) {
+  .tasks-toolbar { align-items:stretch; gap:9px; }
+  .tasks-filters { width:100%; overflow-x:auto; flex-wrap:nowrap; scrollbar-width:none; }
+  .tasks-filters::-webkit-scrollbar { display:none; }
+  .tasks-filters button { flex:0 0 auto; min-height:38px; }
+  .tasks-search,.tasks-sort { flex:1 1 100%; width:100%; }
+  .task-modal__overlay { align-items:flex-end; padding:0; }
+  .task-modal { width:100%; max-height:92dvh; overflow-y:auto; border-radius:24px 24px 0 0; padding:24px 18px calc(24px + env(safe-area-inset-bottom)); }
+}
+
+/* Task lifecycle controls */
+.task-status-picker { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin:2px 0 12px; padding:5px; border:1px solid var(--border,rgba(87,74,110,.12)); border-radius:13px; background:var(--surface-soft,rgba(245,242,251,.72)); }
+.task-status-picker button { min-height:36px; border:0; border-radius:9px; color:var(--text-secondary,#7e7888); background:transparent; font-size:11px; font-weight:750; cursor:pointer; transition:160ms ease; }
+.task-status-picker button:hover { color:var(--text-primary,#342f3d); background:var(--surface-hover,rgba(255,255,255,.72)); }
+.task-status-picker button.is-active { color:#fff; background:linear-gradient(135deg,#7655df,#5f75d9); box-shadow:0 7px 16px rgba(91,76,190,.2); }
+.task-category--todo { color:#9f93c9; background:rgba(118,85,223,.09); }
+.task-category--in_progress { color:#4f8ddc; background:rgba(72,137,218,.11); }
+.task-category--completed { color:#35a071; background:rgba(53,160,113,.11); }
+html[data-theme="dark"] body #root .task-status-picker { border-color:rgba(179,198,235,.18); background:rgba(7,20,36,.62); }
+html[data-theme="dark"] body #root .task-status-picker button { color:rgba(235,240,255,.7); }
+html[data-theme="dark"] body #root .task-status-picker button:hover { color:#fff; background:rgba(115,96,226,.14); }
+@media (max-width:700px) { .task-status-picker button { min-height:42px; font-size:12px; } }

@@ -2671,3 +2671,67 @@ html[data-theme="dark"] body #root .reminders-side__button,
 html[data-theme="dark"] body #root .reminder-modal__submit { border-color: rgba(213,204,255,.32); background: linear-gradient(135deg, rgba(109,98,211,.76), rgba(74,135,197,.68)); color: #fff; }
 html[data-theme="dark"] body #root .reminder-card__more { border-color: rgba(179,198,235,.2); color: rgba(235,240,255,.72); background: rgba(20,43,72,.86); }
 html[data-theme="dark"] body #root .reminder-card__menu .danger { color: #e8a9b6; }
+
+/* Due / snooze lifecycle polish */
+.reminders-stat__small-icon--danger {
+  color: #ff8da1;
+  border-color: rgba(239, 93, 121, 0.24);
+  background: rgba(239, 93, 121, 0.1);
+}
+
+.reminder-card--overdue {
+  border-color: rgba(239, 93, 121, 0.32);
+  background: linear-gradient(135deg, rgba(239, 93, 121, 0.06), transparent 48%), var(--surface, rgba(255,255,255,.7));
+}
+
+.reminder-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid rgba(117, 97, 220, 0.18);
+  border-radius: 999px;
+  color: #675ab5;
+  background: rgba(117, 97, 220, 0.08);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.reminder-status--overdue {
+  color: #ca425e;
+  border-color: rgba(239, 93, 121, 0.26);
+  background: rgba(239, 93, 121, 0.1);
+}
+
+html[data-theme="dark"] .reminder-card--overdue {
+  border-color: rgba(255, 126, 151, 0.36);
+  background: linear-gradient(135deg, rgba(239, 93, 121, 0.12), rgba(17,39,66,.82) 48%);
+}
+
+html[data-theme="dark"] .reminder-status {
+  color: #d7d0ff;
+  border-color: rgba(177, 164, 255, 0.3);
+  background: rgba(115, 96, 226, 0.14);
+}
+
+html[data-theme="dark"] .reminder-status--overdue {
+  color: #ffc1cd;
+  border-color: rgba(255, 126, 151, 0.34);
+  background: rgba(239, 93, 121, 0.14);
+}
+
+@media (max-width: 700px) {
+  .reminders-page { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .reminders-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reminders-toolbar { align-items: stretch; }
+  .reminders-filters { overflow-x: auto; scrollbar-width: none; }
+  .reminders-filters::-webkit-scrollbar { display: none; }
+  .reminder-modal__overlay { align-items: flex-end; padding: 0; }
+  .reminder-modal {
+    width: 100%;
+    max-height: min(88dvh, 760px);
+    overflow-y: auto;
+    border-radius: 24px 24px 0 0;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  }
+}

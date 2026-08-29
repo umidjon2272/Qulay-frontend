@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { WifiOff } from "lucide-react";
 
 import Sidebar from "../../components/Sidebar/Sidebar";
 import TopBar from "../../components/TopBar/TopBar";
@@ -12,6 +13,15 @@ const AppLayout = () => {
   const location = useLocation();
   const isAIWorkspace = location.pathname === "/ai-assistant";
   const isDashboard = location.pathname === "/dashboard";
+  const [online, setOnline] = useState(() => typeof navigator === "undefined" ? true : navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setOnline(true);
+    const handleOffline = () => setOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => { window.removeEventListener("online", handleOnline); window.removeEventListener("offline", handleOffline); };
+  }, []);
 
   useEffect(() => {
     if (location.pathname !== "/dashboard") return undefined;
@@ -47,6 +57,7 @@ const AppLayout = () => {
       htmlOverflow: html.style.overflow,
       htmlOverscroll: html.style.overscrollBehavior,
       appVisibleHeight: html.style.getPropertyValue("--app-visible-height"),
+      appVisibleTop: html.style.getPropertyValue("--app-visible-top"),
       aiKeyboardOpen: html.classList.contains("ai-keyboard-open"),
       rootHeight: root?.style.height ?? "",
       rootOverflow: root?.style.overflow ?? "",
@@ -59,11 +70,10 @@ const AppLayout = () => {
       html.style.height = previous.htmlHeight;
       html.style.overflow = previous.htmlOverflow;
       html.style.overscrollBehavior = previous.htmlOverscroll;
-      if (previous.appVisibleHeight) {
-        html.style.setProperty("--app-visible-height", previous.appVisibleHeight);
-      } else {
-        html.style.removeProperty("--app-visible-height");
-      }
+      if (previous.appVisibleHeight) html.style.setProperty("--app-visible-height", previous.appVisibleHeight);
+      else html.style.removeProperty("--app-visible-height");
+      if (previous.appVisibleTop) html.style.setProperty("--app-visible-top", previous.appVisibleTop);
+      else html.style.removeProperty("--app-visible-top");
       html.classList.toggle("ai-keyboard-open", previous.aiKeyboardOpen);
       if (root) {
         root.style.height = previous.rootHeight;
@@ -75,6 +85,7 @@ const AppLayout = () => {
       if (!media.matches) return;
 
       const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      const viewportTop = window.visualViewport?.offsetTop ?? 0;
       const activeElement = document.activeElement;
       const isTextComposerFocused = activeElement instanceof HTMLTextAreaElement || activeElement instanceof HTMLInputElement;
       const viewportResizedWithoutKeyboard = !isTextComposerFocused && Math.abs(window.innerHeight - layoutViewportHeight) > 80;
@@ -89,8 +100,10 @@ const AppLayout = () => {
 
       if (keyboardOpen) {
         html.style.setProperty("--app-visible-height", `${Math.round(viewportHeight)}px`);
+        html.style.setProperty("--app-visible-top", `${Math.max(0, Math.round(viewportTop))}px`);
       } else {
         html.style.removeProperty("--app-visible-height");
+        html.style.removeProperty("--app-visible-top");
       }
 
       html.classList.toggle("ai-keyboard-open", keyboardOpen);
@@ -151,6 +164,7 @@ const AppLayout = () => {
         <Outlet />
       </main>
 
+      {!online && <div className="app-offline-banner" role="status"><WifiOff size={15} /><span>Internet uzildi. O'zgarishlar ulanish tiklangach yangilanadi.</span></div>}
       <AIChatDrawer />
     </div>
   );

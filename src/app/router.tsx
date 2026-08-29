@@ -1,35 +1,43 @@
-import { Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter } from "react-router-dom";
-
-import Register from "../pages/Register/Register";
-import Login from "../pages/Login/Login";
-import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
-import ResetPassword from "../pages/ResetPassword/ResetPassword";
-import Dashboard from "../pages/Dashboard/Dashboard";
 
 import AIAssistantShell from "../features/ai/components/AssistantPage/AIAssistantShell";
 import { AIAssistantRoute } from "../features/ai/routes/aiRoute";
-import Calendar from "../pages/Calendar/Calendar";
-import Tasks from "../pages/Tasks/Tasks";
-import Reminders from "../pages/Reminders/Reminders";
-import Files from "../pages/Files/Files";
-import Settings from "../pages/Settings/Settings";
-import Integrations from "../pages/Integrations/Integrations";
-import NotFound from "../pages/NotFound/NotFound";
-
 import AppLayout from "../layouts/AppLayout/AppLayout";
 import RequireAuth from "./router/RequireAuth";
 import RequireAdmin from "./router/RequireAdmin";
 import RootRedirect from "./router/RootRedirect";
-import AdminConsole from "../pages/Admin/AdminConsole";
-import AdminLogin from "../pages/Admin/AdminLogin";
 import AdminErrorBoundary from "./router/AdminErrorBoundary";
+
+const Register = lazy(() => import("../pages/Register/Register"));
+const Login = lazy(() => import("../pages/Login/Login"));
+const ForgotPassword = lazy(() => import("../pages/ForgotPassword/ForgotPassword"));
+const ResetPassword = lazy(() => import("../pages/ResetPassword/ResetPassword"));
+const Dashboard = lazy(() => import("../pages/Dashboard/Dashboard"));
+const Calendar = lazy(() => import("../pages/Calendar/Calendar"));
+const Tasks = lazy(() => import("../pages/Tasks/Tasks"));
+const Reminders = lazy(() => import("../pages/Reminders/Reminders"));
+const Files = lazy(() => import("../pages/Files/Files"));
+const Settings = lazy(() => import("../pages/Settings/Settings"));
+const Integrations = lazy(() => import("../pages/Integrations/Integrations"));
+const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
+const AdminConsole = lazy(() => import("../pages/Admin/AdminConsole"));
+const AdminLogin = lazy(() => import("../pages/Admin/AdminLogin"));
+
+const PageFallback = () => (
+  <div className="route-loading" role="status" aria-live="polite">
+    <span className="route-loading__dot" />
+    <span>Yuklanmoqda...</span>
+  </div>
+);
+
+const withSuspense = (node: ReactNode) => <Suspense fallback={<PageFallback />}>{node}</Suspense>;
 
 export const router = createBrowserRouter([
   {
     element: (
       <RequireAdmin>
-        <AdminConsole />
+        {withSuspense(<AdminConsole />)}
       </RequireAdmin>
     ),
     errorElement: <AdminErrorBoundary />,
@@ -38,37 +46,12 @@ export const router = createBrowserRouter([
       { path: "/admin/*", element: null },
     ],
   },
-
-  {
-    path: "/admin/login",
-    element: <AdminLogin />,
-  },
-
-  {
-    path: "/",
-    element: <RootRedirect />,
-  },
-
-  {
-    path: "/register",
-    element: <Register />,
-  },
-
-  {
-    path: "/login",
-    element: <Login />,
-  },
-
-  {
-    path: "/forgot-password",
-    element: <ForgotPassword />,
-  },
-
-  {
-    path: "/reset-password",
-    element: <ResetPassword />,
-  },
-
+  { path: "/admin/login", element: withSuspense(<AdminLogin />) },
+  { path: "/", element: <RootRedirect /> },
+  { path: "/register", element: withSuspense(<Register />) },
+  { path: "/login", element: withSuspense(<Login />) },
+  { path: "/forgot-password", element: withSuspense(<ForgotPassword />) },
+  { path: "/reset-password", element: withSuspense(<ResetPassword />) },
   {
     element: (
       <RequireAuth>
@@ -76,11 +59,7 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      {
-        path: "/dashboard",
-        element: <Dashboard />,
-      },
-
+      { path: "/dashboard", element: withSuspense(<Dashboard />) },
       {
         path: "/ai-assistant",
         element: (
@@ -89,41 +68,13 @@ export const router = createBrowserRouter([
           </Suspense>
         ),
       },
-
-      {
-        path: "/calendar",
-        element: <Calendar />,
-      },
-
-      {
-        path: "/tasks",
-        element: <Tasks />,
-      },
-
-      {
-        path: "/reminders",
-        element: <Reminders />,
-      },
-
-      {
-        path: "/files",
-        element: <Files />,
-      },
-
-      {
-        path: "/settings",
-        element: <Settings />,
-      },
-
-      {
-        path: "/integrations",
-        element: <Integrations />,
-      },
+      { path: "/calendar", element: withSuspense(<Calendar />) },
+      { path: "/tasks", element: withSuspense(<Tasks />) },
+      { path: "/reminders", element: withSuspense(<Reminders />) },
+      { path: "/files", element: withSuspense(<Files />) },
+      { path: "/settings", element: withSuspense(<Settings />) },
+      { path: "/integrations", element: withSuspense(<Integrations />) },
     ],
   },
-
-  {
-    path: "*",
-    element: <NotFound />,
-  },
+  { path: "*", element: withSuspense(<NotFound />) },
 ]);

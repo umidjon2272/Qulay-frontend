@@ -8,6 +8,7 @@ export type Task = {
   category: string;
   priority: TaskPriority;
   completed: boolean;
+  status?: "TODO" | "IN_PROGRESS" | "COMPLETED";
   date?: string;
 };
 
@@ -27,6 +28,7 @@ export type CalendarEvent = {
   title: string;
   date: string;
   time: string;
+  endTime?: string;
   type: "meeting" | "work" | "personal";
   location?: string;
   participant?: string;

@@ -32,10 +32,11 @@ import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
 import { notificationApi } from "../../services/api";
 import type { ApiNotificationPreference } from "../../services/api/types";
+import { useI18n } from "../../i18n/useI18n";
 
 import "./Settings.scss";
 
-type SectionId = "profile" | "appearance" | "notifications" | "language" | "integrations";
+type SectionId = "profile" | "appearance" | "notifications" | "ai" | "language" | "integrations";
 
 type SettingsSection = {
   id: SectionId;
@@ -46,7 +47,8 @@ type SettingsSection = {
 
 const sections: SettingsSection[] = [
   { id: "appearance", label: "Ko'rinish", description: "Yorug' yoki qorong'i rejim", icon: Palette },
-  { id: "notifications", label: "Bildirishnomalar", description: "Vazifalar, eslatmalar va AI", icon: Bell },
+  { id: "notifications", label: "Bildirishnomalar", description: "Ovoz, tinch vaqt va xabar turlari", icon: Bell },
+  { id: "ai", label: "AI yordamchi", description: "Javob, tarix va tasdiqlash", icon: Sparkles },
   { id: "language", label: "Til", description: "O'zbek yoki rus tili", icon: Languages },
   { id: "integrations", label: "Integratsiyalar", description: "Telegram, Calendar va Drive", icon: Link2 },
 ];
@@ -87,43 +89,35 @@ type SettingsRootProps = {
   onBack?: () => void;
 };
 
-const SettingsRoot = ({ onSelect, onChangePassword, onLogout, onBack }: SettingsRootProps) => (
-  <section className="settings-root" aria-label="Sozlamalar">
+const SettingsRoot = ({ onSelect, onChangePassword, onLogout, onBack }: SettingsRootProps) => {
+  const { t } = useI18n();
+  return <section className="settings-root" aria-label={t("settings.title", "Sozlamalar")}>
     <header className="settings-root__header">
       {onBack && <button type="button" className="settings-root__back" onClick={onBack} aria-label="Profilga qaytish"><ArrowLeft size={18} /></button>}
-      <div>
-        <span className="settings-root__eyebrow">QULAY AI</span>
-        <h1>Sozlamalar</h1>
-      </div>
+      <div><span className="settings-root__eyebrow">QULAY AI</span><h1>{t("settings.title", "Sozlamalar")}</h1></div>
     </header>
-
     <div className="settings-root__group">
-      <span className="settings-root__label">Akkaunt</span>
-      <button type="button" onClick={() => onSelect("profile")}>
-        <span className="settings-row-icon"><User size={18} /></span><span>Profil</span><ChevronRight size={18} />
-      </button>
-      <button type="button" onClick={onChangePassword}>
-        <span className="settings-row-icon"><KeyRound size={18} /></span><span>Parolni o'zgartirish</span><ChevronRight size={18} />
-      </button>
-      <button type="button" className="is-danger" onClick={onLogout}>
-        <span className="settings-row-icon"><LogOut size={18} /></span><span>Chiqish</span><ChevronRight size={18} />
-      </button>
+      <span className="settings-root__label">{t("settings.account", "Akkaunt")}</span>
+      <button type="button" onClick={() => onSelect("profile")}><span className="settings-row-icon"><User size={18} /></span><span>{t("nav.profile", "Profil")}</span><ChevronRight size={18} /></button>
+      <button type="button" onClick={onChangePassword}><span className="settings-row-icon"><KeyRound size={18} /></span><span>{t("settings.security", "Parolni o'zgartirish")}</span><ChevronRight size={18} /></button>
+      <button type="button" className="is-danger" onClick={onLogout}><span className="settings-row-icon"><LogOut size={18} /></span><span>{t("nav.logout", "Chiqish")}</span><ChevronRight size={18} /></button>
     </div>
-
     <div className="settings-root__group">
       {sections.map((section) => {
         const Icon = section.icon;
-          return (
-            <button type="button" key={section.id} onClick={() => onSelect(section.id)}>
-              <span className="settings-row-icon"><Icon size={18} /></span>
-              <span><strong>{section.label}</strong><small>{section.description}</small></span>
-            <ChevronRight size={18} />
-          </button>
-        );
+        const labels: Partial<Record<SectionId, [string, string]>> = {
+          appearance: [t("settings.appearance", section.label), section.description],
+          notifications: [t("settings.notifications", section.label), section.description],
+          ai: [t("settings.ai", section.label), section.description],
+          language: [t("settings.language", section.label), section.description],
+          integrations: [t("settings.integrations", section.label), section.description],
+        };
+        const [label, description] = labels[section.id] ?? [section.label, section.description];
+        return <button type="button" key={section.id} onClick={() => onSelect(section.id)}><span className="settings-row-icon"><Icon size={18} /></span><span><strong>{label}</strong><small>{description}</small></span><ChevronRight size={18} /></button>;
       })}
     </div>
-  </section>
-);
+  </section>;
+};
 
 const Settings = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -137,36 +131,49 @@ const Settings = () => {
   const fromProfile = location.state && typeof location.state === "object" && "fromProfile" in location.state && location.state.fromProfile === true;
 
   const { showToast } = useToast();
+  const { t } = useI18n();
   const { name, email, bio, avatar, setName, setBio, setAvatar } = useProfile();
-  const { integrations, connect, disconnect } = useIntegrations();
+  const { integrations, sync } = useIntegrations();
   const { logout } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => getSettings().theme === "dark" ? "dark" : "light");
   const [language, setLanguage] = useState(() => getSettings().language === "O'zbekcha" ? "O'zbekcha" : "Русский");
   const [notifications, setNotifications] = useState(() => getSettings().notifications);
+  const [aiSettings, setAiSettings] = useState(() => getSettings().ai);
+  const [replyStyle, setReplyStyle] = useState(() => getSettings().replyStyle);
+  const [replyLength, setReplyLength] = useState(() => getSettings().replyLength);
   const [firstName, setFirstName] = useState(() => splitName(name).firstName);
   const [lastName, setLastName] = useState(() => splitName(name).lastName);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
+  const googleOAuthHandledRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (active !== "integrations" && searchParams.get("integration") !== "google") return;
+    const oauthIntegration = searchParams.get("integration");
+    if (active !== "integrations" && oauthIntegration !== "google") return;
+    const oauthStatus = searchParams.get("status");
+    const oauthReason = searchParams.get("reason");
+    const oauthKey = oauthIntegration === "google" ? `${oauthStatus ?? "status"}:${oauthReason ?? ""}` : null;
     let activeRequest = true;
     void getGoogleStatus().then((status) => {
       if (!activeRequest) return;
-      if (status.connected) {
-        const account = status.email ?? status.displayName ?? "Google";
-        connect("google-calendar", account);
-        connect("google-drive", account);
-      } else {
-        disconnect("google-calendar");
-        disconnect("google-drive");
+      const account = status.email ?? status.displayName ?? "Google";
+      sync("google-calendar", Boolean(status.connected && status.calendarEnabled), account);
+      sync("google-drive", Boolean(status.connected && status.driveEnabled), account);
+
+      if (oauthIntegration === "google" && oauthKey && googleOAuthHandledRef.current !== oauthKey) {
+        googleOAuthHandledRef.current = oauthKey;
+        if (oauthStatus === "connected" && status.connected) showToast("Google Calendar va Drive ulandi", "success");
+        else if (oauthReason === "cancelled") showToast("Google ulanishi bekor qilindi", "info");
+        else if (oauthStatus === "error") showToast("Google ulanishini yakunlab bo'lmadi", "error");
       }
-      if (searchParams.get("integration") === "google") setSearchParams({ tab: "integrations" }, { replace: true });
+
+      if (oauthIntegration === "google") setSearchParams({ tab: "integrations" }, { replace: true });
     }).catch(() => showToast("Google ulanish holatini tekshirib bo'lmadi", "error"));
     return () => { activeRequest = false; };
-  }, [active, connect, disconnect, searchParams, setSearchParams, showToast]);
+  }, [active, searchParams, setSearchParams, showToast, sync]);
 
   useEffect(() => {
     const parts = splitName(name);
@@ -175,8 +182,8 @@ const Settings = () => {
   }, [name]);
 
   useEffect(() => {
-    updateSettings({ theme, notifications });
-  }, [theme, notifications]);
+    updateSettings({ theme, notifications, ai: aiSettings, replyStyle, replyLength });
+  }, [theme, notifications, aiSettings, replyStyle, replyLength]);
 
   useEffect(() => {
     if (active !== "notifications") return;
@@ -192,6 +199,15 @@ const Settings = () => {
       }));
     }).catch(() => showToast("Bildirishnoma sozlamalarini yuklab bo'lmadi", "error"));
   }, [active, showToast]);
+
+
+  const updateLocalNotificationSetting = <K extends keyof typeof notifications>(key: K, value: (typeof notifications)[K]) => {
+    setNotifications((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateLocalAiSetting = <K extends keyof typeof aiSettings>(key: K, value: (typeof aiSettings)[K]) => {
+    setAiSettings((current) => ({ ...current, [key]: value }));
+  };
 
   const preferencePatchFor = (key: NotificationKey, value: boolean): Partial<ApiNotificationPreference> => ({
     newTasks: { taskEnabled: value },
@@ -265,7 +281,7 @@ const Settings = () => {
     navigate("/login", { replace: true });
   };
 
-  const title = active === "profile" ? "Profil" : sections.find((section) => section.id === active)?.label ?? "Sozlamalar";
+  const title = active === "profile" ? t("nav.profile", "Profil") : active === "appearance" ? t("settings.appearance", "Ko'rinish") : active === "notifications" ? t("settings.notifications", "Bildirishnomalar") : active === "ai" ? t("settings.ai", "AI yordamchi") : active === "language" ? t("settings.language", "Til") : active === "integrations" ? t("settings.integrations", "Integratsiyalar") : t("settings.title", "Sozlamalar");
 
   return (
     <main className={`settings-page settings-page--${active ?? "root"}`}>
@@ -278,9 +294,9 @@ const Settings = () => {
               <ArrowLeft size={18} />
             </button>
             <div>
-              <span className="settings-header__eyebrow">SOZLAMALAR</span>
+              <span className="settings-header__eyebrow">{t("settings.title", "SOZLAMALAR").toUpperCase()}</span>
               <h1>{title}</h1>
-              <p>Qulay AI afzalliklaringizni boshqaring.</p>
+              <p>{t("settings.subtitle", "Qulay AI afzalliklaringizni boshqaring.")}</p>
             </div>
             {active === "profile" ? (
               <button type="button" className="settings-header__save" onClick={() => void handleProfileSave()}>
@@ -347,8 +363,8 @@ const Settings = () => {
 
             {active === "language" && (
               <div className="settings-card">
-                <h2>Til</h2>
-                <p>Qulay AI interfeysi uchun tilni tanlang.</p>
+                <h2>{t("settings.language", "Til")}</h2>
+                <p>{t("settings.subtitle", "Qulay AI interfeysi uchun tilni tanlang.")}</p>
                 <div className="settings-language-list" role="radiogroup" aria-label="Til">
                   {languageOptions.map((option) => (
                     <button type="button" key={option.value} className={language === option.value ? "is-active" : ""} onClick={() => setLanguage(option.value)} role="radio" aria-checked={language === option.value}>
@@ -374,6 +390,33 @@ const Settings = () => {
                       </div>
                     );
                   })}
+                  <div className="settings-toggle-row">
+                    <div className="settings-toggle-row__icon"><Bell size={16} /></div>
+                    <div><strong>Bildirishnoma ovozi</strong><span>Yangi muhim xabar kelganda yumshoq signal chalinsin.</span></div>
+                    <button type="button" className={`settings-switch ${notifications.sound ? "is-on" : ""}`} onClick={() => updateLocalNotificationSetting("sound", !notifications.sound)} role="switch" aria-checked={notifications.sound} aria-label="Bildirishnoma ovozi"><i /></button>
+                  </div>
+                  <div className="settings-toggle-row">
+                    <div className="settings-toggle-row__icon"><Moon size={16} /></div>
+                    <div><strong>Tinch vaqt</strong><span>Tanlangan vaqtda ovozli bildirishnomalar chalinmaydi.</span></div>
+                    <button type="button" className={`settings-switch ${notifications.quietHoursEnabled ? "is-on" : ""}`} onClick={() => updateLocalNotificationSetting("quietHoursEnabled", !notifications.quietHoursEnabled)} role="switch" aria-checked={notifications.quietHoursEnabled} aria-label="Tinch vaqt"><i /></button>
+                  </div>
+                  {notifications.quietHoursEnabled && <div className="settings-time-range"><label>Boshlanish<input type="time" value={notifications.quietHoursStart} onChange={(event) => updateLocalNotificationSetting("quietHoursStart", event.target.value)} /></label><span>→</span><label>Tugash<input type="time" value={notifications.quietHoursEnd} onChange={(event) => updateLocalNotificationSetting("quietHoursEnd", event.target.value)} /></label></div>}
+                </div>
+              </div>
+            )}
+
+            {active === "ai" && (
+              <div className="settings-card">
+                <h2>AI yordamchi</h2>
+                <p>Qulay AI qanday javob berishi va amallarni qanday tasdiqlashini sozlang.</p>
+                <div className="settings-field-grid">
+                  <label>Javob uslubi<select value={replyStyle} onChange={(event) => setReplyStyle(event.target.value)}><option>Professional</option><option>Sodda</option><option>Qisqa</option></select></label>
+                  <label>Javob uzunligi<select value={replyLength} onChange={(event) => setReplyLength(event.target.value)}><option>Qisqa</option><option>O'rta</option><option>Batafsil</option></select></label>
+                </div>
+                <div className="settings-toggle-list">
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>Chat tarixini saqlash</strong><span>Oldingi suhbatlar brauzerda saqlanib, keyin davom ettiriladi.</span></div><button type="button" className={`settings-switch ${aiSettings.saveHistory ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("saveHistory", !aiSettings.saveHistory)} role="switch" aria-checked={aiSettings.saveHistory}><i /></button></div>
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Bell size={16} /></div><div><strong>Tashqi amallarni tasdiqlash</strong><span>Telegram xabari va boshqa tashqi amallar yuborilishidan oldin tasdiqlash so'ralsin.</span></div><button type="button" className={`settings-switch ${aiSettings.confirmExternalActions ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("confirmExternalActions", !aiSettings.confirmExternalActions)} role="switch" aria-checked={aiSettings.confirmExternalActions}><i /></button></div>
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>Ovozli javob</strong><span>Voice Mode'da AI javobini ovoz bilan o'qishi mumkin.</span></div><button type="button" className={`settings-switch ${aiSettings.voiceReply ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("voiceReply", !aiSettings.voiceReply)} role="switch" aria-checked={aiSettings.voiceReply}><i /></button></div>
                 </div>
               </div>
             )}
@@ -381,7 +424,7 @@ const Settings = () => {
             {active === "integrations" && (
               <div className="settings-card settings-card--wide">
                 <div className="settings-integrations__header">
-                  <div><h2>Integratsiyalar</h2><p>Telegram, Google Calendar va Google Drive.</p></div>
+                  <div><h2>{t("settings.integrations", "Integratsiyalar")}</h2><p>Telegram, Google Calendar, Google Drive va WhatsApp.</p></div>
                   <span className="settings-integrations__stats">{integrations.filter((item) => item.connected).length} ta ulangan</span>
                 </div>
                 <IntegrationHub columns={1} />

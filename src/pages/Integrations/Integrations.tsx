@@ -6,7 +6,7 @@ import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
 
 import "./Integrations.scss";
 
-const Integrations = () => {
+const Integrations = ({ dashboard = false }: { dashboard?: boolean }) => {
   const navigate = useNavigate();
 
   return (
@@ -34,7 +34,7 @@ const Integrations = () => {
         </button>
       </div>
 
-      <IntegrationHub limit={5} columns={5} />
+      <IntegrationHub limit={5} columns={5} navigateOnSelect={dashboard} />
     </section>
   );
 };

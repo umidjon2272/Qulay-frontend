@@ -276,6 +276,44 @@ describe("confirm / cancel semantics", () => {
   });
 });
 
+
+describe("routeMessage — Google tools", () => {
+  it('"Bugungi Google Calendar uchrashuvlarimni ko‘rsat" calls get_google_calendar_events', async () => {
+    requestMock.mockResolvedValueOnce({
+      status: "success",
+      tool: "get_google_calendar_events",
+      data: [{ id: "g1", title: "Aziz bilan uchrashuv", start: "2026-08-29T12:00:00.000Z", end: "2026-08-29T13:00:00.000Z", location: "Ofis" }],
+      meta: { executedAt: "", requestId: "g1" },
+    });
+
+    const reply = await routeMessage("Bugungi Google Calendar uchrashuvlarimni ko‘rsat");
+
+    const body = JSON.parse((requestMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.tool).toBe("get_google_calendar_events");
+    expect(body.confirmed).toBe(true);
+    expect(typeof body.input.from).toBe("string");
+    expect(typeof body.input.to).toBe("string");
+    expect(reply.text).toContain("Aziz bilan uchrashuv");
+  });
+
+  it('"Drive’dan shartnoma faylini top" calls search_google_drive_files', async () => {
+    requestMock.mockResolvedValueOnce({
+      status: "success",
+      tool: "search_google_drive_files",
+      data: { items: [{ id: "f1", name: "Shartnoma 2026.pdf", mimeType: "application/pdf", modifiedTime: null, webViewLink: null }], nextPageToken: null },
+      meta: { executedAt: "", requestId: "g2" },
+    });
+
+    const reply = await routeMessage("Drive’dan shartnoma faylini top");
+
+    const body = JSON.parse((requestMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.tool).toBe("search_google_drive_files");
+    expect(body.input).toEqual({ query: "shartnoma", limit: 10 });
+    expect(reply.text).toContain("Shartnoma 2026.pdf");
+  });
+});
+
+
 describe("old mock response does not intercept other intents", () => {
   it('"Ertaga soat 11 da Aziz bilan uchrashuv qo\'y" still maps to the createMeeting action', async () => {
     const reply = await routeMessage("Ertaga soat 11 da Aziz bilan uchrashuv qo'y");

@@ -1,281 +1,137 @@
 import {
-  Send,
-  CalendarPlus,
-  Mail,
-  FilePlus2,
   BellPlus,
-  UserRoundSearch,
-  CheckSquare,
-  NotebookPen,
   Bot,
+  CalendarPlus,
+  CheckSquare,
   FolderOpen,
-  Settings,
+  Send,
   ArrowUpRight,
-  X,
-  Search,
 } from "lucide-react";
-
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAIChat } from "../../../../features/ai/hooks/useAIChat";
-import { useToast } from "../../../../hooks/useToast";
 
+import { useAIChat } from "../../../../features/ai/hooks/useAIChat";
+import { useI18n } from "../../../../i18n/useI18n";
 import "./QuickActions.scss";
 
-const actions = [
+type QuickAction = {
+  id: string;
+  titleKey: string;
+  title: string;
+  subtitleKey: string;
+  subtitle: string;
+  icon: typeof Send;
+  route?: string;
+  prompt?: string;
+};
+
+const actions: QuickAction[] = [
   {
     id: "telegram",
+    titleKey: "quick.telegram",
     title: "Telegramga yozish",
-    subtitle: "Kontaktga xabar yuborish",
+    subtitleKey: "quick.telegramHelp",
+    subtitle: "AI orqali kontakt toping va tasdiqlab yuboring",
     icon: Send,
+    prompt: "Telegram orqali xabar yubormoqchiman",
   },
   {
     id: "calendar",
-    title: "Calendar'ga qo‘shish",
-    subtitle: "Yangi uchrashuv yaratish",
+    titleKey: "quick.calendar",
+    title: "Uchrashuv yaratish",
+    subtitleKey: "quick.calendarHelp",
+    subtitle: "Kalendar uchun yangi uchrashuv",
     icon: CalendarPlus,
+    route: "/calendar?create=1",
   },
   {
-    id: "email",
-    title: "Email yuborish",
-    subtitle: "Email tayyorlash",
-    icon: Mail,
-  },
-  {
-    id: "document",
-    title: "Hujjat yaratish",
-    subtitle: "Google Docs hujjati",
-    icon: FilePlus2,
+    id: "task",
+    titleKey: "quick.task",
+    title: "Vazifa yaratish",
+    subtitleKey: "quick.taskHelp",
+    subtitle: "Muddat va muhimlik bilan vazifa",
+    icon: CheckSquare,
+    route: "/tasks?create=1",
   },
   {
     id: "reminder",
-    title: "Reminder qo‘yish",
-    subtitle: "Eslatma yaratish",
+    titleKey: "quick.reminder",
+    title: "Eslatma qo‘yish",
+    subtitleKey: "quick.reminderHelp",
+    subtitle: "Vaqti kelganda bildirishnoma oling",
     icon: BellPlus,
+    route: "/reminders?create=1",
   },
   {
-    id: "contact",
-    title: "Kontakt topish",
-    subtitle: "Kerakli odamni izlash",
-    icon: UserRoundSearch,
+    id: "files",
+    titleKey: "quick.files",
+    title: "Fayllarni ochish",
+    subtitleKey: "quick.filesHelp",
+    subtitle: "Hujjat, PDF va Drive fayllari",
+    icon: FolderOpen,
+    route: "/files",
   },
-];
-
-const mobileActions = [
-  { label: "Vazifalar", icon: CheckSquare, route: "/tasks" },
-  { label: "Eslatmalar", icon: BellPlus, route: "/reminders" },
-  { label: "Uchrashuvlar", icon: CalendarPlus, route: "/calendar" },
-  { label: "Notes", icon: NotebookPen, prompt: "Yangi qayd yozib ol" },
-  { label: "AI Chat", icon: Bot, prompt: "Bugungi rejamni ayt" },
-  { label: "Fayllar", icon: FolderOpen, route: "/files" },
-  { label: "Kalendar", icon: CalendarPlus, route: "/calendar" },
-  { label: "Sozlamalar", icon: Settings, route: "/settings" },
+  {
+    id: "ai",
+    titleKey: "quick.ai",
+    title: "AI yordamchi",
+    subtitleKey: "quick.aiHelp",
+    subtitle: "Reja, savol yoki boshqa amal",
+    icon: Bot,
+    prompt: "Bugungi rejamni ayt",
+  },
 ];
 
 const QuickActions = () => {
-  const [activeAction, setActiveAction] =
-    useState<string | null>(null);
-
-  const [contact, setContact] = useState("");
-
-  const [message, setMessage] = useState("");
   const navigate = useNavigate();
   const { open: openAIChat, sendMessage } = useAIChat();
-  const { showToast } = useToast();
+  const { t } = useI18n();
 
-  const handleAction = (id: string) => {
-    setActiveAction(id);
-    setContact("");
-    setMessage("");
+  const runAction = (action: QuickAction) => {
+    if (action.route) {
+      navigate(action.route);
+      return;
+    }
+
+    if (action.prompt) {
+      openAIChat();
+      window.setTimeout(() => sendMessage(action.prompt!), 80);
+    }
   };
-
-  const closeModal = () => {
-    setActiveAction(null);
-    setContact("");
-    setMessage("");
-  };
-
-  const active = actions.find(
-    (item) => item.id === activeAction
-  );
 
   return (
-    <>
-      <section className="quick-actions">
-        <div className="quick-actions__header">
-          <div>
-            <h2>Tezkor amallar</h2>
-
-            <p>
-              Ko‘p ishlatiladigan funksiyalar
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => { openAIChat(); sendMessage("Bugungi rejamni ayt"); }}
-          >
-            Barchasi
-            <ArrowUpRight size={13} />
-          </button>
+    <section className="quick-actions">
+      <div className="quick-actions__header">
+        <div>
+          <h2>{t("quick.title", "Tezkor amallar")}</h2>
+          <p>{t("quick.subtitle", "Ko‘p ishlatiladigan real funksiyalar")}</p>
         </div>
+        <button type="button" onClick={() => navigate("/ai-assistant")}>
+          {t("quick.all", "AI bilan boshqarish")}
+          <ArrowUpRight size={13} />
+        </button>
+      </div>
 
-        <div className="quick-actions__mobile-grid">
-          {mobileActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <button
-                type="button"
-                className="quick-actions__mobile-item"
-                key={action.label}
-                onClick={() => {
-                  if (action.route) navigate(action.route);
-                  if (action.prompt) {
-                    openAIChat();
-                    sendMessage(action.prompt);
-                  }
-                }}
-              >
-                <span className="quick-actions__mobile-icon"><Icon size={21} /></span>
-                <span>{action.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="quick-actions__grid">
-          {actions.map((action) => {
-            const Icon = action.icon;
-
-            return (
-              <button
-                type="button"
-                className="quick-actions__item"
-                key={action.id}
-                onClick={() =>
-                  handleAction(action.id)
-                }
-              >
-                <div className="quick-actions__icon">
-                  <Icon size={17} />
-                </div>
-
-                <div className="quick-actions__text">
-                  <strong>{action.title}</strong>
-
-                  <span>{action.subtitle}</span>
-                </div>
-
-                <ArrowUpRight
-                  className="quick-actions__arrow"
-                  size={14}
-                />
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* MODAL */}
-
-      {activeAction && active && (
-        <div
-          className="quick-modal__overlay"
-          onClick={closeModal}
-        >
-          <div
-            className="quick-modal"
-            onClick={(event) =>
-              event.stopPropagation()
-            }
-          >
+      <div className="quick-actions__grid">
+        {actions.map((action) => {
+          const Icon = action.icon;
+          return (
             <button
               type="button"
-              className="quick-modal__close"
-              onClick={closeModal}
+              className="quick-actions__item"
+              key={action.id}
+              onClick={() => runAction(action)}
             >
-              <X size={17} />
+              <div className="quick-actions__icon"><Icon size={17} /></div>
+              <div className="quick-actions__text">
+                <strong>{t(action.titleKey, action.title)}</strong>
+                <span>{t(action.subtitleKey, action.subtitle)}</span>
+              </div>
+              <ArrowUpRight className="quick-actions__arrow" size={14} />
             </button>
-
-            <div className="quick-modal__icon">
-              <active.icon size={21} />
-            </div>
-
-            <h2>{active.title}</h2>
-
-            <p>
-              {active.subtitle}
-            </p>
-
-            {activeAction === "telegram" && (
-              <>
-                <label>
-                  Kontakt
-                </label>
-
-                <div className="quick-modal__input">
-                  <Search size={15} />
-
-                  <input
-                    value={contact}
-                    onChange={(event) =>
-                      setContact(event.target.value)
-                    }
-                    placeholder="@username yoki ism"
-                  />
-                </div>
-
-                <label>
-                  Xabar
-                </label>
-
-                <textarea
-                  value={message}
-                  onChange={(event) =>
-                    setMessage(event.target.value)
-                  }
-                  placeholder="Xabaringizni yozing..."
-                />
-
-                <button
-                  type="button"
-                  className="quick-modal__submit"
-                  onClick={() => {
-                    if (!contact.trim() || !message.trim()) {
-                      showToast("Kontakt va xabarni kiriting", "error");
-                      return;
-                    }
-                    showToast(`Telegram xabari tayyor: ${contact}`, "success");
-
-                    closeModal();
-                  }}
-                >
-                  <Send size={15} />
-                  Xabar yozish
-                </button>
-              </>
-            )}
-
-            {activeAction !== "telegram" && (
-              <button
-                type="button"
-                className="quick-modal__submit"
-                onClick={() => {
-                  if (activeAction === "calendar") navigate("/calendar");
-                  else if (activeAction === "reminder") navigate("/reminders");
-                  else if (activeAction === "document") navigate("/files");
-                  else showToast(`${active.title} uchun AI yordamchidan foydalaning`, "info");
-                  closeModal();
-                }}
-              >
-                Davom etish
-                <ArrowUpRight size={15} />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+          );
+        })}
+      </div>
+    </section>
   );
 };
 

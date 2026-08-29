@@ -22,6 +22,7 @@ type ActionStatus = "pending" | "loading" | "success" | "cancelled";
 
 const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: MessageBubbleProps) => {
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
+  const [actionFeedback, setActionFeedback] = useState("");
   const { resolveTelegramSelection } = useAIChat();
 
   const isUser = message.role === "user";
@@ -44,20 +45,23 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
               onConfirm={async () => {
                 if (actionStatus !== "pending") return;
                 setActionStatus("loading");
+                setActionFeedback("");
                 try {
                   const result = await onAction(action);
-                  setActionStatus(
-                    result && typeof result === "object" && "success" in result && result.success
-                      ? "success"
-                      : "pending",
-                  );
+                  const success = Boolean(result && typeof result === "object" && "success" in result && result.success);
+                  setActionStatus(success ? "success" : "pending");
+                  if (!success && result && typeof result === "object" && "message" in result && typeof result.message === "string") {
+                    setActionFeedback(result.message);
+                  }
                 } catch {
                   setActionStatus("pending");
+                  setActionFeedback(action.error);
                 }
               }}
-              onDismiss={() => setActionStatus("cancelled")}
+              onDismiss={() => { setActionFeedback(""); setActionStatus("cancelled"); }}
             />
           )}
+          {!isUser && actionFeedback && <p className="message-bubble__action-error" role="alert">{actionFeedback}</p>}
 
           {!isUser && selection && (
             <TelegramSelectionCard
