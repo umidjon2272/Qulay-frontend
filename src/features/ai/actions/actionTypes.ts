@@ -45,6 +45,12 @@ export type SendTelegramMessagePayload = {
   text: string;
 };
 
+export type ConfirmAgentActionPayload = {
+  actionId: string;
+  tool: string;
+  preview: unknown;
+};
+
 type ActionBase<Type extends string, Payload> = {
   type: Type;
   payload: Payload;
@@ -60,7 +66,8 @@ export type AIAction =
   | ActionBase<"createMeeting", CreateMeetingPayload>
   | ActionBase<"createNote", CreateNotePayload>
   | ActionBase<"getTodayPlan", GetTodayPlanPayload>
-  | ActionBase<"sendTelegramMessage", SendTelegramMessagePayload>;
+  | ActionBase<"sendTelegramMessage", SendTelegramMessagePayload>
+  | ActionBase<"confirmAgentAction", ConfirmAgentActionPayload>;
 
 export type AIActionType = AIAction["type"];
 
@@ -121,6 +128,10 @@ export const isAIAction = (value: unknown): value is AIAction => {
       isString(payload.text) &&
       (payload.recipientUsername === undefined || isString(payload.recipientUsername))
     );
+  }
+
+  if (action.type === "confirmAgentAction") {
+    return isString(payload.actionId) && isString(payload.tool);
   }
 
   return action.type === "getTodayPlan" && isString(payload.dateKey);

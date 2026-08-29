@@ -6,7 +6,10 @@ export type WorkspaceResource =
   | "files"
   | "profile"
   | "settings"
-  | "integrations";
+  | "integrations"
+  | "finance"
+  | "contacts"
+  | "memories";
 
 export const WORKSPACE_DATA_CHANGED = "yechim_ai_workspace_data_changed";
 

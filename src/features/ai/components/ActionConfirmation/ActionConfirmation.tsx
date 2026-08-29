@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, Check, Flag, ListTodo, NotebookPen, Send, X } from "lucide-react";
+import { Bell, CalendarDays, Check, Flag, ListTodo, NotebookPen, Send, Sparkles, X } from "lucide-react";
 
 import type { AIAction } from "../../actions/actionTypes";
 
@@ -69,6 +69,13 @@ const getActionDetails = (action: AIAction): ActionDetails => {
         target: "Telegram",
         summary: `“${action.payload.text}”`,
       };
+    case "confirmAgentAction": {
+      const preview = action.payload.preview;
+      const summary = preview && typeof preview === "object"
+        ? Object.entries(preview as Record<string, unknown>).slice(0, 5).map(([key, value]) => `${key}: ${String(value ?? "—")}`).join(" · ")
+        : String(preview ?? "AI tayyorlagan amal");
+      return { title: action.label, target: "AI agent", summary };
+    }
   }
 };
 
@@ -78,6 +85,7 @@ const getActionIcon = (action: AIAction) => {
   if (action.type === "createMeeting") return CalendarDays;
   if (action.type === "createNote") return NotebookPen;
   if (action.type === "sendTelegramMessage") return Send;
+  if (action.type === "confirmAgentAction") return Sparkles;
   return Flag;
 };
 

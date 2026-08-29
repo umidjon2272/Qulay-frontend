@@ -15,7 +15,7 @@ describe("SettingsView (admin settings crash regression)", () => {
 
     expect(() => render(<SettingsView data={staleUsageData} />)).not.toThrow();
     expect(screen.getAllByText("Ma'lumot mavjud emas.").length).toBeGreaterThan(0);
-    expect(screen.getByText("Qulay AI")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Qulay AI")).toBeInTheDocument();
   });
 
   it("renders real values for a fully-shaped, well-formed response", () => {

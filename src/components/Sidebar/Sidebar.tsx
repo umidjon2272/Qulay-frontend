@@ -1,14 +1,18 @@
 import {
   Bell,
+  BrainCircuit,
   CalendarDays,
   CheckSquare,
   ChevronRight,
+  ContactRound,
+  CreditCard,
   FolderOpen,
   LayoutDashboard,
   LogOut,
   Settings,
   Sparkles,
   UserRound,
+  WalletCards,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -28,6 +32,9 @@ const menuItems = [
   { key: "nav.tasks", label: "Vazifalar", path: "/tasks", icon: CheckSquare },
   { key: "nav.reminders", label: "Eslatmalar", path: "/reminders", icon: Bell },
   { key: "nav.files", label: "Fayllar", path: "/files", icon: FolderOpen },
+  { key: "nav.finance", label: "Moliya", path: "/finance", icon: WalletCards },
+  { key: "nav.contacts", label: "Kontaktlar", path: "/contacts", icon: ContactRound },
+  { key: "nav.memory", label: "AI xotirasi", path: "/memory", icon: BrainCircuit },
 ];
 
 const Sidebar = () => {
@@ -73,6 +80,11 @@ const Sidebar = () => {
         <NavLink to="/settings" className={({ isActive }) => `sidebar__link ${isActive ? "sidebar__link--active" : ""}`}>
           <span className="sidebar__link-icon"><Settings size={19} /></span>
           <span className="sidebar__link-text">{t("nav.settings", "Sozlamalar")}</span>
+          <ChevronRight className="sidebar__arrow" size={15} />
+        </NavLink>
+        <NavLink to="/billing" className={({ isActive }) => `sidebar__link ${isActive ? "sidebar__link--active" : ""}`}>
+          <span className="sidebar__link-icon"><CreditCard size={19} /></span>
+          <span className="sidebar__link-text">Tarif va limitlar</span>
           <ChevronRight className="sidebar__arrow" size={15} />
         </NavLink>
       </nav>

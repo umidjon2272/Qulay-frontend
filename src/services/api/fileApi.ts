@@ -15,6 +15,7 @@ export const createFolder = (name: string, parentId?: string | null) => request<
 export const updateFolder = (id: string, name: string) => request<ApiFolder>(`/files/folders/${id}`, { method: "PATCH", body: JSON.stringify({ name }) });
 export const deleteFolder = (id: string) => request<{ message: string }>(`/files/folders/${id}`, { method: "DELETE" });
 export const deleteFile = (id: string) => request<{ message: string }>(`/files/${id}`, { method: "DELETE" });
+export const getFileContent = (id: string) => request<{ id: string; originalName: string; mimeType: string; extractionStatus: string; extractedText: string | null; extractionError: string | null }>(`/files/${id}/content`);
 
 export const uploadFileWithProgress = (file: File, options: { folderId?: string; label?: string; onProgress?: (percent: number) => void } = {}): Promise<ApiFile> => new Promise((resolve, reject) => {
   const tokens = getTokens();

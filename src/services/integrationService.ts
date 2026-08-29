@@ -48,7 +48,7 @@ export const disconnectIntegration = (id: string) => {
 
 export type TelegramStatus = {
   connected: boolean;
-  status: "DISCONNECTED" | "AWAITING_CODE" | "AWAITING_PASSWORD" | "CONNECTED" | "ERROR";
+  status: "DISCONNECTED" | "AWAITING_CODE" | "AWAITING_PASSWORD" | "CONNECTED" | "ERROR" | "not_configured";
   username: string | null;
   displayName: string | null;
   maskedPhone: string | null;
@@ -109,6 +109,7 @@ export const sendTelegramMessage = (peerId: string, text: string, confirmed: boo
 export type GoogleStatus = {
   configured: boolean;
   connected: boolean;
+  status: "DISCONNECTED" | "CONNECTED" | "ERROR" | "not_configured";
   email: string | null;
   displayName: string | null;
   connectedAt: string | null;

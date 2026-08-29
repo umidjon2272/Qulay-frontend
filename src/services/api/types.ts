@@ -90,6 +90,9 @@ export type ApiFile = {
   source: "UPLOAD" | "GOOGLE_DRIVE" | "TELEGRAM" | "SYSTEM";
   folderId: string | null;
   status: "ACTIVE" | "PROCESSING" | "FAILED" | "DELETED";
+  extractionStatus?: "PENDING" | "READY" | "FAILED" | "UNSUPPORTED";
+  extractedAt?: string | null;
+  extractionError?: string | null;
   checksum: string | null;
   createdAt: string;
   updatedAt: string;

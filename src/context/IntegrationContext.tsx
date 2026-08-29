@@ -18,6 +18,7 @@ import {
   connectIntegration,
   disconnectIntegration,
   getIntegrationState,
+  getGoogleStatus,
   getTelegramStatus,
 } from "../services/integrationService";
 import { subscribeToWorkspaceData } from "../services/workspaceEvents";
@@ -35,17 +36,37 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<Record<string, ConnectionState>>(loadState);
   const { showToast } = useToast();
 
+  const refreshServerConnections = useCallback(async () => {
+    const [telegram, google] = await Promise.allSettled([getTelegramStatus(), getGoogleStatus()]);
+    setState((current) => {
+      const next = { ...current };
+      if (telegram.status === "fulfilled") {
+        next.telegram = { connected: telegram.value.connected, username: telegram.value.username ?? telegram.value.displayName ?? undefined };
+      }
+      if (google.status === "fulfilled") {
+        const account = google.value.email ?? google.value.displayName ?? undefined;
+        next["google-calendar"] = { connected: Boolean(google.value.connected && google.value.calendarEnabled), username: account };
+        next["google-drive"] = { connected: Boolean(google.value.connected && google.value.driveEnabled), username: account };
+      }
+      return next;
+    });
+  }, []);
+
   useEffect(() => subscribeToWorkspaceData("integrations", () => setState(loadState())), []);
 
-  // Telegram is server-owned: refresh/login/browser state must never decide whether it is connected.
+  // Server-owned integrations remain connected across refreshes, devices and sessions.
+  // A temporary network error preserves the last known status instead of showing "Ulanmagan".
   useEffect(() => {
-    let active = true;
-    void getTelegramStatus().then((status) => {
-      if (!active) return;
-      setState((current) => ({ ...current, telegram: { connected: status.connected, username: status.username ?? status.displayName ?? undefined } }));
-    }).catch(() => undefined);
-    return () => { active = false; };
-  }, []);
+    void refreshServerConnections();
+    const refreshOnFocus = () => void refreshServerConnections();
+    const refreshOnVisibility = () => { if (document.visibilityState === "visible") void refreshServerConnections(); };
+    window.addEventListener("focus", refreshOnFocus);
+    document.addEventListener("visibilitychange", refreshOnVisibility);
+    return () => {
+      window.removeEventListener("focus", refreshOnFocus);
+      document.removeEventListener("visibilitychange", refreshOnVisibility);
+    };
+  }, [refreshServerConnections]);
 
   const connect = useCallback(
     (id: IntegrationId, username: string) => {

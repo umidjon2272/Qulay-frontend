@@ -52,8 +52,8 @@ export const detectGoogleDriveSearch = (raw: string): { query: string } | null =
   if (!/\b(google\s*)?(drive|docs?|dokument|hujjat)\b/u.test(normalized)) return null;
 
   const patterns = [
-    /(?:google\s*)?(?:drive|docs?|dokument|hujjat)(?:dan|da)?\s+(.+?)\s+(?:fayl(?:ini)?|hujjat(?:ni)?|dokument(?:ni)?)?\s*(?:top|qidir|izla)(?:ib\s+ber|ing)?$/u,
-    /(.+?)\s+(?:fayl(?:ini)?|hujjat(?:ni)?|dokument(?:ni)?)\s+(?:google\s*)?(?:drive|docs?|dokument)(?:dan|da)?\s*(?:top|qidir|izla)(?:ib\s+ber|ing)?$/u,
+    /(?:google\s*)?(?:drive|docs?|dokument|hujjat)'?(?:dan|da)?\s+(.+?)\s+(?:fayl(?:ini)?|hujjat(?:ni)?|dokument(?:ni)?)?\s*(?:top|qidir|izla)(?:ib\s+ber|ing)?$/u,
+    /(.+?)\s+(?:fayl(?:ini)?|hujjat(?:ni)?|dokument(?:ni)?)\s+(?:google\s*)?(?:drive|docs?|dokument)'?(?:dan|da)?\s*(?:top|qidir|izla)(?:ib\s+ber|ing)?$/u,
   ];
 
   for (const pattern of patterns) {

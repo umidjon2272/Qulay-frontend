@@ -5,11 +5,12 @@ import { clearMeetingCache } from "../../../services/meetingService";
 import { clearNoteCache } from "../../../services/noteService";
 import { clearReminderCache } from "../../../services/reminderService";
 import { clearTaskCache } from "../../../services/taskService";
-import { notifyWorkspaceDataChanged } from "../../../services/workspaceEvents";
+import { notifyWorkspaceDataChanged, type WorkspaceResource } from "../../../services/workspaceEvents";
 import { getApiErrorMessage } from "../../../services/api/apiClient";
 import { logRouter } from "../router/debugLog";
 import { describeTelegramError } from "../router/telegramError";
 import type { AIAction } from "./actionTypes";
+import { agentApi } from "../../../services/api/agentApi";
 
 export type AIActionExecutionResult = {
   success: boolean;
@@ -113,6 +114,12 @@ export const executeAIAction = async (
           text: action.payload.text,
         });
         return { success: true, message: action.success, data };
+      }
+
+      case "confirmAgentAction": {
+        const result = await agentApi.confirm(action.payload.actionId, true);
+        (["tasks", "reminders", "calendarEvents", "notes", "finance", "contacts", "memories"] satisfies WorkspaceResource[]).forEach((scope) => notifyWorkspaceDataChanged(scope));
+        return { success: result.status === "success", message: result.message || action.success, data: result.data };
       }
 
       case "getTodayPlan":

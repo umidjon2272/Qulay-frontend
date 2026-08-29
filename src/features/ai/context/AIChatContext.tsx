@@ -397,10 +397,10 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setMessages((current) => appendMessage(current, userMessage));
-    void conversationPromise.then((id) => persistConversationMessage(id, trimmed, "USER"));
+    const preparedConversation = conversationPromise.then(async (id) => { await persistConversationMessage(id, trimmed, "USER"); return id; });
     setIsTyping(true);
 
-    void getAIReply(trimmed, { signal: controller.signal })
+    void preparedConversation.then((conversationId) => getAIReply(trimmed, { signal: controller.signal, conversationId }))
       .then((reply) => {
         if (
           !mountedRef.current ||
@@ -420,7 +420,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         };
 
         setMessages((current) => appendMessage(current, aiMessage));
-        void conversationPromise.then((id) => persistConversationMessage(id, reply.text, "ASSISTANT"));
+        if (!reply.serverPersisted) void conversationPromise.then((id) => persistConversationMessage(id, reply.text, "ASSISTANT"));
       })
       .catch((error: unknown) => {
         if (

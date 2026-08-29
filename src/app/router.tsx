@@ -20,6 +20,10 @@ const Reminders = lazy(() => import("../pages/Reminders/Reminders"));
 const Files = lazy(() => import("../pages/Files/Files"));
 const Settings = lazy(() => import("../pages/Settings/Settings"));
 const Integrations = lazy(() => import("../pages/Integrations/Integrations"));
+const Finance = lazy(() => import("../pages/Finance/Finance"));
+const Contacts = lazy(() => import("../pages/Contacts/Contacts"));
+const Memory = lazy(() => import("../pages/Memory/Memory"));
+const Billing = lazy(() => import("../pages/Billing/Billing"));
 const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
 const AdminConsole = lazy(() => import("../pages/Admin/AdminConsole"));
 const AdminLogin = lazy(() => import("../pages/Admin/AdminLogin"));
@@ -72,6 +76,10 @@ export const router = createBrowserRouter([
       { path: "/tasks", element: withSuspense(<Tasks />) },
       { path: "/reminders", element: withSuspense(<Reminders />) },
       { path: "/files", element: withSuspense(<Files />) },
+      { path: "/finance", element: withSuspense(<Finance />) },
+      { path: "/contacts", element: withSuspense(<Contacts />) },
+      { path: "/memory", element: withSuspense(<Memory />) },
+      { path: "/billing", element: withSuspense(<Billing />) },
       { path: "/settings", element: withSuspense(<Settings />) },
       { path: "/integrations", element: withSuspense(<Integrations />) },
     ],
