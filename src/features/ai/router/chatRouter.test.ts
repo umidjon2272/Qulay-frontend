@@ -278,6 +278,20 @@ describe("confirm / cancel semantics", () => {
 
 
 describe("routeMessage — Google tools", () => {
+  it('"Bugungi uchrashuvlar" also reads connected Google Calendar events', async () => {
+    requestMock.mockResolvedValueOnce({
+      status: "success",
+      tool: "get_google_calendar_events",
+      data: [{ id: "g1", title: "Google event", start: "2026-08-29T10:00:00.000Z", end: "2026-08-29T11:00:00.000Z" }],
+      meta: { executedAt: "", requestId: "g0" },
+    });
+
+    const reply = await routeMessage("Bugungi uchrashuvlar");
+    const body = JSON.parse((requestMock.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.tool).toBe("get_google_calendar_events");
+    expect(reply.text).toContain("Google event");
+  });
+
   it('"Bugungi Google Calendar uchrashuvlarimni ko‘rsat" calls get_google_calendar_events', async () => {
     requestMock.mockResolvedValueOnce({
       status: "success",
@@ -315,6 +329,14 @@ describe("routeMessage — Google tools", () => {
 
 
 describe("old mock response does not intercept other intents", () => {
+  it('"Bugun soat 15:00 ga test uchrashuv yarat" maps to createMeeting', async () => {
+    const reply = await routeMessage("Bugun soat 15:00 ga test uchrashuv yarat");
+    expect(reply.action?.type).toBe("createMeeting");
+    if (reply.action?.type !== "createMeeting") throw new Error("Expected createMeeting action");
+    expect(reply.action.payload.time).toBe("15:00");
+    expect(requestMock).not.toHaveBeenCalled();
+  });
+
   it('"Ertaga soat 11 da Aziz bilan uchrashuv qo\'y" still maps to the createMeeting action', async () => {
     const reply = await routeMessage("Ertaga soat 11 da Aziz bilan uchrashuv qo'y");
     expect(reply.action?.type).toBe("createMeeting");

@@ -321,6 +321,9 @@ export const routeMessage = async (input: string): Promise<RouterReply> => {
   const googleDrive = detectGoogleDriveSearch(trimmed);
   if (googleDrive) return handleGoogleDriveSearch(googleDrive.query);
 
+  const legacyAction = parseAIAction(trimmed);
+  if (legacyAction) return handleLegacyAction(legacyAction);
+
   const googleCalendar = detectGoogleCalendarLookup(trimmed);
   if (googleCalendar) return handleGoogleCalendarLookup(googleCalendar.range);
 
@@ -331,9 +334,6 @@ export const routeMessage = async (input: string): Promise<RouterReply> => {
 
   const memory = detectMemoryLookup(trimmed);
   if (memory) return handleMemoryLookup(memory.query);
-
-  const legacyAction = parseAIAction(trimmed);
-  if (legacyAction) return handleLegacyAction(legacyAction);
 
   logRouter("intent_detected", { intent: "none" });
   return { text: buildFallbackReply(trimmed) };

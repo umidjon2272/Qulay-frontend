@@ -175,11 +175,11 @@ const Calendar = () => {
     };
     try {
       if (editId !== null) {
-      await updateMeeting(editId, payload);
-      showToast("Uchrashuv yangilandi", "success");
+      const saved = await updateMeeting(editId, payload);
+      showToast(saved.googleSyncError ? `Uchrashuv yangilandi, lekin Google sync xatosi: ${saved.googleSyncError}` : "Uchrashuv yangilandi", saved.googleSyncError ? "error" : "success");
     } else {
-      await createMeetingRecord(payload);
-      showToast("Uchrashuv kalendarga qo‘shildi", "success");
+      const saved = await createMeetingRecord(payload);
+      showToast(saved.googleSyncError ? `Uchrashuv saqlandi, lekin Google sync xatosi: ${saved.googleSyncError}` : "Uchrashuv kalendarga qo‘shildi", saved.googleSyncError ? "error" : "success");
       }
       setEvents(getCalendarEvents());
       closeModal();
@@ -198,10 +198,11 @@ const Calendar = () => {
     if (!pendingDelete) return;
 
     const event = pendingDelete;
-    try { await deleteMeeting(event.id); } catch { showToast("Uchrashuvni o'chirib bo'lmadi", "error"); return; }
+    let result: Awaited<ReturnType<typeof deleteMeeting>>;
+    try { result = await deleteMeeting(event.id); } catch { showToast("Uchrashuvni o'chirib bo'lmadi", "error"); return; }
     setEvents(getCalendarEvents());
     setPendingDelete(null);
-    showToast("Uchrashuv o‘chirildi", "success");
+    showToast(result.googleSync.synced ? "Uchrashuv o‘chirildi" : `Uchrashuv o‘chirildi, lekin Google sync xatosi: ${result.googleSync.errorCode}`, result.googleSync.synced ? "success" : "error");
   };
 
   const setMonth = (offset: number) => {

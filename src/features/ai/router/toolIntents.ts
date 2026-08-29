@@ -37,7 +37,9 @@ export const detectMemoryLookup = (raw: string): { query: string } | null => {
 export const detectGoogleCalendarLookup = (raw: string): { range: "today" | "tomorrow" | "week" } | null => {
   const normalized = normalize(raw);
   const mentionsCalendar = /(?:\bgoogle\s+calendar\b|\bcalendar\b|\bkalendar\b|\btaqvim\b)/u.test(normalized);
-  if (!mentionsCalendar) return null;
+  const asksTodayMeetings = /\b(bugun|bugungi)\b/u.test(normalized) && /\b(uchrashuv|uchrashuvlar|meeting|event)\b/u.test(normalized);
+  if (!mentionsCalendar && !asksTodayMeetings) return null;
+  if (/(?:yarat|qo['’]?sh|qo['’]?y|rejalashtir|create|add|schedule)/u.test(normalized)) return null;
   if (!/(ko['’]?rsat|ayt|ber|nima|qanday|bor|reja|uchrashuv|meeting|event)/u.test(normalized)) return null;
   if (/\bertaga\b/u.test(normalized)) return { range: "tomorrow" };
   if (/\b(hafta|7\s*kun|keyingi\s+hafta)\b/u.test(normalized)) return { range: "week" };

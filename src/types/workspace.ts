@@ -34,6 +34,8 @@ export type CalendarEvent = {
   participant?: string;
   description?: string;
   reminder?: string;
+  googleCalendarEventId?: string;
+  googleSyncError?: string;
 };
 
 export type Note = {

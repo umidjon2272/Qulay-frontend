@@ -1,5 +1,5 @@
 import { executeAiTool } from "../../../services/api/aiToolsApi";
-import { localDateTimeToIso, meetingFromApi, priorityToApi, reminderFromApi, taskFromApi } from "../../../services/api/helpers";
+import { localDateTimeToIso, meetingFromApi, priorityToApi, reminderFromApi, tashkentDateTimeToIso, taskFromApi } from "../../../services/api/helpers";
 import type { ApiMeeting, ApiNote, ApiReminder, ApiTask } from "../../../services/api/types";
 import { clearMeetingCache } from "../../../services/meetingService";
 import { clearNoteCache } from "../../../services/noteService";
@@ -86,13 +86,15 @@ export const executeAIAction = async (
           .join(" · ") || undefined;
         const data = await runWriteTool<ApiMeeting>("create_meeting", {
           title: action.payload.title,
-          startAt: localDateTimeToIso(action.payload.date, action.payload.time),
+          startAt: tashkentDateTimeToIso(action.payload.date, action.payload.time),
           location: action.payload.location || undefined,
           notes,
         });
         clearMeetingCache();
         notifyWorkspaceDataChanged("calendarEvents");
-        return { success: true, message: action.success, data: meetingFromApi(data) };
+        return data.googleSyncError
+          ? { success: false, message: `Uchrashuv Qulay Calendar’da saqlandi, lekin Google Calendar sync xatosi: ${data.googleSyncError}`, data: meetingFromApi(data) }
+          : { success: true, message: action.success, data: meetingFromApi(data) };
       }
 
       case "createNote": {

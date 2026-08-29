@@ -32,8 +32,8 @@ export const createMeeting = async (input: CreateMeetingInput): Promise<Calendar
 export const updateMeeting = async (id: string | number, patch: Partial<CalendarEvent>): Promise<CalendarEvent> => {
   const event = await meetingApi.updateMeeting(id, patch); cache = cache.map((item) => item.id === id ? event : item); notifyWorkspaceDataChanged("calendarEvents"); return event;
 };
-export const deleteMeeting = async (id: string | number): Promise<boolean> => {
-  await meetingApi.deleteMeeting(id); cache = cache.filter((item) => item.id !== id); notifyWorkspaceDataChanged("calendarEvents"); return true;
+export const deleteMeeting = async (id: string | number) => {
+  const result = await meetingApi.deleteMeeting(id); cache = cache.filter((item) => item.id !== id); notifyWorkspaceDataChanged("calendarEvents"); return result;
 };
 export const cancelMeeting = async (id: string | number): Promise<CalendarEvent> => {
   const event = await meetingApi.cancelMeeting(id); cache = cache.map((item) => item.id === id ? event : item); notifyWorkspaceDataChanged("calendarEvents"); return event;

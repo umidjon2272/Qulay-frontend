@@ -52,6 +52,10 @@ export type ApiMeeting = {
   endsAt: string;
   reminderMinutesBefore: number;
   status: "SCHEDULED" | "COMPLETED" | "CANCELLED";
+  googleCalendarEventId: string | null;
+  googleCalendarId: string | null;
+  googleSyncedAt: string | null;
+  googleSyncError: string | null;
   createdAt: string;
   updatedAt: string;
 };
