@@ -165,8 +165,10 @@ const Settings = () => {
 
       if (oauthIntegration === "google" && oauthKey && googleOAuthHandledRef.current !== oauthKey) {
         googleOAuthHandledRef.current = oauthKey;
-        if (oauthStatus === "connected" && status.connected) showToast("Google Calendar va Drive ulandi", "success");
-        else if (oauthReason === "cancelled") showToast("Google ulanishi bekor qilindi", "info");
+        if (oauthStatus === "connected" && status.connected) {
+          const connectedServices = [status.calendarEnabled ? "Calendar" : null, status.driveEnabled ? "Drive" : null].filter(Boolean).join(" va " );
+          showToast(connectedServices ? `Google ${connectedServices} ulandi` : "Google akkaunti ulandi, lekin kerakli ruxsatlar topilmadi", connectedServices ? "success" : "error");
+        } else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast("Google ulanishi bekor qilindi", "info");
         else if (oauthStatus === "error") showToast("Google ulanishini yakunlab bo'lmadi", "error");
       }
 
