@@ -3,6 +3,19 @@
 }
 
 @media (max-width: 700px) {
+  .dashboard-mobile-home__finance { display:grid; grid-template-columns:36px repeat(3,minmax(0,1fr)) auto; align-items:center; width:100%; gap:8px; padding:12px; border:1px solid var(--border); border-radius:18px; background:var(--surface-elevated); color:var(--text-primary); text-align:left; }
+  .dashboard-mobile-home__finance-icon { display:grid; place-items:center; width:36px; height:36px; border-radius:12px; background:var(--accent-soft); color:var(--accent); }
+  .dashboard-mobile-home__finance span:not(.dashboard-mobile-home__finance-icon) { display:flex; min-width:0; flex-direction:column; gap:3px; }
+  .dashboard-mobile-home__finance small { color:var(--text-muted); font-size:9px; }
+  .dashboard-mobile-home__finance strong { overflow:hidden; font-size:11px; white-space:nowrap; text-overflow:ellipsis; }
+}
+
+@media (max-width: 360px) {
+  .dashboard-mobile-home__finance { grid-template-columns:32px 1fr auto; }
+  .dashboard-mobile-home__finance span:nth-of-type(2), .dashboard-mobile-home__finance span:nth-of-type(3) { display:none; }
+}
+
+@media (max-width: 700px) {
   .dashboard-mobile-home {
     display: block;
     width: 100%;

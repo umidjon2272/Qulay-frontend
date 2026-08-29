@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import AIAssistantShell from "../features/ai/components/AssistantPage/AIAssistantShell";
 import { AIAssistantRoute } from "../features/ai/routes/aiRoute";
@@ -21,8 +21,6 @@ const Files = lazy(() => import("../pages/Files/Files"));
 const Settings = lazy(() => import("../pages/Settings/Settings"));
 const Integrations = lazy(() => import("../pages/Integrations/Integrations"));
 const Finance = lazy(() => import("../pages/Finance/Finance"));
-const Contacts = lazy(() => import("../pages/Contacts/Contacts"));
-const Memory = lazy(() => import("../pages/Memory/Memory"));
 const Billing = lazy(() => import("../pages/Billing/Billing"));
 const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
 const AdminConsole = lazy(() => import("../pages/Admin/AdminConsole"));
@@ -77,8 +75,8 @@ export const router = createBrowserRouter([
       { path: "/reminders", element: withSuspense(<Reminders />) },
       { path: "/files", element: withSuspense(<Files />) },
       { path: "/finance", element: withSuspense(<Finance />) },
-      { path: "/contacts", element: withSuspense(<Contacts />) },
-      { path: "/memory", element: withSuspense(<Memory />) },
+      { path: "/contacts", element: <Navigate to="/dashboard" replace /> },
+      { path: "/memory", element: <Navigate to="/settings?tab=ai" replace /> },
       { path: "/billing", element: withSuspense(<Billing />) },
       { path: "/settings", element: withSuspense(<Settings />) },
       { path: "/integrations", element: withSuspense(<Integrations />) },

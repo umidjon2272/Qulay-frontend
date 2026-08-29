@@ -9,6 +9,7 @@ import {
   Mic,
   NotebookPen,
   Sparkles,
+  WalletCards,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -20,6 +21,7 @@ import { getNotes, loadNotes } from "../../../../services/noteService";
 import { getReminders, loadReminders } from "../../../../services/reminderService";
 import { getTasks, loadTasks } from "../../../../services/taskService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
+import { financeApi, type FinanceSummary } from "../../../../services/api/financeApi";
 
 import "./MobileDashboardHome.scss";
 
@@ -50,6 +52,7 @@ const MobileDashboardHome = () => {
   const [meetings, setMeetings] = useState(getCalendarEvents);
   const [notes, setNotes] = useState(getNotes);
   const [loading, setLoading] = useState(true);
+  const [finance, setFinance] = useState<FinanceSummary | null>(null);
 
   const refresh = () => {
     setTasks(getTasks());
@@ -71,6 +74,12 @@ const MobileDashboardHome = () => {
         }
       });
     return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    void financeApi.summary(from, new Date(now.getTime() + 60000).toISOString(), "UZS").then(setFinance).catch(() => undefined);
   }, []);
 
   const today = getDateKey();
@@ -158,6 +167,17 @@ const MobileDashboardHome = () => {
             );
           })}
         </div>
+      </section>
+
+      <section className="dashboard-mobile-home__section">
+        <header className="dashboard-mobile-home__section-header"><h2>Joriy oy moliyasi</h2><button type="button" onClick={() => navigate("/finance")}>Batafsil <ArrowUpRight size={14}/></button></header>
+        <button type="button" className="dashboard-mobile-home__finance" onClick={() => navigate("/finance")}>
+          <span className="dashboard-mobile-home__finance-icon"><WalletCards size={20}/></span>
+          <span><small>Daromad</small><strong>{Number(finance?.totalIncome ?? 0).toLocaleString("uz-UZ")}</strong></span>
+          <span><small>Xarajat</small><strong>{Number(finance?.totalExpense ?? 0).toLocaleString("uz-UZ")}</strong></span>
+          <span><small>Sof foyda</small><strong>{Number(finance?.netProfit ?? 0).toLocaleString("uz-UZ")} so'm</strong></span>
+          <ChevronRight size={17}/>
+        </button>
       </section>
 
       <section className="dashboard-mobile-home__section dashboard-mobile-home__next">

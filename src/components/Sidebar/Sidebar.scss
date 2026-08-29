@@ -729,6 +729,46 @@
 }
 
 @media (max-width: 700px) {
+  .mobile-more {
+    position: fixed;
+    inset: 0;
+    z-index: 1190;
+    display: flex;
+    align-items: flex-end;
+    padding: 16px 12px calc(96px + env(safe-area-inset-bottom));
+    background: rgba(10, 12, 24, .46);
+    backdrop-filter: blur(8px);
+  }
+
+  .mobile-more__sheet {
+    width: 100%;
+    max-height: min(72dvh, 620px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px;
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    background: var(--surface-solid);
+    box-shadow: 0 24px 70px rgba(8, 12, 30, .28);
+  }
+
+  .mobile-more__sheet header { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .mobile-more__sheet header span { color:var(--accent); font-size:10px; font-weight:850; letter-spacing:1.3px; }
+  .mobile-more__sheet header h2 { margin:3px 0 0; color:var(--text-primary); font-size:22px; }
+  .mobile-more__sheet header button { display:grid; place-items:center; width:40px; height:40px; border:1px solid var(--border); border-radius:13px; background:var(--surface-elevated); color:var(--text-secondary); }
+  .mobile-more__sheet nav { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .mobile-more__sheet nav a { display:grid; grid-template-columns:42px minmax(0,1fr) auto; align-items:center; gap:10px; min-height:66px; padding:10px; border:1px solid var(--border); border-radius:17px; background:var(--surface-elevated); color:var(--text-secondary); text-decoration:none; }
+  .mobile-more__sheet nav a > span { display:grid; place-items:center; width:42px; height:42px; border-radius:13px; background:var(--accent-soft); color:var(--accent); }
+  .mobile-more__sheet nav a strong { min-width:0; font-size:13px; line-height:1.25; }
+  .mobile-more__sheet nav a.is-active { border-color:color-mix(in srgb,var(--accent) 45%,var(--border)); color:var(--accent); }
+}
+
+@media (max-width: 350px) {
+  .mobile-more__sheet nav { grid-template-columns:1fr; }
+  .mobile-more { padding-inline:8px; }
+}
+
+@media (max-width: 700px) {
   .sidebar {
     position: fixed;
     top: auto;

@@ -33,6 +33,7 @@ import { updateProfile } from "../../services/profileService";
 import { notificationApi } from "../../services/api";
 import type { ApiNotificationPreference } from "../../services/api/types";
 import { useI18n } from "../../i18n/useI18n";
+import Memory from "../Memory/Memory";
 
 import "./Settings.scss";
 
@@ -48,7 +49,7 @@ type SettingsSection = {
 const sections: SettingsSection[] = [
   { id: "appearance", label: "Ko'rinish", description: "Yorug' yoki qorong'i rejim", icon: Palette },
   { id: "notifications", label: "Bildirishnomalar", description: "Ovoz, tinch vaqt va xabar turlari", icon: Bell },
-  { id: "ai", label: "AI yordamchi", description: "Javob, tarix va tasdiqlash", icon: Sparkles },
+  { id: "ai", label: "AI va maxfiylik", description: "Xotira, javob va maxfiylik nazorati", icon: Sparkles },
   { id: "language", label: "Til", description: "O'zbek yoki rus tili", icon: Languages },
   { id: "integrations", label: "Integratsiyalar", description: "Telegram, Calendar va Drive", icon: Link2 },
 ];
@@ -424,6 +425,7 @@ const Settings = () => {
                 </div>
               </div>
             )}
+            {active === "ai" && <Memory />}
 
             {active === "integrations" && (
               <div className="settings-card settings-card--wide">
