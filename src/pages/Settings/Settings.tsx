@@ -155,7 +155,9 @@ const Settings = () => {
     if (active !== "integrations" && oauthIntegration !== "google") return;
     const oauthStatus = searchParams.get("status");
     const oauthReason = searchParams.get("reason");
-    const oauthKey = oauthIntegration === "google" ? `${oauthStatus ?? "status"}:${oauthReason ?? ""}` : null;
+    const oauthErrorCode = searchParams.get("errorCode");
+    const oauthMessage = searchParams.get("message");
+    const oauthKey = oauthIntegration === "google" ? `${oauthStatus ?? "status"}:${oauthReason ?? ""}:${oauthErrorCode ?? ""}` : null;
     let activeRequest = true;
     void getGoogleStatus().then((status) => {
       if (!activeRequest) return;
@@ -169,7 +171,7 @@ const Settings = () => {
           const connectedServices = [status.calendarEnabled ? "Calendar" : null, status.driveEnabled ? "Drive" : null].filter(Boolean).join(" va " );
           showToast(connectedServices ? `Google ${connectedServices} ulandi` : "Google akkaunti ulandi, lekin kerakli ruxsatlar topilmadi", connectedServices ? "success" : "error");
         } else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast("Google ulanishi bekor qilindi", "info");
-        else if (oauthStatus === "error") showToast("Google ulanishini yakunlab bo'lmadi", "error");
+        else if (oauthStatus === "error") showToast(oauthMessage || (oauthErrorCode ? `Google OAuth xatosi: ${oauthErrorCode}` : "Google ulanishini yakunlab bo'lmadi"), "error");
       }
 
       if (oauthIntegration === "google") setSearchParams({ tab: "integrations" }, { replace: true });
