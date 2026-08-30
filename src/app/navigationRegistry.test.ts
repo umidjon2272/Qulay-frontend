@@ -9,7 +9,9 @@ describe("navigation registry", () => {
   });
 
   it("keeps finance in More and hides CRM contacts and standalone memory", () => {
-    expect(getNavigation("mobileMore").some((item) => item.id === "finance")).toBe(true);
+    const moreItems = getNavigation("mobileMore");
+    expect(moreItems).toHaveLength(8);
+    expect(moreItems.some((item) => item.id === "finance")).toBe(true);
     expect(navigationRegistry.some((item) => item.id === "contacts" || item.id === "memory")).toBe(false);
   });
 

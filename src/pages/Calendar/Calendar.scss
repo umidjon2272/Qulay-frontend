@@ -1215,3 +1215,141 @@ html[data-theme="dark"] body #root .calendar-agenda__event strong { color:#f7f9f
   .calendar-modal__overlay { align-items:flex-end; padding:0; }
   .calendar-modal { width:100%; max-height:92dvh; overflow:auto; border-radius:24px 24px 0 0; padding:24px 18px calc(24px + env(safe-area-inset-bottom)); }
 }
+
+/* Mobile width contract: every calendar layer participates in the padded
+   app content width instead of contributing an intrinsic viewport width. */
+@media (max-width: 700px) {
+  body #root .calendar-page,
+  body #root .calendar-layout,
+  body #root .calendar-card,
+  body #root .calendar-sidebar,
+  body #root .calendar-summary,
+  body #root .calendar-card__top,
+  body #root .calendar-grid,
+  body #root .calendar-agenda {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  body #root .calendar-page {
+    padding: 12px 0 28px;
+  }
+
+  body #root .calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body #root .calendar-card {
+    padding: 0;
+  }
+
+  body #root .calendar-card__top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 0;
+    padding: 10px 12px;
+  }
+
+  body #root .calendar-card__month {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr) 34px;
+    flex: 1 1 190px;
+    min-width: 0;
+    gap: 5px;
+  }
+
+  body #root .calendar-card__month h2 {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 12px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  body #root .calendar-card__month button {
+    width: 34px;
+    height: 34px;
+  }
+
+  body #root .calendar-card__today {
+    flex: 0 0 auto;
+    min-width: 52px;
+    height: 34px;
+    padding-inline: 10px;
+    box-sizing: border-box;
+    font-size: 11px;
+  }
+
+  body #root .calendar-view-switch {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  body #root .calendar-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 5px;
+    padding: 12px;
+  }
+
+  body #root .calendar-grid__weekday,
+  body #root .calendar-day {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  body #root .calendar-grid__weekday {
+    height: 26px;
+    font-size: 10px;
+  }
+
+  body #root .calendar-day {
+    aspect-ratio: 1;
+    min-height: 0;
+    padding: 4px;
+    border-radius: 9px;
+    font-size: 10px;
+  }
+
+  body #root .calendar-day span {
+    width: 24px;
+    height: 24px;
+    max-width: 100%;
+    font-size: 10px;
+  }
+
+  body #root .calendar-day__count {
+    right: 3px;
+    bottom: 3px;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+  }
+
+  body #root .calendar-agenda__day,
+  body #root .calendar-agenda__events,
+  body #root .calendar-agenda__event {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 360px) {
+  body #root .calendar-card__top { gap: 6px; padding: 9px 10px; }
+  body #root .calendar-card__month { flex-basis: 176px; }
+  body #root .calendar-grid { gap: 4px; padding: 10px; }
+  body #root .calendar-day span { width: 22px; height: 22px; }
+  body #root .calendar-agenda__event { grid-template-columns: 58px minmax(0, 1fr); gap: 6px; }
+}
+
+@media (max-width: 330px) {
+  body #root .calendar-card__month { flex-basis: 168px; }
+  body #root .calendar-card__today { min-width: 48px; padding-inline: 7px; }
+  body #root .calendar-grid { gap: 4px; padding: 8px; }
+}

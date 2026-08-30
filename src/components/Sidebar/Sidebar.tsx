@@ -15,7 +15,7 @@ import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
 import { useI18n } from "../../i18n/useI18n";
 import { usePlatform } from "../../context/PlatformContext";
-import { getNavigation, isNavigationPathActive } from "../../app/navigationRegistry";
+import { getNavigation } from "../../app/navigationRegistry";
 import "./Sidebar.scss";
 
 const Sidebar = () => {
@@ -46,8 +46,19 @@ const Sidebar = () => {
     };
   }, [moreOpen]);
 
-  const closeMore = () => setMoreOpen(false);
+  const closeMore = () => {
+    if (window.history.state?.mobileMore) {
+      window.history.back();
+      return;
+    }
+    setMoreOpen(false);
+  };
   const openMore = () => setMoreOpen(true);
+  const isMoreItemActive = (path: string) => {
+    const [pathname, search = ""] = path.split("?");
+    if (location.pathname !== pathname) return false;
+    return search ? location.search === `?${search}` : location.search === "";
+  };
 
   const handleMobileAI = () => {
     if (typeof window !== "undefined" && window.innerWidth <= 700) {
@@ -58,7 +69,7 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${moreOpen ? "sidebar--more-open" : ""}`}>
       <div className="sidebar__brand">
         <div className="sidebar__logo"><Sparkles size={20} /></div>
         <div className="sidebar__brand-text"><strong>{platformName}</strong><span>{t("nav.workspace", "AI ish maydoni")}</span></div>
@@ -105,7 +116,7 @@ const Sidebar = () => {
         {mobileItems.map((item) => {
           const Icon = item.icon;
           if (item.id === "ai") return <button key={item.id} type="button" className={`sidebar__mobile-item sidebar__mobile-item--ai ${location.pathname === item.path ? "is-active" : ""}`} onClick={handleMobileAI} aria-label={item.label}><Icon size={20} /><span>AI</span></button>;
-          if (item.id === "more") return <button key={item.id} type="button" className={`sidebar__mobile-item ${moreOpen || moreItems.some((entry) => isNavigationPathActive(location.pathname, entry.path)) ? "is-active" : ""}`} onClick={openMore} aria-label={item.label} aria-expanded={moreOpen}><Icon size={19} /><span>{item.label}</span></button>;
+          if (item.id === "more") return <button key={item.id} type="button" className={`sidebar__mobile-item ${moreOpen || moreItems.some((entry) => isMoreItemActive(entry.path)) ? "is-active" : ""}`} onClick={openMore} aria-label={item.label} aria-expanded={moreOpen}><Icon size={19} /><span>{item.label}</span></button>;
           return <NavLink key={item.id} to={item.path} className={({ isActive }) => `sidebar__mobile-item ${isActive ? "is-active" : ""}`} aria-label={item.label}><Icon size={19} /><span>{t(item.translationKey, item.label)}</span></NavLink>;
         })}
       </nav>
@@ -114,7 +125,7 @@ const Sidebar = () => {
         <section className="mobile-more__sheet">
           <header><div><span>QULAY AI</span><h2>Ko'proq</h2></div><button type="button" onClick={closeMore} aria-label="Menyuni yopish"><X size={20} /></button></header>
           <nav aria-label="Qo'shimcha bo'limlar">
-            {moreItems.map((item) => { const Icon = item.icon; const active = isNavigationPathActive(location.pathname, item.path); return <NavLink key={item.id} to={item.path} onClick={closeMore} className={active ? "is-active" : ""}><span><Icon size={20} /></span><strong>{t(item.translationKey, item.label)}</strong><ChevronRight size={17} /></NavLink>; })}
+            {moreItems.map((item) => { const Icon = item.icon; const active = isMoreItemActive(item.path); return <NavLink key={item.id} to={item.path} onClick={() => setMoreOpen(false)} className={active ? "is-active" : ""}><span><Icon size={19} /></span><strong>{t(item.translationKey, item.label)}</strong><ChevronRight className="mobile-more__chevron" size={16} /></NavLink>; })}
           </nav>
         </section>
       </div>}
