@@ -4,12 +4,15 @@ import { WifiOff } from "lucide-react";
 
 import Sidebar from "../../components/Sidebar/Sidebar";
 import TopBar from "../../components/TopBar/TopBar";
+import ProactiveSuggestions from "../../components/ProactiveSuggestions/ProactiveSuggestions";
 import AIChatDrawer from "../../features/ai/components/AIChatDrawer/AIChatDrawer";
 import { prefetchAIAssistant } from "../../features/ai/routes/aiLoader";
+import { useI18n } from "../../i18n/useI18n";
 
 import "./AppLayout.scss";
 
 const AppLayout = () => {
+  const { t } = useI18n();
   const location = useLocation();
   const isAIWorkspace = location.pathname === "/ai-assistant";
   const isDashboard = location.pathname === "/dashboard";
@@ -164,7 +167,8 @@ const AppLayout = () => {
         <Outlet />
       </main>
 
-      {!online && <div className="app-offline-banner" role="status"><WifiOff size={15} /><span>Internet uzildi. O'zgarishlar ulanish tiklangach yangilanadi.</span></div>}
+      {!online && <div className="app-offline-banner" role="status"><WifiOff size={15} /><span>{t("app.offline", "Internet uzildi. O'zgarishlar ulanish tiklangach yangilanadi.")}</span></div>}
+      {!isAIWorkspace && <ProactiveSuggestions />}
       <AIChatDrawer />
     </div>
   );

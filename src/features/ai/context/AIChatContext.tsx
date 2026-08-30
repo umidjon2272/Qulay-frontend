@@ -21,7 +21,7 @@ import { getAIReply } from "../../../services/aiService";
 import { addMessage as addConversationMessage, createConversation, deleteConversation as removeConversation, listConversations, listMessages, updateConversation } from "../../../services/api/conversationApi";
 import type { Conversation } from "../../../services/api/conversationApi";
 import { usePlatform } from "../../../context/PlatformContext";
-import { useI18n, type AppLocale } from "../../../i18n/useI18n";
+import { getLocale, useI18n, type AppLocale } from "../../../i18n/useI18n";
 import {
   AIChatContext,
   type ChatMessage,
@@ -29,7 +29,7 @@ import {
 } from "./AIChatContextValue";
 
 const formatTime = () =>
-  new Date().toLocaleTimeString("uz-UZ", {
+  new Date().toLocaleTimeString(getLocale() === "ru" ? "ru-RU" : "uz-UZ", {
     hour: "2-digit",
     minute: "2-digit",
   });

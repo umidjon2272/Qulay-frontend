@@ -1,5 +1,7 @@
 import { clearAuth, getTokens, isAccessTokenExpiringSoon, updateTokens, type AuthTokens } from "./tokenStorage";
 import type { AuthResponse } from "./types";
+import { getLocale } from "../../i18n/useI18n";
+import { localizedErrorMessage } from "../../i18n/errorMessages";
 
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -8,15 +10,25 @@ const AUTH_REQUEST_TIMEOUT_MS = 20_000;
 export class ApiError extends Error {
   status: number;
   details: unknown;
+  code?: string;
 
-  constructor(status: number, message: string, details?: unknown) {
+  constructor(status: number, message: string, details?: unknown, code?: string) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.details = details;
+    this.code = code;
   }
 }
 
+const errorCodeOf = (details: unknown): string | undefined => {
+  if (typeof details !== "object" || details === null || !("code" in details)) return undefined;
+  const code = (details as { code?: unknown }).code;
+  return typeof code === "string" ? code : undefined;
+};
+
+// Only used for the Uzbek path (the default locale) — a Russian-locale reader must
+// never see this raw backend text, since it's English/Uzbee and not translated here.
 const safeValidationMessage = (details: unknown): string | null => {
   if (typeof details !== "object" || details === null || !("message" in details)) return null;
   const message = (details as { message?: unknown }).message;
@@ -28,14 +40,29 @@ const safeValidationMessage = (details: unknown): string | null => {
   return null;
 };
 
+const STATUS_FALLBACKS: Record<number, { uz: string; ru: string }> = {
+  400: { uz: "Kiritilgan ma'lumotlarni tekshiring.", ru: "Проверьте введённые данные." },
+  401: { uz: "Email yoki parol noto'g'ri.", ru: "Неверный email или пароль." },
+  403: { uz: "Akkauntingiz bloklangan yoki bu amal uchun ruxsatingiz yo'q.", ru: "Ваш аккаунт заблокирован или у вас нет прав на это действие." },
+  404: { uz: "So'ralgan ma'lumot topilmadi.", ru: "Запрошенные данные не найдены." },
+  409: { uz: "Bu email bilan akkaunt mavjud.", ru: "Аккаунт с таким email уже существует." },
+};
+
 export const getApiErrorMessage = (error: unknown, fallback = "Server bilan bog'lanib bo'lmadi."): string => {
   if (!(error instanceof ApiError)) return fallback;
-  if (error.status === 400) return safeValidationMessage(error.details) ?? "Kiritilgan ma'lumotlarni tekshiring.";
-  if (error.status === 401) return "Email yoki parol noto'g'ri.";
-  if (error.status === 403) return "Akkauntingiz bloklangan yoki bu amal uchun ruxsatingiz yo'q.";
-  if (error.status === 404) return "So'ralgan ma'lumot topilmadi.";
-  if (error.status === 409) return "Bu email bilan akkaunt mavjud.";
-  if (error.status >= 500) return "Serverda vaqtinchalik xatolik yuz berdi.";
+  const locale = getLocale();
+
+  const codeMessage = localizedErrorMessage(error.code, locale);
+  if (codeMessage) return codeMessage;
+
+  // Uzbek keeps today's richer behavior (surfacing the raw validation message);
+  // Russian never falls through to untranslated backend text.
+  if (locale === "uz" && error.status === 400) return safeValidationMessage(error.details) ?? STATUS_FALLBACKS[400].uz;
+
+  const statusFallback = STATUS_FALLBACKS[error.status];
+  if (statusFallback) return statusFallback[locale];
+
+  if (error.status >= 500) return locale === "ru" ? "На сервере произошла временная ошибка." : "Serverda vaqtinchalik xatolik yuz berdi.";
   return fallback;
 };
 
@@ -73,7 +100,7 @@ const rawRequest = async <T>(path: string, options: RequestInit = {}, token?: st
       const message = typeof body === "object" && body !== null && "message" in body
         ? String((body as { message: unknown }).message)
         : "API request failed";
-      throw new ApiError(response.status, message, body);
+      throw new ApiError(response.status, message, body, errorCodeOf(body));
     }
     return body as T;
   } catch (error) {

@@ -1,4 +1,5 @@
 import { Mic } from "lucide-react";
+import { useI18n } from "../../../../i18n/useI18n";
 
 import "./VoiceInput.scss";
 
@@ -7,6 +8,7 @@ type VoiceInputProps = {
 };
 
 const VoiceInput = ({ interimText }: VoiceInputProps) => {
+  const { t } = useI18n();
   return (
     <div className="voice-input">
       <div className="voice-input__mic">
@@ -18,9 +20,9 @@ const VoiceInput = ({ interimText }: VoiceInputProps) => {
       </div>
 
       <div className="voice-input__text">
-        <strong>Tinglayapman...</strong>
+        <strong>{t("voice.listening", "Tinglayapman...")}</strong>
 
-        <span>{interimText || "Gapiring, matn avtomatik yoziladi"}</span>
+        <span>{interimText || t("voice.speakHint", "Gapiring, matn avtomatik yoziladi")}</span>
       </div>
     </div>
   );

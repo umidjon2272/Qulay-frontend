@@ -286,7 +286,6 @@
   #root .ai-page__workspace { display: block; height: 100%; }
   #root .ai-page__rail { display: none; }
   #root .ai-page__main { border: 0; border-radius: 0; background: transparent; }
-  #root .ai-page__mobile-bar { top: max(8px, env(safe-area-inset-top)); right: 12px; left: 12px; }
 }
 
 @media (max-width: 380px) {

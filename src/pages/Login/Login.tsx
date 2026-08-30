@@ -7,9 +7,11 @@ import { getSafeReturnPath } from "../../app/router/routeUtils";
 import { signIn } from "../../services/authService";
 import { getApiErrorMessage } from "../../services/api";
 import { getSettings } from "../../services/settingsService";
+import { useI18n } from "../../i18n/useI18n";
 import "./Login.scss";
 
 const Login = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const returnPath = getSafeReturnPath(location.state);
@@ -39,11 +41,11 @@ const Login = () => {
     setSuccess("");
     const normalizedEmail = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
-      setError("To'g'ri email manzilini kiriting.");
+      setError(t("auth.invalidEmail", "To'g'ri email manzilini kiriting."));
       return;
     }
     if (password.length < 8) {
-      setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak.");
+      setError(t("auth.passwordTooShort", "Parol kamida 8 ta belgidan iborat bo'lishi kerak."));
       return;
     }
 
@@ -62,7 +64,7 @@ const Login = () => {
   };
 
   const signInWithGoogle = () => {
-    setError("Google OAuth hali ulanmagan.");
+    setError(t("auth.googleNotConnected", "Google OAuth hali ulanmagan."));
   };
 
   return (
@@ -70,31 +72,31 @@ const Login = () => {
       <div className="login__left">
         <div className="login__brand"><div className="login__logo">✦</div><span>QULAY AI</span></div>
         <div className="login__content">
-          <span className="login__badge">AI Business Assistant</span>
-          <h1>Ishingizni<br /><span>AI'ga topshiring.</span></h1>
-          <p>Kunlik vazifalar, uchrashuvlar, hujjatlar va biznes ishlaringizni aqlli yordamchi bilan boshqaring.</p>
-          <div className="login__assistant"><div className="login__assistant-icon">✦</div><div><span>QULAY AI</span><strong>Bugun sizga yordam berishga tayyor.</strong></div></div>
+          <span className="login__badge">{t("auth.badge", "AI Business Assistant")}</span>
+          <h1>{t("auth.heroLine1", "Ishingizni")}<br /><span>{t("auth.heroLine2", "AI'ga topshiring.")}</span></h1>
+          <p>{t("auth.heroSubtitle", "Kunlik vazifalar, uchrashuvlar, hujjatlar va biznes ishlaringizni aqlli yordamchi bilan boshqaring.")}</p>
+          <div className="login__assistant"><div className="login__assistant-icon">✦</div><div><span>QULAY AI</span><strong>{t("auth.assistantReady", "Bugun sizga yordam berishga tayyor.")}</strong></div></div>
         </div>
         <div className="login__footer">© 2026 QULAY AI</div>
       </div>
 
       <div className="login__right">
         <div className="login__form-wrapper">
-          <div className="login__heading"><h2>Xush kelibsiz 👋</h2><p>Hisobingizga kirib, ishlaringizni davom ettiring.</p></div>
+          <div className="login__heading"><h2>{t("auth.welcomeBack", "Xush kelibsiz 👋")}</h2><p>{t("auth.loginSubtitle", "Hisobingizga kirib, ishlaringizni davom ettiring.")}</p></div>
           <form className="login__form" onSubmit={submit}>
-            <div className="login__field"><label htmlFor="login-email">Email</label><input id="login-email" type="email" placeholder="example@gmail.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
+            <div className="login__field"><label htmlFor="login-email">{t("auth.email", "Email")}</label><input id="login-email" type="email" placeholder="example@gmail.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
             <div className="login__field">
-              <div className="login__label-row"><label htmlFor="login-password">Parol</label><button type="button" onClick={() => navigate("/forgot-password")}>Parolni unutdingizmi?</button></div>
-              <div className="auth-password"><input id="login-password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div>
+              <div className="login__label-row"><label htmlFor="login-password">{t("auth.password", "Parol")}</label><button type="button" onClick={() => navigate("/forgot-password")}>{t("auth.forgotPassword", "Parolni unutdingizmi?")}</button></div>
+              <div className="auth-password"><input id="login-password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? t("auth.hidePassword", "Parolni yashirish") : t("auth.showPassword", "Parolni ko'rsatish")}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div>
             </div>
-            <label className="login__remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>Meni eslab qol</span></label>
+            <label className="login__remember"><input type="checkbox" checked={remember} onChange={(event) => setRemember(event.target.checked)} /><span>{t("auth.rememberMe", "Meni eslab qol")}</span></label>
             {error && <p className="auth-message auth-message--error">{error}</p>}
             {success && <p className="auth-message auth-message--success">{success}</p>}
-            <button type="submit" className="login__submit" disabled={loading}>{loading ? "Tekshirilmoqda..." : "Kirish"}</button>
+            <button type="submit" className="login__submit" disabled={loading}>{loading ? t("auth.checking", "Tekshirilmoqda...") : t("auth.login", "Kirish")}</button>
           </form>
-          <div className="login__divider"><span>yoki</span></div>
-          <button type="button" className="login__google" onClick={signInWithGoogle}><span>G</span>Google bilan kirish</button>
-          <p className="login__register">Hisobingiz yo'qmi?<button type="button" onClick={() => navigate("/register")}>Ro'yxatdan o'tish</button></p>
+          <div className="login__divider"><span>{t("auth.or", "yoki")}</span></div>
+          <button type="button" className="login__google" onClick={signInWithGoogle}><span>G</span>{t("auth.googleLogin", "Google bilan kirish")}</button>
+          <p className="login__register">{t("auth.noAccount", "Hisobingiz yo'qmi?")}<button type="button" onClick={() => navigate("/register")}>{t("auth.register", "Ro'yxatdan o'tish")}</button></p>
         </div>
       </div>
     </main>

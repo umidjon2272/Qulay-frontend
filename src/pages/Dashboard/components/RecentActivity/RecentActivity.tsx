@@ -6,11 +6,13 @@ import { getNotes, loadNotes } from "../../../../services/noteService";
 import { getReminders, loadReminders } from "../../../../services/reminderService";
 import { getTasks, loadTasks } from "../../../../services/taskService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
+import { useI18n } from "../../../../i18n/useI18n";
 import "./RecentActivity.scss";
 
 type Activity = { id: string; title: string; meta: string; icon: typeof ListTodo };
 
 const RecentActivity = () => {
+  const { t } = useI18n();
   const [version, setVersion] = useState(0);
   useEffect(() => subscribeToWorkspaceData(["tasks", "reminders", "calendarEvents", "notes"], () => setVersion((value) => value + 1)), []);
   useEffect(() => { void Promise.all([loadTasks(), loadReminders(), loadCalendarEvents(), loadNotes()]).catch(() => undefined); }, []);
@@ -26,8 +28,8 @@ const RecentActivity = () => {
 
   return (
     <section className="recent-activity">
-      <div className="recent-activity__header"><div><h2>So'nggi faoliyat</h2><p>Workspace ma'lumotlaridagi oxirgi yozuvlar</p></div></div>
-      {activities.length ? <div className="recent-activity__list">{activities.map((item) => { const Icon = item.icon; return <div className="recent-activity__item" key={item.id}><span className="recent-activity__icon"><Icon size={15} /></span><div><strong>{item.title}</strong><small>{item.meta}</small></div></div>; })}</div> : <div className="recent-activity__empty">Hali faoliyat mavjud emas.</div>}
+      <div className="recent-activity__header"><div><h2>{t("dashboard.activity.title", "So'nggi faoliyat")}</h2><p>{t("dashboard.activity.description", "Workspace ma'lumotlaridagi oxirgi yozuvlar")}</p></div></div>
+      {activities.length ? <div className="recent-activity__list">{activities.map((item) => { const Icon = item.icon; return <div className="recent-activity__item" key={item.id}><span className="recent-activity__icon"><Icon size={15} /></span><div><strong>{item.title}</strong><small>{item.meta}</small></div></div>; })}</div> : <div className="recent-activity__empty">{t("dashboard.activity.empty", "Hali faoliyat mavjud emas.")}</div>}
     </section>
   );
 };

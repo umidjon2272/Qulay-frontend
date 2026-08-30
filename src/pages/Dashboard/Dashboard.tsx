@@ -1,4 +1,5 @@
 import Hero from "./components/Hero/Hero";
+import BriefingCard from "./components/BriefingCard/BriefingCard";
 import Stats from "./components/Stats/Stats";
 import QuickActions from "./components/QuickActions/QuickActions";
 import RecentFiles from "./components/RecentFiles/RecentFiles";
@@ -14,6 +15,7 @@ const Dashboard = () => {
     <main className="dashboard__main">
       <MobileDashboardHome />
       <Hero />
+      <BriefingCard />
 
       <Stats />
 

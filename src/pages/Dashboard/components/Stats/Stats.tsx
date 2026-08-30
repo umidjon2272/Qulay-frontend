@@ -7,10 +7,12 @@ import { getCalendarEvents, loadCalendarEvents } from "../../../../services/meet
 import { getReminders, loadReminders } from "../../../../services/reminderService";
 import { getTasks, loadTasks } from "../../../../services/taskService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
+import { useI18n } from "../../../../i18n/useI18n";
 import "./Stats.scss";
 
 const Stats = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [tasks, setTasks] = useState(getTasks);
   const [reminders, setReminders] = useState(getReminders);
   const [events, setEvents] = useState(getCalendarEvents);
@@ -42,12 +44,12 @@ const Stats = () => {
     <section className="stats">
       <div className="stats__header">
         <div className="stats__heading">
-          <h2>Bugungi umumiy ko‘rinish</h2>
-          <span>Bugungi ishlaringiz va natijalaringiz</span>
+          <h2>{t("dashboard.stats.title", "Bugungi umumiy ko‘rinish")}</h2>
+          <span>{t("dashboard.stats.description", "Bugungi ishlaringiz va natijalaringiz")}</span>
         </div>
         <button type="button" className="stats__view" onClick={() => navigate("/tasks")}>
-          <span className="stats__view-desktop">Batafsil <ArrowUpRight size={14} /></span>
-          <span className="stats__view-mobile">Bugun <ChevronDown size={15} /></span>
+          <span className="stats__view-desktop">{t("common.details", "Batafsil")} <ArrowUpRight size={14} /></span>
+          <span className="stats__view-mobile">{t("common.today", "Bugun")} <ChevronDown size={15} /></span>
         </button>
       </div>
       <div className="stats__grid">

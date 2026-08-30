@@ -7,9 +7,11 @@ import { getSafeReturnPath } from "../../app/router/routeUtils";
 import { signUp } from "../../services/authService";
 import { getApiErrorMessage } from "../../services/api";
 import { getSettings } from "../../services/settingsService";
+import { useI18n } from "../../i18n/useI18n";
 import "./Register.scss";
 
 const Register = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const returnPath = getSafeReturnPath(location.state);
@@ -39,11 +41,11 @@ const Register = () => {
     if (loading) return;
     setError("");
     setSuccess("");
-    if (firstName.trim().length < 1 || lastName.trim().length < 1) { setError("Ism va familiyangizni kiriting."); return; }
+    if (firstName.trim().length < 1 || lastName.trim().length < 1) { setError(t("auth.fillNames", "Ism va familiyangizni kiriting.")); return; }
     const normalizedEmail = email.trim().toLowerCase();
-    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) { setError("To'g'ri email manzilini kiriting."); return; }
-    if (password.length < 8) { setError("Parol kamida 8 ta belgidan iborat bo'lishi kerak."); return; }
-    if (password !== confirm) { setError("Parollar mos kelmadi."); return; }
+    if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) { setError(t("auth.invalidEmail", "To'g'ri email manzilini kiriting.")); return; }
+    if (password.length < 8) { setError(t("auth.passwordTooShort", "Parol kamida 8 ta belgidan iborat bo'lishi kerak.")); return; }
+    if (password !== confirm) { setError(t("auth.passwordsMismatch", "Parollar mos kelmadi.")); return; }
 
     setLoading(true);
     try {
@@ -56,7 +58,7 @@ const Register = () => {
   };
 
   const signUpWithGoogle = () => {
-    setError("Google OAuth hali ulanmagan.");
+    setError(t("auth.googleNotConnected", "Google OAuth hali ulanmagan."));
   };
 
   return (
@@ -64,29 +66,33 @@ const Register = () => {
       <div className="register__left">
         <div className="register__brand"><div className="register__logo">✦</div><span>QULAY AI</span></div>
         <div className="register__content">
-          <span className="register__badge">AI Business Assistant</span>
-          <h1>Biznesingizni<br /><span>AI bilan boshqaring.</span></h1>
-          <p>Vazifalar, uchrashuvlar, hujjatlar va kundalik ishlaringizni bitta aqlli yordamchi orqali boshqaring.</p>
-          <div className="register__features"><div><span>✓</span>AI bilan ovozli muloqot</div><div><span>✓</span>Vazifa va uchrashuvlarni boshqarish</div><div><span>✓</span>Telegram, Gmail va Calendar integratsiyasi</div></div>
+          <span className="register__badge">{t("auth.badge", "AI Business Assistant")}</span>
+          <h1>{t("auth.registerHeroLine1", "Biznesingizni")}<br /><span>{t("auth.registerHeroLine2", "AI bilan boshqaring.")}</span></h1>
+          <p>{t("auth.registerHeroSubtitle", "Vazifalar, uchrashuvlar, hujjatlar va kundalik ishlaringizni bitta aqlli yordamchi orqali boshqaring.")}</p>
+          <div className="register__features">
+            <div><span>✓</span>{t("auth.featureVoice", "AI bilan ovozli muloqot")}</div>
+            <div><span>✓</span>{t("auth.featureTasks", "Vazifa va uchrashuvlarni boshqarish")}</div>
+            <div><span>✓</span>{t("auth.featureIntegrations", "Telegram, Gmail va Calendar integratsiyasi")}</div>
+          </div>
         </div>
         <div className="register__footer">© 2026 QULAY AI</div>
       </div>
       <div className="register__right">
         <div className="register__form-wrapper">
-          <div className="register__heading"><h2>Hisob yaratish 👋</h2><p>QULAY AI'dan foydalanishni boshlang.</p></div>
+          <div className="register__heading"><h2>{t("auth.createAccount", "Hisob yaratish 👋")}</h2><p>{t("auth.registerSubtitle", "QULAY AI'dan foydalanishni boshlang.")}</p></div>
           <form className="register__form" onSubmit={submit}>
-            <div className="register__field"><label htmlFor="register-first-name">Ism</label><input id="register-first-name" type="text" placeholder="Ismingizni kiriting" value={firstName} onChange={(event) => setFirstName(event.target.value)} required /></div>
-            <div className="register__field"><label htmlFor="register-last-name">Familiya</label><input id="register-last-name" type="text" placeholder="Familiyangizni kiriting" value={lastName} onChange={(event) => setLastName(event.target.value)} required /></div>
-            <div className="register__field"><label htmlFor="register-email">Email</label><input id="register-email" type="email" placeholder="example@gmail.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
-            <div className="register__field"><label htmlFor="register-password">Parol</label><div className="auth-password"><input id="register-password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></div>
-            <div className="register__field"><label htmlFor="register-confirm">Parolni tasdiqlang</label><div className="auth-password"><input id="register-confirm" type={showConfirm ? "text" : "password"} placeholder="••••••••" value={confirm} onChange={(event) => setConfirm(event.target.value)} minLength={6} required /><button type="button" onClick={() => setShowConfirm((value) => !value)} aria-label={showConfirm ? "Tasdiqlash parolini yashirish" : "Tasdiqlash parolini ko'rsatish"}>{showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></div>
+            <div className="register__field"><label htmlFor="register-first-name">{t("auth.firstName", "Ism")}</label><input id="register-first-name" type="text" placeholder={t("auth.firstNamePlaceholder", "Ismingizni kiriting")} value={firstName} onChange={(event) => setFirstName(event.target.value)} required /></div>
+            <div className="register__field"><label htmlFor="register-last-name">{t("auth.lastName", "Familiya")}</label><input id="register-last-name" type="text" placeholder={t("auth.lastNamePlaceholder", "Familiyangizni kiriting")} value={lastName} onChange={(event) => setLastName(event.target.value)} required /></div>
+            <div className="register__field"><label htmlFor="register-email">{t("auth.email", "Email")}</label><input id="register-email" type="email" placeholder="example@gmail.com" value={email} onChange={(event) => setEmail(event.target.value)} required /></div>
+            <div className="register__field"><label htmlFor="register-password">{t("auth.password", "Parol")}</label><div className="auth-password"><input id="register-password" type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(event) => setPassword(event.target.value)} minLength={6} required /><button type="button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? t("auth.hidePassword", "Parolni yashirish") : t("auth.showPassword", "Parolni ko'rsatish")}>{showPassword ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></div>
+            <div className="register__field"><label htmlFor="register-confirm">{t("auth.confirmPassword", "Parolni tasdiqlang")}</label><div className="auth-password"><input id="register-confirm" type={showConfirm ? "text" : "password"} placeholder="••••••••" value={confirm} onChange={(event) => setConfirm(event.target.value)} minLength={6} required /><button type="button" onClick={() => setShowConfirm((value) => !value)} aria-label={showConfirm ? t("auth.hideConfirmPassword", "Tasdiqlash parolini yashirish") : t("auth.showConfirmPassword", "Tasdiqlash parolini ko'rsatish")}>{showConfirm ? <EyeOff size={15} /> : <Eye size={15} />}</button></div></div>
             {error && <p className="auth-message auth-message--error">{error}</p>}
             {success && <p className="auth-message auth-message--success">{success}</p>}
-            <button type="submit" className="register__submit" disabled={loading}>{loading ? "Yaratilmoqda..." : "Hisob yaratish"}</button>
+            <button type="submit" className="register__submit" disabled={loading}>{loading ? t("auth.creating", "Yaratilmoqda...") : t("auth.createAccountButton", "Hisob yaratish")}</button>
           </form>
-          <div className="register__divider"><span>yoki</span></div>
-          <button type="button" className="register__google" onClick={signUpWithGoogle}><span>G</span>Google bilan ro'yxatdan o'tish</button>
-          <p className="register__login">Allaqachon hisobingiz bormi?<button type="button" onClick={() => navigate("/login")}>Kirish</button></p>
+          <div className="register__divider"><span>{t("auth.or", "yoki")}</span></div>
+          <button type="button" className="register__google" onClick={signUpWithGoogle}><span>G</span>{t("auth.googleRegister", "Google bilan ro'yxatdan o'tish")}</button>
+          <p className="register__login">{t("auth.haveAccount", "Allaqachon hisobingiz bormi?")}<button type="button" onClick={() => navigate("/login")}>{t("auth.login", "Kirish")}</button></p>
         </div>
       </div>
     </main>

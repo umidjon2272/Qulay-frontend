@@ -1,4 +1,6 @@
 .message-list {
+  position: relative;
+
   display: flex;
   flex-direction: column;
 
@@ -14,6 +16,34 @@
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+.message-list__scroll-bottom {
+  position: sticky;
+  align-self: flex-end;
+  bottom: 10px;
+  right: 10px;
+  flex: 0 0 auto;
+
+  display: grid;
+  place-items: center;
+
+  width: 36px;
+  height: 36px;
+
+  margin-top: -46px;
+  margin-right: 6px;
+
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+
+  background: var(--surface-solid);
+  color: #7655df;
+
+  box-shadow: 0 12px 26px rgba(60, 45, 90, 0.16);
+
+  cursor: pointer;
+  z-index: 3;
 }
 
 .message-list__inner {
@@ -86,6 +116,12 @@
   .message-list__typing {
     padding: 13px 15px;
   }
+}
+
+html[data-theme="dark"] body #root .message-list__scroll-bottom {
+  border-color: rgba(160,177,220,.2);
+  background: rgba(13,31,53,.92);
+  color: #d0c8ff;
 }
 
 html[data-theme="dark"] body #root .message-list__typing {

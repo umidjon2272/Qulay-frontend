@@ -89,8 +89,8 @@ const Sidebar = () => {
         })}
       </nav>
 
-      <button type="button" className="sidebar__user" onClick={() => setProfileMenuOpen((value) => !value)} aria-expanded={profileMenuOpen} aria-label="Profil menyusini ochish">
-        <div className="sidebar__avatar">{avatar ? <img src={avatar} alt={`${name} avatari`} /> : name.charAt(0).toUpperCase()}</div>
+      <button type="button" className="sidebar__user" onClick={() => setProfileMenuOpen((value) => !value)} aria-expanded={profileMenuOpen} aria-label={t("nav.openProfileMenu", "Profil menyusini ochish")}>
+        <div className="sidebar__avatar">{avatar ? <img src={avatar} alt={t("nav.userAvatar", "{{name}} avatari", { name })} /> : name.charAt(0).toUpperCase()}</div>
         <div className="sidebar__user-info"><strong>{name}</strong><span>{t("nav.profile", "Profil")}</span></div>
         <ChevronRight size={15} className="sidebar__user-arrow" />
       </button>
@@ -112,7 +112,7 @@ const Sidebar = () => {
         </div>
       )}
 
-      <nav className="sidebar__mobile-dock" aria-label="Mobil navigatsiya">
+      <nav className="sidebar__mobile-dock" aria-label={t("nav.mobile", "Mobil navigatsiya")}>
         {mobileItems.map((item) => {
           const Icon = item.icon;
           if (item.id === "ai") return <button key={item.id} type="button" className={`sidebar__mobile-item sidebar__mobile-item--ai ${location.pathname === item.path ? "is-active" : ""}`} onClick={handleMobileAI} aria-label={item.label}><Icon size={20} /><span>AI</span></button>;
@@ -121,10 +121,10 @@ const Sidebar = () => {
         })}
       </nav>
 
-      {moreOpen && <div className="mobile-more" role="dialog" aria-modal="true" aria-label="Ko'proq menyusi" onMouseDown={(event) => { if (event.target === event.currentTarget) closeMore(); }}>
+      {moreOpen && <div className="mobile-more" role="dialog" aria-modal="true" aria-label={t("nav.moreMenu", "Ko'proq menyusi")} onMouseDown={(event) => { if (event.target === event.currentTarget) closeMore(); }}>
         <section className="mobile-more__sheet">
-          <header><div><span>QULAY AI</span><h2>Ko'proq</h2></div><button type="button" onClick={closeMore} aria-label="Menyuni yopish"><X size={20} /></button></header>
-          <nav aria-label="Qo'shimcha bo'limlar">
+          <header><div><span>QULAY AI</span><h2>{t("nav.more", "Ko'proq")}</h2></div><button type="button" onClick={closeMore} aria-label={t("nav.closeMenu", "Menyuni yopish")}><X size={20} /></button></header>
+          <nav aria-label={t("nav.additionalSections", "Qo'shimcha bo'limlar")}>
             {moreItems.map((item) => { const Icon = item.icon; const active = isMoreItemActive(item.path); return <NavLink key={item.id} to={item.path} onClick={() => setMoreOpen(false)} className={active ? "is-active" : ""}><span><Icon size={19} /></span><strong>{t(item.translationKey, item.label)}</strong><ChevronRight className="mobile-more__chevron" size={16} /></NavLink>; })}
           </nav>
         </section>
@@ -132,9 +132,9 @@ const Sidebar = () => {
 
       {confirmLogout && (
         <ConfirmDialog
-          title="Akkauntdan chiqmoqchimisiz?"
-          description="Sessiyangiz va qurilmadagi tokenlar tozalanadi."
-          confirmLabel="Chiqish"
+          title={t("nav.logoutConfirmTitle", "Akkauntdan chiqmoqchimisiz?")}
+          description={t("nav.logoutConfirmDescription", "Sessiyangiz va qurilmadagi tokenlar tozalanadi.")}
+          confirmLabel={t("nav.logout", "Chiqish")}
           onCancel={() => setConfirmLogout(false)}
           onConfirm={async () => { setConfirmLogout(false); await logout(); navigate("/login", { replace: true }); }}
         />

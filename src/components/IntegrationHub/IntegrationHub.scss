@@ -143,6 +143,24 @@
 
     font-size: var(--font-xs);
     font-weight: 700;
+
+    &--temporary_issue {
+      border-color: rgba(230, 190, 120, 0.65);
+      background: rgba(255, 244, 224, 0.72);
+      color: #b3730f;
+    }
+
+    &--reconnect_required {
+      border-color: rgba(230, 150, 130, 0.65);
+      background: rgba(255, 232, 228, 0.72);
+      color: #c34255;
+    }
+
+    &--disconnected {
+      border-color: rgba(200, 200, 210, 0.6);
+      background: rgba(240, 240, 244, 0.65);
+      color: #6c6874;
+    }
   }
 
   &__info {
@@ -610,6 +628,33 @@
     color: #c94f67;
     font-size: var(--font-xs);
     line-height: var(--line-height-body);
+  }
+
+  &__health {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: -6px 0 14px;
+
+    small {
+      color: #8d8798;
+      font-size: var(--font-xs);
+    }
+  }
+
+  &__health-badge {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(225, 248, 234, 0.62);
+    color: #38a467;
+    font-size: var(--font-xs);
+    font-weight: 700;
+
+    &--temporary_issue { background: rgba(255, 244, 224, 0.72); color: #b3730f; }
+    &--reconnect_required { background: rgba(255, 232, 228, 0.72); color: #c34255; }
+    &--disconnected { background: rgba(240, 240, 244, 0.65); color: #6c6874; }
   }
 }
 

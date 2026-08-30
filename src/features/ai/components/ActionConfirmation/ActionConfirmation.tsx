@@ -1,6 +1,7 @@
 import { Bell, CalendarDays, Check, Flag, ListTodo, NotebookPen, Send, Sparkles, X } from "lucide-react";
 
 import type { AIAction } from "../../actions/actionTypes";
+import { getLocale, translate } from "../../../../i18n/useI18n";
 
 import "./ActionConfirmation.scss";
 
@@ -90,6 +91,7 @@ const getActionIcon = (action: AIAction) => {
 };
 
 const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConfirmationProps) => {
+  const t = (key: string, fallback: string) => translate(key, fallback, getLocale());
   const details = getActionDetails(action);
   const Icon = getActionIcon(action);
   const resolved = status === "success" || status === "cancelled";
@@ -127,10 +129,10 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
           className="action-confirmation__dismiss"
           onClick={onDismiss}
           disabled={status === "loading"}
-          aria-label="Bekor qilish"
+          aria-label={t("common.cancel", "Bekor qilish")}
         >
           <X size={13} />
-          <span>Bekor qilish</span>
+          <span>{t("common.cancel", "Bekor qilish")}</span>
         </button>
       </div>}
     </div>

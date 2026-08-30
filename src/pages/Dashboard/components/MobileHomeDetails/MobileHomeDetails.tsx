@@ -8,6 +8,7 @@ import { getReminders, loadReminders } from "../../../../services/reminderServic
 import { getTasks, loadTasks, updateTask } from "../../../../services/taskService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
 import type { Task } from "../../../../types/workspace";
+import { useI18n } from "../../../../i18n/useI18n";
 import "./MobileHomeDetails.scss";
 
 const priorityLabel = (priority: Task["priority"]) => {
@@ -18,6 +19,7 @@ const priorityLabel = (priority: Task["priority"]) => {
 
 const MobileHomeDetails = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [tasks, setTasks] = useState(getTasks);
   const [events, setEvents] = useState(getCalendarEvents);
   const [reminders, setReminders] = useState(getReminders);
@@ -70,14 +72,14 @@ const MobileHomeDetails = () => {
       )}
 
       <div className="mobile-home-details__tasks-header">
-        <div><span className="mobile-home-details__eyebrow">BUGUN</span><h2>Bugungi vazifalar</h2></div>
-        <button type="button" onClick={() => navigate("/tasks")}>Barchasi</button>
+        <div><span className="mobile-home-details__eyebrow">{t("common.today", "Bugun")}</span><h2>{t("dashboard.todayTasks", "Bugungi vazifalar")}</h2></div>
+        <button type="button" onClick={() => navigate("/tasks")}>{t("common.all", "Barchasi")}</button>
       </div>
 
       <div className="mobile-home-details__tasks">
         {todayTasks.slice(0, 3).map((task) => (
           <article className={`mobile-task-row ${task.completed ? "is-completed" : ""}`} key={task.id}>
-            <button type="button" className="mobile-task-row__check" onClick={() => toggleTask(task)} aria-label={`${task.title} holatini o‘zgartirish`}>
+            <button type="button" className="mobile-task-row__check" onClick={() => toggleTask(task)} aria-label={t("tasks.changeStatus", "{{title}} holatini o‘zgartirish", { title: task.title })}>
               {task.completed && <Check size={14} />}
             </button>
             <button type="button" className="mobile-task-row__body" onClick={() => navigate("/tasks")}>
@@ -87,7 +89,7 @@ const MobileHomeDetails = () => {
             <span className="mobile-task-row__time"><Clock3 size={13} />{task.time}</span>
           </article>
         ))}
-        {!todayTasks.length && <div className="mobile-home-details__empty"><Sparkles size={18} />Bugun uchun vazifalar yo‘q.</div>}
+        {!todayTasks.length && <div className="mobile-home-details__empty"><Sparkles size={18} />{t("dashboard.noTasksToday", "Bugun uchun vazifalar yo‘q.")}</div>}
       </div>
     </section>
   );

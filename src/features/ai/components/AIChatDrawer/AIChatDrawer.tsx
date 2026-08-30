@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { useAIChat } from "../../hooks/useAIChat";
+import { useI18n } from "../../../../i18n/useI18n";
 
 import ChatHeader from "../ChatHeader/ChatHeader";
 import MessageList from "../MessageList/MessageList";
@@ -9,6 +10,7 @@ import ChatInput from "../ChatInput/ChatInput";
 import "./AIChatDrawer.scss";
 
 const AIChatDrawer = () => {
+  const { t } = useI18n();
   const { isOpen, close, messages, isTyping, sendMessage, executeAction, clearChat, speakingId, speak, stopSpeaking } =
     useAIChat();
 
@@ -51,7 +53,7 @@ const AIChatDrawer = () => {
         className={`ai-drawer ${isOpen ? "is-open" : ""}`}
         role="dialog"
         aria-modal="true"
-        aria-label="Qulay AI suhbat oynasi"
+        aria-label={t("ai.chat.dialog", "Qulay AI suhbat oynasi")}
         aria-hidden={!isOpen}
       >
         <ChatHeader onClose={close} onClear={clearChat} />

@@ -14,6 +14,7 @@ import {
 import { getSettings } from "../../../../services/settingsService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
 import { useToast } from "../../../../hooks/useToast";
+import { useI18n } from "../../../../i18n/useI18n";
 import type { AIAction } from "../../actions/actionTypes";
 import type { ChatMessage } from "../../context/AIChatContextValue";
 import { useAIChat } from "../../hooks/useAIChat";
@@ -30,23 +31,24 @@ type VoiceModeProps = {
 };
 
 type ActionStatus = "pending" | "loading" | "success" | "cancelled";
+type TFn = (key: string, fallback: string, params?: Record<string, string | number>) => string;
 
-const getActionDetails = (action: AIAction) => {
+const getActionDetails = (t: TFn, action: AIAction) => {
   switch (action.type) {
     case "createMeeting":
       return {
-        title: "Uchrashuv yaratish",
+        title: t("voiceMode.action.createMeeting", "Uchrashuv yaratish"),
         subject: action.payload.participant || action.payload.title,
         meta: `${action.payload.dateLabel} · ${action.payload.time}`,
       };
     case "createTask":
-      return { title: "Vazifa yaratish", subject: action.payload.title, meta: `${action.payload.dateLabel} · ${action.payload.time}` };
+      return { title: t("voiceMode.action.createTask", "Vazifa yaratish"), subject: action.payload.title, meta: `${action.payload.dateLabel} · ${action.payload.time}` };
     case "createReminder":
-      return { title: "Eslatma qo'shish", subject: action.payload.title, meta: `${action.payload.dateLabel} · ${action.payload.time}` };
+      return { title: t("voiceMode.action.createReminder", "Eslatma qo'shish"), subject: action.payload.title, meta: `${action.payload.dateLabel} · ${action.payload.time}` };
     case "createNote":
-      return { title: "Qayd yozish", subject: action.payload.title, meta: "Yangi qayd" };
+      return { title: t("voiceMode.action.createNote", "Qayd yozish"), subject: action.payload.title, meta: t("voiceMode.action.newNote", "Yangi qayd") };
     case "getTodayPlan":
-      return { title: "Bugungi rejani ko'rish", subject: "Bugungi reja", meta: "Tayyorlanmoqda" };
+      return { title: t("voiceMode.action.getTodayPlan", "Bugungi rejani ko'rish"), subject: t("briefing.title", "Bugungi reja"), meta: t("voiceMode.action.preparing", "Tayyorlanmoqda") };
   }
 };
 
@@ -67,6 +69,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     stopSpeaking,
   } = useAIChat();
   const { showToast } = useToast();
+  const { t } = useI18n();
   const [muted, setMuted] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
@@ -99,12 +102,12 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
 
     if (pendingAction && actionStatus === "pending" && isCancellation(normalized)) {
       setActionStatus("cancelled");
-      showToast("Amal bekor qilindi", "success");
+      showToast(t("voiceMode.actionCancelled", "Amal bekor qilindi"), "success");
       return;
     }
 
     sendMessage(transcript);
-  }, [actionStatus, executeAction, pendingAction, sendMessage, showToast]);
+  }, [actionStatus, executeAction, pendingAction, sendMessage, showToast, t]);
 
   const { isSupported, isListening, interimTranscript, start, stop, requestPermission } = useSpeechRecognition({
     onResult: handleResult,
@@ -173,18 +176,18 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
           : "idle";
 
   const stateText = voiceError
-    ? "Ovozli suhbatda xatolik yuz berdi"
+    ? t("voiceMode.state.error", "Ovozli suhbatda xatolik yuz berdi")
     : speakingId
-      ? "Javob beryapman..."
+      ? t("voiceMode.state.speaking", "Javob beryapman...")
       : isTyping
-        ? "O'ylayapman..."
+        ? t("voiceMode.state.thinking", "O'ylayapman...")
         : isListening
-          ? "Tinglayapman..."
+          ? t("voiceMode.state.listening", "Tinglayapman...")
           : muted
-            ? "Mikrofon o'chiq"
-            : "Gapirishni boshlashingiz mumkin";
+            ? t("voiceMode.state.muted", "Mikrofon o'chiq")
+            : t("voiceMode.state.idle", "Gapirishni boshlashingiz mumkin");
 
-  const actionDetails = pendingAction ? getActionDetails(pendingAction) : null;
+  const actionDetails = pendingAction ? getActionDetails(t, pendingAction) : null;
 
   const handleEnd = () => {
     stop();
@@ -193,7 +196,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   };
 
   const handleRetry = async () => {
-    if (!isSupported) { showToast("Bu brauzer ovozli kiritishni qo'llab-quvvatlamaydi.", "error"); return; }
+    if (!isSupported) { showToast(t("voiceMode.notSupported", "Bu brauzer ovozli kiritishni qo'llab-quvvatlamaydi."), "error"); return; }
     const permissionGranted = await requestPermission();
     if (!permissionGranted) return;
     setVoiceError("");
@@ -209,7 +212,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   };
 
   return (
-    <div className="voice-mode" role="dialog" aria-modal="true" aria-label="Qulay AI Voice Mode">
+    <div className="voice-mode" role="dialog" aria-modal="true" aria-label={t("voiceMode.dialogAria", "Qulay AI Voice Mode")}>
       <div className="voice-mode__backdrop" />
 
       <div className="voice-mode__shell">
@@ -218,11 +221,11 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
             <span className="voice-mode__brand-dot" />
             <div>
               <strong>Qulay AI</strong>
-              <span>Voice Mode · O'zbekcha</span>
+              <span>{t("voiceMode.subtitle", "Voice Mode · O'zbekcha")}</span>
             </div>
           </div>
 
-          <button type="button" className="voice-mode__close" onClick={handleEnd} aria-label="Voice Mode'ni yopish">
+          <button type="button" className="voice-mode__close" onClick={handleEnd} aria-label={t("voiceMode.closeAria", "Voice Mode'ni yopish")}>
             <X size={19} />
           </button>
         </header>
@@ -238,13 +241,13 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
           <div className="voice-mode__transcript" aria-live="polite">
             {transcriptMessages.length > 0 ? transcriptMessages.map((message) => (
               <div className={`voice-mode__line voice-mode__line--${message.role}`} key={message.id}>
-                <span>{message.role === "user" ? "Siz" : "Qulay AI"}</span>
+                <span>{message.role === "user" ? t("voiceMode.you", "Siz") : "Qulay AI"}</span>
                 <p>{message.text}</p>
               </div>
             )) : (
               <div className="voice-mode__line voice-mode__line--interim">
-                <span>Siz</span>
-                <p>{interimTranscript || "Ovozli suhbatga tayyorman."}</p>
+                <span>{t("voiceMode.you", "Siz")}</span>
+                <p>{interimTranscript || t("voiceMode.readyForVoiceChat", "Ovozli suhbatga tayyorman.")}</p>
               </div>
             )}
             {interimTranscript && <p className="voice-mode__interim">{interimTranscript}</p>}
@@ -261,10 +264,10 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
               <div className="voice-mode__confirmation-actions">
                 <button type="button" onClick={() => void handleActionConfirm()} disabled={actionStatus === "loading"}>
                   <Check size={14} />
-                  {actionStatus === "loading" ? "Saqlanmoqda" : "Tasdiqlash"}
+                  {actionStatus === "loading" ? t("voiceMode.saving", "Saqlanmoqda") : t("common.confirm", "Tasdiqlash")}
                 </button>
                 <button type="button" onClick={() => setActionStatus("cancelled")} disabled={actionStatus === "loading"}>
-                  Bekor qilish
+                  {t("common.cancel", "Bekor qilish")}
                 </button>
               </div>
             </section>
@@ -273,7 +276,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
           {voiceError && (
             <div className="voice-mode__error">
               <span>{voiceError}</span>
-              <button type="button" onClick={() => void handleRetry()}><RotateCcw size={14} /> Mikrofonni tekshirish</button>
+              <button type="button" onClick={() => void handleRetry()}><RotateCcw size={14} /> {t("voiceMode.checkMic", "Mikrofonni tekshirish")}</button>
             </div>
           )}
         </main>
@@ -291,30 +294,30 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
                 stop();
               }
             }}
-            aria-label={muted ? "Mikrofonni yoqish" : "Mikrofonni o'chirish"}
+            aria-label={muted ? t("voiceMode.turnMicOn", "Mikrofonni yoqish") : t("voiceMode.turnMicOff", "Mikrofonni o'chirish")}
           >
             {muted ? <MicOff size={20} /> : <Mic size={20} />}
-            <span>{muted ? "Yoqish" : "Mute"}</span>
+            <span>{muted ? t("voiceMode.turnOn", "Yoqish") : t("voiceMode.mute", "Mute")}</span>
           </button>
 
-          <button type="button" className="voice-mode__end" onClick={handleEnd} aria-label="Voice session'ni tugatish">
+          <button type="button" className="voice-mode__end" onClick={handleEnd} aria-label={t("voiceMode.endSessionAria", "Voice session'ni tugatish")}>
             <PhoneOff size={22} />
-            <span>Tugatish</span>
+            <span>{t("voiceMode.end", "Tugatish")}</span>
           </button>
 
-          <button type="button" className="voice-mode__control" onClick={onKeyboard} aria-label="Klaviaturaga o'tish">
+          <button type="button" className="voice-mode__control" onClick={onKeyboard} aria-label={t("voiceMode.switchToKeyboardAria", "Klaviaturaga o'tish")}>
             <Keyboard size={20} />
-            <span>Klaviatura</span>
+            <span>{t("voiceMode.keyboard", "Klaviatura")}</span>
           </button>
 
           <button
             type="button"
             className="voice-mode__sound"
             onClick={speakingId ? stopSpeaking : undefined}
-            aria-label={speakingId ? "Ovozli javobni to'xtatish" : "Ovoz yoqilgan"}
+            aria-label={speakingId ? t("voiceMode.stopSpeakingAria", "Ovozli javobni to'xtatish") : t("voiceMode.soundOnAria", "Ovoz yoqilgan")}
           >
             {speakingId ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            <span>{voiceReply ? "Ovoz yoqilgan" : "Faqat matn"}</span>
+            <span>{voiceReply ? t("voiceMode.soundOn", "Ovoz yoqilgan") : t("voiceMode.textOnly", "Faqat matn")}</span>
           </button>
         </footer>
       </div>

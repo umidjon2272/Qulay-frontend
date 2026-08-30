@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Sparkles, User, Volume2, VolumeX } from "lucide-react";
+import { Check, Copy, Sparkles, User, Volume2, VolumeX } from "lucide-react";
 
 import type { ChatMessage } from "../../context/AIChatContextValue";
 import type { AIAction } from "../../actions/actionTypes";
 import { useAIChat } from "../../hooks/useAIChat";
+import { useI18n } from "../../../../i18n/useI18n";
 
 import ActionConfirmation from "../ActionConfirmation/ActionConfirmation";
 import TelegramSelectionCard from "../TelegramSelection/TelegramSelection";
@@ -23,12 +24,26 @@ type ActionStatus = "pending" | "loading" | "success" | "cancelled";
 const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: MessageBubbleProps) => {
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
   const [actionFeedback, setActionFeedback] = useState("");
+  const [copied, setCopied] = useState(false);
   const { resolveTelegramSelection } = useAIChat();
+  const { t } = useI18n();
 
   const isUser = message.role === "user";
   const action = message.action;
   const selection = message.telegramSelection;
   const canSpeak = typeof window !== "undefined" && Boolean(window.speechSynthesis);
+  const canCopy = typeof navigator !== "undefined" && Boolean(navigator.clipboard);
+
+  const copyText = async () => {
+    if (!canCopy) return;
+    try {
+      await navigator.clipboard.writeText(message.text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard permission can be denied silently; the button just stays idle.
+    }
+  };
 
   return (
     <div className={`message-bubble ${isUser ? "message-bubble--user" : "message-bubble--ai"}`}>
@@ -76,13 +91,25 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
         <div className="message-bubble__meta">
           <span>{message.time}</span>
 
+          {!isUser && canCopy && (
+            <button
+              type="button"
+              className="message-bubble__copy"
+              onClick={() => void copyText()}
+              aria-label={copied ? t("ai.message.copied", "Nusxalandi") : t("ai.message.copy", "Nusxalash")}
+              title={copied ? t("ai.message.copied", "Nusxalandi") : t("ai.message.copy", "Nusxalash")}
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+            </button>
+          )}
+
           {!isUser && canSpeak && (
             <button
               type="button"
               className={`message-bubble__speak ${isSpeaking ? "is-speaking" : ""}`}
               onClick={isSpeaking ? onStopSpeak : onSpeak}
-              aria-label={isSpeaking ? "O'qishni to'xtatish" : "Ovozda o'qish"}
-              title={isSpeaking ? "To'xtatish" : "Ovozda o'qish"}
+              aria-label={isSpeaking ? t("ai.message.stopReading", "O'qishni to'xtatish") : t("ai.message.readAloud", "Ovozda o'qish")}
+              title={isSpeaking ? t("common.stop", "To'xtatish") : t("ai.message.readAloud", "Ovozda o'qish")}
             >
               {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
             </button>

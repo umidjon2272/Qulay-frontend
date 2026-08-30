@@ -1,13 +1,11 @@
 import { lazy, Suspense, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ArrowLeft,
   BellPlus,
   CalendarDays,
   FolderSearch,
   ListTodo,
   MessageSquareText,
-  Mic,
   Sparkles,
   Plus,
   Trash2,
@@ -20,6 +18,7 @@ import { useI18n } from "../../../../i18n/useI18n";
 import { usePlatform } from "../../../../context/PlatformContext";
 
 import ChatHeader from "../ChatHeader/ChatHeader";
+import ChatHistoryDrawer from "../ChatHistoryDrawer/ChatHistoryDrawer";
 import ChatInput from "../ChatInput/ChatInput";
 import MessageList from "../MessageList/MessageList";
 
@@ -55,6 +54,7 @@ const AIAssistant = () => {
   } = useAIChat();
   const [input, setInput] = useState("");
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
+  const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState("");
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -67,6 +67,10 @@ const AIAssistant = () => {
     const query = historySearch.trim().toLocaleLowerCase();
     return query ? conversations.filter((item) => item.title.toLocaleLowerCase().includes(query)) : conversations;
   }, [conversations, historySearch]);
+  const activeConversationTitle = useMemo(
+    () => conversations.find((item) => item.id === activeConversationId)?.title,
+    [conversations, activeConversationId],
+  );
 
   const commitConversationRename = async (id: string) => {
     const title = editingTitle.trim();
@@ -100,7 +104,7 @@ const AIAssistant = () => {
       <div className="ai-page__ambient ai-page__ambient--two" />
 
       <section className="ai-page__workspace">
-        <aside className="ai-page__rail" aria-label="AI yordamchi tezkor paneli">
+        <aside className="ai-page__rail" aria-label={t("ai.quickPanelAria", "AI yordamchi tezkor paneli")}>
           <div className="ai-page__rail-heading">
             <div className="ai-page__rail-mark"><Sparkles size={15} /></div>
             <div>
@@ -165,7 +169,7 @@ const AIAssistant = () => {
                   )}
                   <span className="ai-history__actions">
                     <button type="button" className="ai-history__edit" onClick={() => { setEditingConversationId(item.id); setEditingTitle(item.title); }} aria-label={t("ai.renameChat", "Chat nomini o'zgartirish")}><Pencil size={12} /></button>
-                    <button type="button" className="ai-history__delete" onClick={() => void deleteConversation(item.id)} aria-label={`${item.title} suhbatini o'chirish`}><Trash2 size={13} /></button>
+                    <button type="button" className="ai-history__delete" onClick={() => void deleteConversation(item.id)} aria-label={t("ai.deleteChatAria", "{title} suhbatini o'chirish", { title: item.title })}><Trash2 size={13} /></button>
                   </span>
                 </div>
               ))}
@@ -175,7 +179,12 @@ const AIAssistant = () => {
         </aside>
 
         <section className="ai-page__main">
-          <ChatHeader onClear={clearChat} onVoice={openVoiceMode} />
+          <ChatHeader
+            title={activeConversationTitle}
+            onClear={clearChat}
+            onOpenHistory={() => setIsHistoryDrawerOpen(true)}
+            onNewChat={newChat}
+          />
 
           {!hasConversation ? (
             <div className="ai-welcome">
@@ -197,11 +206,6 @@ const AIAssistant = () => {
                     </button>
                   ))}
                 </div>
-
-                <button type="button" className="ai-welcome__voice" onClick={openVoiceMode}>
-                  <Mic size={15} />
-                  {t("ai.voice", "Voice Mode'ni ochish")}
-                </button>
               </div>
             </div>
           ) : (
@@ -215,19 +219,14 @@ const AIAssistant = () => {
             />
           )}
 
-          <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isTyping} />
+          <ChatInput value={input} onChange={setInput} onSend={handleSend} onVoice={openVoiceMode} disabled={isTyping} />
         </section>
       </section>
 
-      <header className="ai-page__mobile-bar">
-        <button type="button" onClick={() => navigate(-1)} aria-label="Orqaga"><ArrowLeft size={18} /></button>
-        <div><strong>{platformName}</strong><span><i /> {t("ai.online", "Onlayn · Tayyor")}</span></div>
-        <button type="button" className="ai-page__mobile-voice" onClick={openVoiceMode} aria-label={t("ai.voice", "Voice Mode'ni ochish")}><Mic size={17} /></button>
-        <button type="button" onClick={newChat} aria-label={t("ai.newChat", "Yangi chat")}><Plus size={18} /></button>
-      </header>
+      <ChatHistoryDrawer open={isHistoryDrawerOpen} onClose={() => setIsHistoryDrawerOpen(false)} />
 
       {isVoiceModeOpen && (
-        <Suspense fallback={<div className="ai-voice-loading" role="status"><span />Voice Mode</div>}>
+        <Suspense fallback={<div className="ai-voice-loading" role="status"><span />{t("ai.voiceLoading", "Voice Mode yuklanmoqda")}</div>}>
           <VoiceMode
             open={isVoiceModeOpen}
             onClose={closeVoiceMode}

@@ -17,6 +17,7 @@ import {
   Settings as SettingsIcon,
   Sparkles,
   Sun,
+  Sunrise,
   User,
 } from "lucide-react";
 
@@ -34,10 +35,11 @@ import { notificationApi } from "../../services/api";
 import type { ApiNotificationPreference } from "../../services/api/types";
 import { useI18n } from "../../i18n/useI18n";
 import Memory from "../Memory/Memory";
+import AgentBriefingSettings from "./sections/AgentBriefingSettings";
 
 import "./Settings.scss";
 
-type SectionId = "profile" | "appearance" | "notifications" | "ai" | "language" | "integrations";
+type SectionId = "profile" | "appearance" | "notifications" | "ai" | "agentBriefing" | "language" | "integrations";
 
 type SettingsSection = {
   id: SectionId;
@@ -46,31 +48,36 @@ type SettingsSection = {
   icon: ComponentType<{ size?: number }>;
 };
 
-const sections: SettingsSection[] = [
-  { id: "appearance", label: "Ko'rinish", description: "Yorug' yoki qorong'i rejim", icon: Palette },
-  { id: "notifications", label: "Bildirishnomalar", description: "Ovoz, tinch vaqt va xabar turlari", icon: Bell },
-  { id: "ai", label: "AI va maxfiylik", description: "Xotira, javob va maxfiylik nazorati", icon: Sparkles },
-  { id: "language", label: "Til", description: "O'zbek yoki rus tili", icon: Languages },
-  { id: "integrations", label: "Integratsiyalar", description: "Telegram, Calendar va Drive", icon: Link2 },
+type TFn = (key: string, fallback: string, params?: Record<string, string | number>) => string;
+
+const sectionIds: SectionId[] = ["appearance", "notifications", "ai", "agentBriefing", "language", "integrations"];
+
+const getSections = (t: TFn): SettingsSection[] => [
+  { id: "appearance", label: t("settings.appearance", "Ko'rinish"), description: t("settings.appearance.hint", "Yorug' yoki qorong'i rejim"), icon: Palette },
+  { id: "notifications", label: t("settings.notifications", "Bildirishnomalar"), description: t("settings.notifications.hint", "Ovoz, tinch vaqt va xabar turlari"), icon: Bell },
+  { id: "ai", label: t("settings.ai", "AI va maxfiylik"), description: t("settings.ai.hint", "Xotira, javob va maxfiylik nazorati"), icon: Sparkles },
+  { id: "agentBriefing", label: t("agentBriefing.title", "Agent va briefing"), description: t("agentBriefing.subtitle.short", "Ertalabki reja, kechki yakun va proaktiv tavsiyalar"), icon: Sunrise },
+  { id: "language", label: t("settings.language", "Til"), description: t("settings.language.hint", "O'zbek yoki rus tili"), icon: Languages },
+  { id: "integrations", label: t("settings.integrations", "Integratsiyalar"), description: t("settings.integrations.hint", "Telegram, Calendar va Drive"), icon: Link2 },
 ];
 
 const isSectionId = (value: string | null): value is SectionId =>
-  Boolean(value) && (value === "profile" || sections.some((section) => section.id === value));
+  Boolean(value) && (value === "profile" || sectionIds.includes(value as SectionId));
 
 type NotificationKey = "newTasks" | "reminders" | "meetingReminders" | "aiReplies" | "telegram" | "webPush";
 
-const notificationItems: Array<{
+const getNotificationItems = (t: TFn): Array<{
   key: NotificationKey;
   label: string;
   hint: string;
   icon: ComponentType<{ size?: number }>;
-}> = [
-  { key: "newTasks", label: "Vazifalar", hint: "Vazifa yangilanganda xabar berish", icon: Check },
-  { key: "reminders", label: "Eslatmalar", hint: "Eslatma vaqti yaqinlashganda xabar berish", icon: Bell },
-  { key: "meetingReminders", label: "Uchrashuvlar", hint: "Uchrashuvdan oldin eslatish", icon: CalendarDays },
-  { key: "aiReplies", label: "AI tavsiyalari", hint: "Qulay AI tavsiyalari haqida xabar berish", icon: Sparkles },
-  { key: "telegram", label: "Telegram notifications", hint: "Ulangan Telegram akkauntingizga yuborish", icon: Bell },
-  { key: "webPush", label: "Web push", hint: "Tez orada mavjud bo'ladi", icon: Bell },
+}> => [
+  { key: "newTasks", label: t("admin.item.tasks", "Vazifalar"), hint: t("settings.notif.newTasksHint", "Vazifa yangilanganda xabar berish"), icon: Check },
+  { key: "reminders", label: t("admin.item.reminders", "Eslatmalar"), hint: t("settings.notif.remindersHint", "Eslatma vaqti yaqinlashganda xabar berish"), icon: Bell },
+  { key: "meetingReminders", label: t("admin.item.meetings", "Uchrashuvlar"), hint: t("settings.notif.meetingsHint", "Uchrashuvdan oldin eslatish"), icon: CalendarDays },
+  { key: "aiReplies", label: t("settings.notif.aiRepliesLabel", "AI tavsiyalari"), hint: t("settings.notif.aiRepliesHint", "Qulay AI tavsiyalari haqida xabar berish"), icon: Sparkles },
+  { key: "telegram", label: t("settings.notif.telegramLabel", "Telegram notifications"), hint: t("settings.notif.telegramHint", "Ulangan Telegram akkauntingizga yuborish"), icon: Bell },
+  { key: "webPush", label: t("settings.notif.webPushLabel", "Web push"), hint: t("settings.notif.webPushHint", "Tez orada mavjud bo'ladi"), icon: Bell },
 ];
 
 const languageOptions = [
@@ -94,7 +101,7 @@ const SettingsRoot = ({ onSelect, onChangePassword, onLogout, onBack }: Settings
   const { t } = useI18n();
   return <section className="settings-root" aria-label={t("settings.title", "Sozlamalar")}>
     <header className="settings-root__header">
-      {onBack && <button type="button" className="settings-root__back" onClick={onBack} aria-label="Profilga qaytish"><ArrowLeft size={18} /></button>}
+      {onBack && <button type="button" className="settings-root__back" onClick={onBack} aria-label={t("settings.backToProfile", "Profilga qaytish")}><ArrowLeft size={18} /></button>}
       <div><span className="settings-root__eyebrow">QULAY AI</span><h1>{t("settings.title", "Sozlamalar")}</h1></div>
     </header>
     <div className="settings-root__group">
@@ -104,17 +111,9 @@ const SettingsRoot = ({ onSelect, onChangePassword, onLogout, onBack }: Settings
       <button type="button" className="is-danger" onClick={onLogout}><span className="settings-row-icon"><LogOut size={18} /></span><span>{t("nav.logout", "Chiqish")}</span><ChevronRight size={18} /></button>
     </div>
     <div className="settings-root__group">
-      {sections.map((section) => {
+      {getSections(t).map((section) => {
         const Icon = section.icon;
-        const labels: Partial<Record<SectionId, [string, string]>> = {
-          appearance: [t("settings.appearance", section.label), section.description],
-          notifications: [t("settings.notifications", section.label), section.description],
-          ai: [t("settings.ai", section.label), section.description],
-          language: [t("settings.language", section.label), section.description],
-          integrations: [t("settings.integrations", section.label), section.description],
-        };
-        const [label, description] = labels[section.id] ?? [section.label, section.description];
-        return <button type="button" key={section.id} onClick={() => onSelect(section.id)}><span className="settings-row-icon"><Icon size={18} /></span><span><strong>{label}</strong><small>{description}</small></span><ChevronRight size={18} /></button>;
+        return <button type="button" key={section.id} onClick={() => onSelect(section.id)}><span className="settings-row-icon"><Icon size={18} /></span><span><strong>{section.label}</strong><small>{section.description}</small></span><ChevronRight size={18} /></button>;
       })}
     </div>
   </section>;
@@ -169,16 +168,16 @@ const Settings = () => {
       if (oauthIntegration === "google" && oauthKey && googleOAuthHandledRef.current !== oauthKey) {
         googleOAuthHandledRef.current = oauthKey;
         if (oauthStatus === "connected" && status.connected) {
-          const connectedServices = [status.calendarEnabled ? "Calendar" : null, status.driveEnabled ? "Drive" : null].filter(Boolean).join(" va " );
-          showToast(connectedServices ? `Google ${connectedServices} ulandi` : "Google akkaunti ulandi, lekin kerakli ruxsatlar topilmadi", connectedServices ? "success" : "error");
-        } else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast("Google ulanishi bekor qilindi", "info");
-        else if (oauthStatus === "error") showToast(oauthMessage || (oauthErrorCode ? `Google OAuth xatosi: ${oauthErrorCode}` : "Google ulanishini yakunlab bo'lmadi"), "error");
+          const connectedServices = [status.calendarEnabled ? "Calendar" : null, status.driveEnabled ? "Drive" : null].filter(Boolean).join(` ${t("common.and", "va")} `);
+          showToast(connectedServices ? t("settings.google.connectedWith", "Google {services} ulandi", { services: connectedServices }) : t("settings.google.connectedNoScopes", "Google akkaunti ulandi, lekin kerakli ruxsatlar topilmadi"), connectedServices ? "success" : "error");
+        } else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast(t("settings.google.cancelled", "Google ulanishi bekor qilindi"), "info");
+        else if (oauthStatus === "error") showToast(oauthMessage || (oauthErrorCode ? t("settings.google.oauthErrorCode", "Google OAuth xatosi: {code}", { code: oauthErrorCode }) : t("settings.google.finishFailed", "Google ulanishini yakunlab bo'lmadi")), "error");
       }
 
       if (oauthIntegration === "google") setSearchParams({ tab: "integrations" }, { replace: true });
-    }).catch((error) => showToast(error instanceof Error && error.message ? error.message : "Google ulanish holatini tekshirib bo'lmadi", "error"));
+    }).catch((error) => showToast(error instanceof Error && error.message ? error.message : t("settings.google.checkFailed", "Google ulanish holatini tekshirib bo'lmadi"), "error"));
     return () => { activeRequest = false; };
-  }, [active, searchParams, setSearchParams, showToast, sync]);
+  }, [active, searchParams, setSearchParams, showToast, sync, t]);
 
   useEffect(() => {
     const parts = splitName(name);
@@ -202,8 +201,8 @@ const Settings = () => {
         telegram: preferences.telegramEnabled,
         webPush: preferences.webPushEnabled,
       }));
-    }).catch(() => showToast("Bildirishnoma sozlamalarini yuklab bo'lmadi", "error"));
-  }, [active, showToast]);
+    }).catch(() => showToast(t("settings.notifPrefsLoadError", "Bildirishnoma sozlamalarini yuklab bo'lmadi"), "error"));
+  }, [active, showToast, t]);
 
 
   const updateLocalNotificationSetting = <K extends keyof typeof notifications>(key: K, value: (typeof notifications)[K]) => {
@@ -231,7 +230,7 @@ const Settings = () => {
       await notificationApi.updatePreferences(preferencePatchFor(key, nextValue));
     } catch {
       setNotifications((current) => ({ ...current, [key]: !nextValue }));
-      showToast("Bildirishnoma sozlamasini saqlab bo'lmadi", "error");
+      showToast(t("settings.notifPrefSaveError", "Bildirishnoma sozlamasini saqlab bo'lmadi"), "error");
     }
   };
 
@@ -244,16 +243,16 @@ const Settings = () => {
   const handleProfileSave = async () => {
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     if (fullName.length < 2) {
-      showToast("Ism kamida 2 ta belgidan iborat bo'lsin", "error");
+      showToast(t("settings.nameTooShort", "Ism kamida 2 ta belgidan iborat bo'lsin"), "error");
       return;
     }
 
     setName(fullName);
     try {
       await updateProfile({ name: fullName, bio, avatar });
-      showToast("Profil saqlandi", "success");
+      showToast(t("settings.profileSaved", "Profil saqlandi"), "success");
     } catch {
-      showToast("Profilni serverda saqlab bo'lmadi", "error");
+      showToast(t("settings.profileSaveError", "Profilni serverda saqlab bo'lmadi"), "error");
     }
   };
 
@@ -261,11 +260,11 @@ const Settings = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      showToast("Faqat rasm faylini tanlang", "error");
+      showToast(t("settings.avatarNotImage", "Faqat rasm faylini tanlang"), "error");
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      showToast("Avatar hajmi 2 MB dan oshmasin", "error");
+      showToast(t("settings.avatarTooLarge", "Avatar hajmi 2 MB dan oshmasin"), "error");
       return;
     }
 
@@ -273,7 +272,7 @@ const Settings = () => {
     reader.onload = () => {
       if (typeof reader.result === "string") {
         setAvatar(reader.result);
-        showToast("Avatar yangilandi", "success");
+        showToast(t("settings.avatarUpdated", "Avatar yangilandi"), "success");
       }
     };
     reader.readAsDataURL(file);
@@ -286,7 +285,7 @@ const Settings = () => {
     navigate("/login", { replace: true });
   };
 
-  const title = active === "profile" ? t("nav.profile", "Profil") : active === "appearance" ? t("settings.appearance", "Ko'rinish") : active === "notifications" ? t("settings.notifications", "Bildirishnomalar") : active === "ai" ? t("settings.ai", "AI yordamchi") : active === "language" ? t("settings.language", "Til") : active === "integrations" ? t("settings.integrations", "Integratsiyalar") : t("settings.title", "Sozlamalar");
+  const title = active === "profile" ? t("nav.profile", "Profil") : active === "appearance" ? t("settings.appearance", "Ko'rinish") : active === "notifications" ? t("settings.notifications", "Bildirishnomalar") : active === "ai" ? t("settings.ai", "AI yordamchi") : active === "agentBriefing" ? t("agentBriefing.title", "Agent va briefing") : active === "language" ? t("settings.language", "Til") : active === "integrations" ? t("settings.integrations", "Integratsiyalar") : t("settings.title", "Sozlamalar");
 
   return (
     <main className={`settings-page settings-page--${active ?? "root"}`}>
@@ -295,7 +294,7 @@ const Settings = () => {
       ) : (
         <section className="settings-subpage">
           <header className="settings-header">
-            <button type="button" className="settings-header__back" onClick={goToRoot} aria-label="Sozlamalarga qaytish">
+            <button type="button" className="settings-header__back" onClick={goToRoot} aria-label={t("settings.backToSettings", "Sozlamalarga qaytish")}>
               <ArrowLeft size={18} />
             </button>
             <div>
@@ -305,7 +304,7 @@ const Settings = () => {
             </div>
             {active === "profile" ? (
               <button type="button" className="settings-header__save" onClick={() => void handleProfileSave()}>
-                <Save size={15} /> Saqlash
+                <Save size={15} /> {t("common.save", "Saqlash")}
               </button>
             ) : <span className="settings-header__placeholder" aria-hidden="true" />}
           </header>
@@ -313,39 +312,39 @@ const Settings = () => {
           <section className="settings-panel">
             {active === "profile" && (
               <div className="settings-card">
-                <h2>Profil ma'lumotlari</h2>
-                <p>Avatar, ism va bio ma'lumotlaringizni yangilang.</p>
+                <h2>{t("settings.profileInfo.title", "Profil ma'lumotlari")}</h2>
+                <p>{t("settings.profileInfo.subtitle", "Avatar, ism va bio ma'lumotlaringizni yangilang.")}</p>
 
                 <div className="settings-avatar">
                   <div className="settings-avatar__preview">
-                    {avatar ? <img src={avatar} alt={`${name} avatari`} /> : <span>{name.charAt(0).toUpperCase()}</span>}
+                    {avatar ? <img src={avatar} alt={t("settings.avatarAlt", "{name} avatari", { name })} /> : <span>{name.charAt(0).toUpperCase()}</span>}
                   </div>
                   <div className="settings-avatar__actions">
                     <button type="button" className="settings-avatar__upload" onClick={() => fileInputRef.current?.click()}>
-                      <Camera size={14} /> Rasmni almashtirish
+                      <Camera size={14} /> {t("settings.changePhoto", "Rasmni almashtirish")}
                     </button>
                     <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleAvatarChange} />
-                    {avatar && <button type="button" className="settings-avatar__remove" onClick={() => setAvatar(null)}>O'chirish</button>}
+                    {avatar && <button type="button" className="settings-avatar__remove" onClick={() => setAvatar(null)}>{t("common.delete", "O'chirish")}</button>}
                   </div>
                 </div>
 
-                <label>Ism<input value={firstName} onChange={(event) => setFirstName(event.target.value)} /></label>
-                <label>Familiya<input value={lastName} onChange={(event) => setLastName(event.target.value)} /></label>
-                <label>Email<input type="email" value={email} readOnly aria-readonly="true" /></label>
-                <label>Bio<textarea rows={3} value={bio} onChange={(event) => setBio(event.target.value)} /></label>
+                <label>{t("settings.firstNameLabel", "Ism")}<input value={firstName} onChange={(event) => setFirstName(event.target.value)} /></label>
+                <label>{t("settings.lastNameLabel", "Familiya")}<input value={lastName} onChange={(event) => setLastName(event.target.value)} /></label>
+                <label>{t("settings.emailLabel", "Email")}<input type="email" value={email} readOnly aria-readonly="true" /></label>
+                <label>{t("settings.bioLabel", "Bio")}<textarea rows={3} value={bio} onChange={(event) => setBio(event.target.value)} /></label>
 
                 <div className="settings-profile-actions">
                   <button type="button" className="settings-card__submit" onClick={() => void handleProfileSave()}>
-                    <Check size={14} /> Saqlash
+                    <Check size={14} /> {t("common.save", "Saqlash")}
                   </button>
                   <button type="button" className="settings-danger-btn" onClick={() => setConfirmingLogout(true)}>
-                    <LogOut size={14} /> Akkauntdan chiqish
+                    <LogOut size={14} /> {t("nav.logout", "Akkauntdan chiqish")}
                   </button>
                 </div>
 
                 <button type="button" className="settings-profile-settings" onClick={() => navigate("/settings", { state: { fromProfile: true } })}>
                   <span className="settings-profile-settings__icon"><SettingsIcon size={16} /></span>
-                  <span><strong>Sozlamalar</strong><small>Profil va ilova afzalliklari</small></span>
+                  <span><strong>{t("settings.title", "Sozlamalar")}</strong><small>{t("settings.profileSettingsHint", "Profil va ilova afzalliklari")}</small></span>
                   <ChevronRight size={17} />
                 </button>
               </div>
@@ -353,14 +352,14 @@ const Settings = () => {
 
             {active === "appearance" && (
               <div className="settings-card">
-                <h2>Ko'rinish</h2>
-                <p>Interfeys mavzusini tanlang.</p>
-                <div className="settings-theme settings-theme--compact" role="group" aria-label="Mavzu">
+                <h2>{t("settings.appearance", "Ko'rinish")}</h2>
+                <p>{t("settings.appearance.subtitle", "Interfeys mavzusini tanlang.")}</p>
+                <div className="settings-theme settings-theme--compact" role="group" aria-label={t("settings.themeAria", "Mavzu")}>
                   <button type="button" className={theme === "light" ? "is-active" : ""} onClick={() => setTheme("light")}>
-                    <span className="settings-row-icon"><Sun size={17} /></span><strong>Yorug'</strong>{theme === "light" && <Check size={14} />}
+                    <span className="settings-row-icon"><Sun size={17} /></span><strong>{t("settings.themeLight", "Yorug'")}</strong>{theme === "light" && <Check size={14} />}
                   </button>
                   <button type="button" className={theme === "dark" ? "is-active" : ""} onClick={() => setTheme("dark")}>
-                    <span className="settings-row-icon"><Moon size={17} /></span><strong>Qorong'i</strong>{theme === "dark" && <Check size={14} />}
+                    <span className="settings-row-icon"><Moon size={17} /></span><strong>{t("settings.themeDark", "Qorong'i")}</strong>{theme === "dark" && <Check size={14} />}
                   </button>
                 </div>
               </div>
@@ -370,7 +369,7 @@ const Settings = () => {
               <div className="settings-card">
                 <h2>{t("settings.language", "Til")}</h2>
                 <p>{t("settings.subtitle", "Qulay AI interfeysi uchun tilni tanlang.")}</p>
-                <div className="settings-language-list" role="radiogroup" aria-label="Til">
+                <div className="settings-language-list" role="radiogroup" aria-label={t("settings.language", "Til")}>
                   {languageOptions.map((option) => (
                     <button type="button" key={option.value} className={language === option.value ? "is-active" : ""} onClick={() => setLanguage(option.value)} role="radio" aria-checked={language === option.value}>
                       <span className="settings-row-icon"><Languages size={17} /></span><span>{option.label}</span>{language === option.value && <Check size={15} />}
@@ -382,10 +381,10 @@ const Settings = () => {
 
             {active === "notifications" && (
               <div className="settings-card">
-                <h2>Bildirishnomalar</h2>
-                <p>Qaysi xabarlarni olishni xohlaysiz.</p>
+                <h2>{t("settings.notifications", "Bildirishnomalar")}</h2>
+                <p>{t("settings.notifications.subtitle", "Qaysi xabarlarni olishni xohlaysiz.")}</p>
                 <div className="settings-toggle-list">
-                  {notificationItems.map((item) => {
+                  {getNotificationItems(t).map((item) => {
                     const Icon = item.icon;
                     return (
                       <div className="settings-toggle-row" key={item.key}>
@@ -397,41 +396,43 @@ const Settings = () => {
                   })}
                   <div className="settings-toggle-row">
                     <div className="settings-toggle-row__icon"><Bell size={16} /></div>
-                    <div><strong>Bildirishnoma ovozi</strong><span>Yangi muhim xabar kelganda yumshoq signal chalinsin.</span></div>
-                    <button type="button" className={`settings-switch ${notifications.sound ? "is-on" : ""}`} onClick={() => updateLocalNotificationSetting("sound", !notifications.sound)} role="switch" aria-checked={notifications.sound} aria-label="Bildirishnoma ovozi"><i /></button>
+                    <div><strong>{t("settings.soundLabel", "Bildirishnoma ovozi")}</strong><span>{t("settings.soundHint", "Yangi muhim xabar kelganda yumshoq signal chalinsin.")}</span></div>
+                    <button type="button" className={`settings-switch ${notifications.sound ? "is-on" : ""}`} onClick={() => updateLocalNotificationSetting("sound", !notifications.sound)} role="switch" aria-checked={notifications.sound} aria-label={t("settings.soundLabel", "Bildirishnoma ovozi")}><i /></button>
                   </div>
                   <div className="settings-toggle-row">
                     <div className="settings-toggle-row__icon"><Moon size={16} /></div>
-                    <div><strong>Tinch vaqt</strong><span>Tanlangan vaqtda ovozli bildirishnomalar chalinmaydi.</span></div>
-                    <button type="button" className={`settings-switch ${notifications.quietHoursEnabled ? "is-on" : ""}`} onClick={() => updateLocalNotificationSetting("quietHoursEnabled", !notifications.quietHoursEnabled)} role="switch" aria-checked={notifications.quietHoursEnabled} aria-label="Tinch vaqt"><i /></button>
+                    <div><strong>{t("settings.quietHours", "Tinch vaqt")}</strong><span>{t("settings.quietHoursHint", "Tanlangan vaqtda ovozli bildirishnomalar chalinmaydi.")}</span></div>
+                    <button type="button" className={`settings-switch ${notifications.quietHoursEnabled ? "is-on" : ""}`} onClick={() => updateLocalNotificationSetting("quietHoursEnabled", !notifications.quietHoursEnabled)} role="switch" aria-checked={notifications.quietHoursEnabled} aria-label={t("settings.quietHours", "Tinch vaqt")}><i /></button>
                   </div>
-                  {notifications.quietHoursEnabled && <div className="settings-time-range"><label>Boshlanish<input type="time" value={notifications.quietHoursStart} onChange={(event) => updateLocalNotificationSetting("quietHoursStart", event.target.value)} /></label><span>→</span><label>Tugash<input type="time" value={notifications.quietHoursEnd} onChange={(event) => updateLocalNotificationSetting("quietHoursEnd", event.target.value)} /></label></div>}
+                  {notifications.quietHoursEnabled && <div className="settings-time-range"><label>{t("settings.quietStart", "Boshlanish")}<input type="time" value={notifications.quietHoursStart} onChange={(event) => updateLocalNotificationSetting("quietHoursStart", event.target.value)} /></label><span>→</span><label>{t("settings.quietEnd", "Tugash")}<input type="time" value={notifications.quietHoursEnd} onChange={(event) => updateLocalNotificationSetting("quietHoursEnd", event.target.value)} /></label></div>}
                 </div>
               </div>
             )}
 
             {active === "ai" && (
               <div className="settings-card">
-                <h2>AI yordamchi</h2>
-                <p>Qulay AI qanday javob berishi va amallarni qanday tasdiqlashini sozlang.</p>
+                <h2>{t("settings.ai", "AI yordamchi")}</h2>
+                <p>{t("settings.ai.subtitle", "Qulay AI qanday javob berishi va amallarni qanday tasdiqlashini sozlang.")}</p>
                 <div className="settings-field-grid">
-                  <label>Javob uslubi<select value={replyStyle} onChange={(event) => setReplyStyle(event.target.value)}><option>Professional</option><option>Sodda</option><option>Qisqa</option></select></label>
-                  <label>Javob uzunligi<select value={replyLength} onChange={(event) => setReplyLength(event.target.value)}><option>Qisqa</option><option>O'rta</option><option>Batafsil</option></select></label>
+                  <label>{t("settings.replyStyleLabel", "Javob uslubi")}<select value={replyStyle} onChange={(event) => setReplyStyle(event.target.value)}><option value="Professional">{t("settings.replyStyle.professional", "Professional")}</option><option value="Sodda">{t("settings.replyStyle.simple", "Sodda")}</option><option value="Qisqa">{t("settings.replyStyle.short", "Qisqa")}</option></select></label>
+                  <label>{t("settings.replyLengthLabel", "Javob uzunligi")}<select value={replyLength} onChange={(event) => setReplyLength(event.target.value)}><option value="Qisqa">{t("settings.replyLength.short", "Qisqa")}</option><option value="O'rta">{t("settings.replyLength.medium", "O'rta")}</option><option value="Batafsil">{t("settings.replyLength.detailed", "Batafsil")}</option></select></label>
                 </div>
                 <div className="settings-toggle-list">
-                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>Chat tarixini saqlash</strong><span>Oldingi suhbatlar brauzerda saqlanib, keyin davom ettiriladi.</span></div><button type="button" className={`settings-switch ${aiSettings.saveHistory ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("saveHistory", !aiSettings.saveHistory)} role="switch" aria-checked={aiSettings.saveHistory}><i /></button></div>
-                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Bell size={16} /></div><div><strong>Tashqi amallarni tasdiqlash</strong><span>Telegram xabari va boshqa tashqi amallar yuborilishidan oldin tasdiqlash so'ralsin.</span></div><button type="button" className={`settings-switch ${aiSettings.confirmExternalActions ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("confirmExternalActions", !aiSettings.confirmExternalActions)} role="switch" aria-checked={aiSettings.confirmExternalActions}><i /></button></div>
-                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>Ovozli javob</strong><span>Voice Mode'da AI javobini ovoz bilan o'qishi mumkin.</span></div><button type="button" className={`settings-switch ${aiSettings.voiceReply ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("voiceReply", !aiSettings.voiceReply)} role="switch" aria-checked={aiSettings.voiceReply}><i /></button></div>
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>{t("settings.saveHistoryLabel", "Chat tarixini saqlash")}</strong><span>{t("settings.saveHistoryHint", "Oldingi suhbatlar brauzerda saqlanib, keyin davom ettiriladi.")}</span></div><button type="button" className={`settings-switch ${aiSettings.saveHistory ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("saveHistory", !aiSettings.saveHistory)} role="switch" aria-checked={aiSettings.saveHistory}><i /></button></div>
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Bell size={16} /></div><div><strong>{t("settings.confirmExternalLabel", "Tashqi amallarni tasdiqlash")}</strong><span>{t("settings.confirmExternalHint", "Telegram xabari va boshqa tashqi amallar yuborilishidan oldin tasdiqlash so'ralsin.")}</span></div><button type="button" className={`settings-switch ${aiSettings.confirmExternalActions ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("confirmExternalActions", !aiSettings.confirmExternalActions)} role="switch" aria-checked={aiSettings.confirmExternalActions}><i /></button></div>
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>{t("settings.voiceReplyLabel", "Ovozli javob")}</strong><span>{t("settings.voiceReplyHint", "Voice Mode'da AI javobini ovoz bilan o'qishi mumkin.")}</span></div><button type="button" className={`settings-switch ${aiSettings.voiceReply ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("voiceReply", !aiSettings.voiceReply)} role="switch" aria-checked={aiSettings.voiceReply}><i /></button></div>
                 </div>
               </div>
             )}
             {active === "ai" && <Memory />}
 
+            {active === "agentBriefing" && <AgentBriefingSettings />}
+
             {active === "integrations" && (
               <div className="settings-card settings-card--wide">
                 <div className="settings-integrations__header">
-                  <div><h2>{t("settings.integrations", "Integratsiyalar")}</h2><p>Telegram, Google Calendar, Google Drive va WhatsApp.</p></div>
-                  <span className="settings-integrations__stats">{integrations.filter((item) => item.connected).length} ta ulangan</span>
+                  <div><h2>{t("settings.integrations", "Integratsiyalar")}</h2><p>{t("settings.integrations.subtitle", "Telegram, Google Calendar, Google Drive va WhatsApp.")}</p></div>
+                  <span className="settings-integrations__stats">{t("settings.connectedCount", "{count} ta ulangan", { count: integrations.filter((item) => item.connected).length })}</span>
                 </div>
                 <IntegrationHub columns={1} />
               </div>
@@ -442,9 +443,9 @@ const Settings = () => {
 
       {confirmingLogout && (
         <ConfirmDialog
-          title="Akkauntdan chiqmoqchimisiz?"
-          description="Sessiyangiz va qurilmadagi tokenlar tozalanadi."
-          confirmLabel="Chiqish"
+          title={t("settings.logoutConfirm.title", "Akkauntdan chiqmoqchimisiz?")}
+          description={t("settings.logoutConfirm.description", "Sessiyangiz va qurilmadagi tokenlar tozalanadi.")}
+          confirmLabel={t("nav.logout", "Chiqish")}
           onCancel={() => setConfirmingLogout(false)}
           onConfirm={() => void handleLogout()}
         />
@@ -454,7 +455,7 @@ const Settings = () => {
           onCancel={() => setChangingPassword(false)}
           onSuccess={async () => {
             setChangingPassword(false);
-            showToast("Parolingiz yangilandi. Qayta kiring.", "success");
+            showToast(t("settings.passwordUpdatedRelogin", "Parolingiz yangilandi. Qayta kiring."), "success");
             await logout();
             navigate("/login", { replace: true });
           }}

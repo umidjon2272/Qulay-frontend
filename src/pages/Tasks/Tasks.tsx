@@ -98,7 +98,7 @@ const Tasks = () => {
     () => subscribeToWorkspaceData("tasks", () => setTasks(getTasks())),
     [],
   );
-  useEffect(() => { void loadTasks().catch(() => showToast("Vazifalarni yuklab bo'lmadi", "error")); }, [showToast]);
+  useEffect(() => { void loadTasks().catch(() => showToast(t("tasks.loadError", "Vazifalarni yuklab bo'lmadi"), "error")); }, [showToast, t]);
 
   const toggleTask = async (id: string | number) => {
     const task = tasks.find((item) => item.id === id);
@@ -108,8 +108,8 @@ const Tasks = () => {
     try {
       const updated = await updateTaskRecord(id, { completed: !task.completed, status: task.completed ? "TODO" : "COMPLETED" });
       setTasks((current) => current.map((item) => item.id === id ? updated : item));
-      showToast(task.completed ? "Vazifa qayta faollashtirildi" : "Vazifa bajarildi", "success");
-    } catch { showToast("Vazifa holatini yangilab bo'lmadi", "error"); }
+      showToast(task.completed ? t("tasks.reactivatedToast", "Vazifa qayta faollashtirildi") : t("tasks.completedToast", "Vazifa bajarildi"), "success");
+    } catch { showToast(t("tasks.statusError", "Vazifa holatini yangilab bo'lmadi"), "error"); }
   };
 
   const deleteTask = (task: Task) => {
@@ -121,12 +121,12 @@ const Tasks = () => {
     if (!pendingDelete) return;
 
     const task = pendingDelete;
-    try { await deleteTaskRecord(task.id); } catch { showToast("Vazifani o'chirib bo'lmadi", "error"); return; }
+    try { await deleteTaskRecord(task.id); } catch { showToast(t("tasks.deleteError", "Vazifani o'chirib bo'lmadi"), "error"); return; }
     setTasks(getTasks());
 
     setOpenMenuId(null);
     setPendingDelete(null);
-    showToast(`"${task.title}" o'chirildi`, "success");
+    showToast(t("tasks.deletedToast", "\"{title}\" o'chirildi", { title: task.title }), "success");
   };
 
   const resetTaskForm = () => {
@@ -209,11 +209,11 @@ const Tasks = () => {
 
   const createTask = async () => {
     if (!newTitle.trim()) {
-      showToast("Vazifa nomini kiriting", "error");
+      showToast(t("tasks.titleRequired", "Vazifa nomini kiriting"), "error");
       return;
     }
     if (!newDate || !newTime || savingRef.current) {
-      if (!newDate || !newTime) showToast("Sana va vaqtni tanlang", "error");
+      if (!newDate || !newTime) showToast(t("reminders.dateTimeRequired", "Sana va vaqtni tanlang"), "error");
       return;
     }
 
@@ -233,17 +233,17 @@ const Tasks = () => {
 
       if (editId !== null) {
         await updateTaskRecord(editId, payload);
-        showToast("Vazifa yangilandi", "success");
+        showToast(t("tasks.updatedToast", "Vazifa yangilandi"), "success");
       } else {
         await createTaskRecord(payload);
-        showToast("Vazifa yaratildi", "success");
+        showToast(t("tasks.createdToast", "Vazifa yaratildi"), "success");
       }
 
       setTasks(getTasks());
       resetTaskForm();
       setShowModal(false);
     } catch {
-      showToast("Vazifani saqlab bo'lmadi", "error");
+      showToast(t("tasks.saveError", "Vazifani saqlab bo'lmadi"), "error");
     } finally {
       savingRef.current = false;
     }
@@ -255,7 +255,7 @@ const Tasks = () => {
 
       <header className="tasks-header">
         <div>
-          <span className="tasks-header__eyebrow">TODAY'S WORK</span>
+          <span className="tasks-header__eyebrow">{t("tasks.eyebrow", "TODAY'S WORK")}</span>
           <h1>{t("tasks.title", "Vazifalar")}</h1>
           <p>{t("tasks.subtitle", "Bugungi ishlaringizni tartibli boshqaring va nazorat qiling.")}</p>
         </div>
@@ -285,13 +285,11 @@ const Tasks = () => {
             </span>
 
             <h2>
-              {completedCount} /{" "}
-              {tasks.length} vazifa
+              {t("tasks.completedOfTotal", "{completed} / {total} vazifa", { completed: completedCount, total: tasks.length })}
             </h2>
 
             <p>
-              Bugungi vazifalarning{" "}
-              {progress}% bajarildi.
+              {t("tasks.progressSentence", "Bugungi vazifalarning {percent}% bajarildi.", { percent: progress })}
             </p>
           </div>
         </div>
@@ -343,7 +341,7 @@ const Tasks = () => {
           <input
             type="text"
             placeholder={t("tasks.search", "Vazifa qidirish...")}
-            aria-label="Vazifalardan qidirish"
+            aria-label={t("tasks.searchAria", "Vazifalardan qidirish")}
             value={search}
             onChange={(event) =>
               setSearch(
@@ -364,7 +362,7 @@ const Tasks = () => {
         <div className="tasks-list">
           <div className="tasks-list__heading">
             <div>
-              <span>VAZIFALAR</span>
+              <span>{t("tasks.listEyebrow", "VAZIFALAR")}</span>
 
               <h2>
                 {t("tasks.todayWork", "Bugungi ishlar")}
@@ -376,7 +374,7 @@ const Tasks = () => {
               onClick={() => {
                 setFilter("Barchasi");
                 setSearch("");
-                showToast("Barcha vazifalar ko‘rsatildi", "info");
+                showToast(t("tasks.allShownToast", "Barcha vazifalar ko'rsatildi"), "info");
               }}
             >
               <MoreHorizontal
@@ -407,7 +405,7 @@ const Tasks = () => {
                       task.id
                     )
                   }
-                  aria-label="Vazifani bajarilgan deb belgilash"
+                  aria-label={t("tasks.markDone", "Vazifani bajarilgan deb belgilash")}
                 >
                   {task.completed ? (
                     <Check size={14} />
@@ -474,7 +472,7 @@ const Tasks = () => {
                         openMenuId === task.id ? null : task.id
                       );
                     }}
-                    aria-label={`${task.title} uchun amallar`}
+                    aria-label={t("tasks.actionsAria", "{title} uchun amallar", { title: task.title })}
                     aria-expanded={openMenuId === task.id}
                   >
                     <MoreHorizontal
@@ -530,7 +528,7 @@ const Tasks = () => {
                       </button>
 
                       <button type="button" onClick={() => {
-                        void createTaskRecord({ title: `${task.title} — nusxa`, description: task.description, time: task.time, category: task.category, priority: task.priority, status: "TODO", completed: false, date: task.date }).then(() => { setTasks(getTasks()); showToast("Vazifa nusxalandi", "success"); }).catch(() => showToast("Vazifani nusxalab bo'lmadi", "error"));
+                        void createTaskRecord({ title: t("tasks.copyTitleSuffix", "{title} — nusxa", { title: task.title }), description: task.description, time: task.time, category: task.category, priority: task.priority, status: "TODO", completed: false, date: task.date }).then(() => { setTasks(getTasks()); showToast(t("tasks.duplicatedToast", "Vazifa nusxalandi"), "success"); }).catch(() => showToast(t("tasks.duplicateError", "Vazifani nusxalab bo'lmadi"), "error"));
                         setOpenMenuId(null);
                       }}><Copy size={13} />{t("tasks.copy", "Nusxa olish")}</button>
 
@@ -645,7 +643,7 @@ const Tasks = () => {
               type="button"
               className="task-modal__close"
               onClick={closeTaskModal}
-              aria-label="Vazifa oynasini yopish"
+              aria-label={t("tasks.closeModalAria", "Vazifa oynasini yopish")}
             >
               ×
             </button>
@@ -657,7 +655,7 @@ const Tasks = () => {
             </div>
 
             <span className="task-modal__eyebrow">
-              NEW TASK
+              {editId !== null ? t("tasks.editEyebrow", "EDIT TASK") : t("tasks.newEyebrow", "NEW TASK")}
             </span>
 
             <h2>
@@ -665,7 +663,7 @@ const Tasks = () => {
             </h2>
 
             <p>
-              {editId !== null ? "Vazifa ma’lumotlarini yangilang." : "Bugungi rejangizga yangi vazifa qo‘shing."}
+              {editId !== null ? t("tasks.editHint", "Vazifa ma'lumotlarini yangilang.") : t("tasks.createHint", "Bugungi rejangizga yangi vazifa qo'shing.")}
             </p>
 
             {/* TITLE */}
@@ -673,7 +671,7 @@ const Tasks = () => {
             <input
               type="text"
               placeholder={t("tasks.name", "Vazifa nomi")}
-              aria-label="Vazifa nomi"
+              aria-label={t("tasks.name", "Vazifa nomi")}
               value={newTitle}
               onChange={(event) =>
                 setNewTitle(
@@ -686,7 +684,7 @@ const Tasks = () => {
 
             <textarea
               placeholder={t("tasks.description", "Qisqacha tavsif...")}
-              aria-label="Vazifa tavsifi"
+              aria-label={t("tasks.descriptionAria", "Vazifa tavsifi")}
               rows={3}
               value={
                 newDescription
@@ -829,9 +827,9 @@ const Tasks = () => {
 
       {pendingDelete && (
         <ConfirmDialog
-          title="Vazifani o'chirish"
-          description={`"${pendingDelete.title}" vazifasini o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.`}
-          confirmLabel="O'chirish"
+          title={t("tasks.deleteConfirmTitle", "Vazifani o'chirish")}
+          description={t("tasks.deleteConfirmDescription", "\"{title}\" vazifasini o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.", { title: pendingDelete.title })}
+          confirmLabel={t("common.delete", "O'chirish")}
           onConfirm={confirmDeleteTask}
           onCancel={() => setPendingDelete(null)}
         />

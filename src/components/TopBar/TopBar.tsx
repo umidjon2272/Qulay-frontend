@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useProfile } from "../../hooks/useProfile";
 import { getSettings, updateSettings } from "../../services/settingsService";
+import { updateProfile } from "../../services/profileService";
 import { subscribeToWorkspaceData } from "../../services/workspaceEvents";
 import ThemeToggle from "../ThemeToggle/ThemeToggle";
 import { notificationApi } from "../../services/api";
@@ -167,6 +168,7 @@ const TopBar = () => {
     const nextLanguage: LanguageCode = language === "UZ" ? "RU" : "UZ";
     setLanguage(nextLanguage);
     updateSettings({ language: nextLanguage === "UZ" ? "O'zbekcha" : "Русский" });
+    void updateProfile({ language: nextLanguage === "UZ" ? "uz" : "ru" }).catch(() => undefined);
   };
 
   return (
@@ -174,7 +176,7 @@ const TopBar = () => {
       <div className="topbar__search-wrap">
         <label className="topbar__search">
           <Search size={16} />
-          <input ref={searchInputRef} type="search" placeholder={t("top.search", "Qidirish...")} aria-label="Workspace bo'ylab qidirish" value={searchQuery} onFocus={() => setSearchOpen(true)} onChange={(event) => { setSearchQuery(event.target.value); setSearchOpen(true); }} />
+          <input ref={searchInputRef} type="search" placeholder={t("top.search", "Qidirish...")} aria-label={t("top.searchWorkspace", "Workspace bo'ylab qidirish")} value={searchQuery} onFocus={() => setSearchOpen(true)} onChange={(event) => { setSearchQuery(event.target.value); setSearchOpen(true); }} />
           <kbd>⌘ K</kbd>
         </label>
         {searchOpen && searchQuery.trim().length >= 2 && <div className="topbar-search-results">
@@ -183,7 +185,7 @@ const TopBar = () => {
       </div>
 
       <div className="topbar__actions">
-        <button type="button" className="topbar__icon topbar__notification-trigger" onClick={() => setIsOpen((current) => !current)} aria-label="Bildirishnomalar" aria-expanded={isOpen}>
+        <button type="button" className="topbar__icon topbar__notification-trigger" onClick={() => setIsOpen((current) => !current)} aria-label={t("top.notifications", "Bildirishnomalar")} aria-expanded={isOpen}>
           <Bell size={17} />
           {unreadCount > 0 && <i>{unreadCount > 99 ? "99+" : unreadCount}</i>}
         </button>
@@ -191,24 +193,24 @@ const TopBar = () => {
           type="button"
           className="topbar__icon topbar__language"
           onClick={toggleLanguage}
-          aria-label={`Tilni ${language === "UZ" ? "Русский" : "O'zbekcha"} tiliga almashtirish`}
-          title={`Joriy til: ${language}`}
+          aria-label={t("top.switchLanguage", "Tilni {{language}} tiliga almashtirish", { language: language === "UZ" ? "Русский" : "O'zbekcha" })}
+          title={t("top.currentLanguage", "Joriy til: {{language}}", { language })}
         >
           <span key={language}>{language}</span>
         </button>
         <ThemeToggle variant="menu" />
-        <button type="button" className="topbar__profile" onClick={() => navigate("/settings?tab=profile")} aria-label={`${firstName} profilini ochish`}>
+        <button type="button" className="topbar__profile" onClick={() => navigate("/settings?tab=profile")} aria-label={t("top.openProfile", "{{name}} profilini ochish", { name: firstName })}>
           <span className="topbar__avatar">{avatar ? <img src={avatar} alt="" /> : firstName.charAt(0).toUpperCase()}</span>
           <span className="topbar__profile-name">{firstName}</span>
         </button>
       </div>
       {isOpen && (
-        <aside className="notification-panel" aria-label="Bildirishnomalar markazi">
+        <aside className="notification-panel" aria-label={t("top.notificationCenter", "Bildirishnomalar markazi")}>
           <div className="notification-panel__header">
             <div><strong>{t("top.notifications", "Bildirishnomalar")}</strong><span>{unreadCount ? `${unreadCount} ${t("top.new", "ta yangi")}` : t("top.allRead", "Hammasi o'qilgan")}</span></div>
             <div className="notification-panel__actions">
-              <button type="button" onClick={() => void markAllRead()} title="Hammasini o'qilgan deb belgilash" aria-label="Hammasini o'qilgan deb belgilash"><CheckCheck size={16} /></button>
-              <button type="button" onClick={() => setIsOpen(false)} title="Yopish" aria-label="Yopish"><X size={16} /></button>
+              <button type="button" onClick={() => void markAllRead()} title={t("top.markAllRead", "Hammasini o'qilgan deb belgilash")} aria-label={t("top.markAllRead", "Hammasini o'qilgan deb belgilash")}><CheckCheck size={16} /></button>
+              <button type="button" onClick={() => setIsOpen(false)} title={t("common.close", "Yopish")} aria-label={t("common.close", "Yopish")}><X size={16} /></button>
             </div>
           </div>
           <div className="notification-panel__list">

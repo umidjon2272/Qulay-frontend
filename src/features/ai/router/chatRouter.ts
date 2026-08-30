@@ -8,6 +8,7 @@ import { detectTelegramSearch, detectTelegramSend } from "./telegramIntent";
 import { detectContactLookup, detectGoogleCalendarLookup, detectGoogleDriveSearch, detectMemoryLookup, isFinanceSummaryIntent } from "./toolIntents";
 import { describeTelegramError } from "./telegramError";
 import type { TelegramCandidate, TelegramSelection } from "./routerTypes";
+import { getLocale } from "../../../i18n/useI18n";
 
 export type RouterReply = {
   text: string;
@@ -171,7 +172,7 @@ const formatCalendarTime = (value: string | null): string => {
   if (!value) return "Vaqt ko‘rsatilmagan";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(date);
+  return new Intl.DateTimeFormat(getLocale() === "ru" ? "ru-RU" : "uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(date);
 };
 
 const handleGoogleCalendarLookup = async (range: "today" | "tomorrow" | "week"): Promise<RouterReply> => {

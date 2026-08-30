@@ -23,6 +23,7 @@ import {
 } from "../services/integrationService";
 import { subscribeToWorkspaceData } from "../services/workspaceEvents";
 import { useToast } from "../hooks/useToast";
+import { useI18n } from "../i18n/useI18n";
 
 export type ConnectionState = {
   connected: boolean;
@@ -35,6 +36,7 @@ const loadState = (): Record<string, ConnectionState> =>
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<Record<string, ConnectionState>>(loadState);
   const { showToast } = useToast();
+  const { t } = useI18n();
 
   const refreshServerConnections = useCallback(async () => {
     const [telegram, google] = await Promise.allSettled([getTelegramStatus(), getGoogleStatus()]);
@@ -74,12 +76,12 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
         const connection = connectIntegration(id, username);
         setState((current) => ({ ...current, [id]: connection }));
         const integration = integrationCatalog.find((item) => item.id === id);
-        showToast(`${integration?.name ?? "Integratsiya"} ulandi`, "success");
+        showToast(t("integrations.connectedToast", "{{name}} ulandi", { name: integration?.name ?? t("integrations.generic", "Integratsiya") }), "success");
       } catch {
-        showToast("Integratsiyani saqlab bo'lmadi", "error");
+        showToast(t("integrations.saveError", "Integratsiyani saqlab bo'lmadi"), "error");
       }
     },
-    [showToast],
+    [showToast, t],
   );
 
   const disconnect = useCallback(
@@ -88,12 +90,12 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
         const connection = disconnectIntegration(id);
         setState((current) => ({ ...current, [id]: connection }));
         const integration = integrationCatalog.find((item) => item.id === id);
-        showToast(`${integration?.name ?? "Integratsiya"} uchun ulanish bekor qilindi`, "info");
+        showToast(t("integrations.disconnectedToast", "{{name}} uchun ulanish bekor qilindi", { name: integration?.name ?? t("integrations.generic", "Integratsiya") }), "info");
       } catch {
-        showToast("Integratsiya holatini saqlab bo'lmadi", "error");
+        showToast(t("integrations.statusSaveError", "Integratsiya holatini saqlab bo'lmadi"), "error");
       }
     },
-    [showToast],
+    [showToast, t],
   );
 
 

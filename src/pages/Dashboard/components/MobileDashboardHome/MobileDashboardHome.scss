@@ -16,6 +16,12 @@
 }
 
 @media (max-width: 700px) {
+  .dashboard-mobile-home__briefing { display:grid; grid-template-columns:36px minmax(0,1fr) auto; align-items:center; width:100%; gap:10px; padding:12px; border:1px solid var(--border); border-radius:18px; background:var(--surface-elevated); color:var(--text-primary); text-align:left; }
+  .dashboard-mobile-home__briefing-icon { display:grid; place-items:center; width:36px; height:36px; border-radius:12px; background:var(--accent-soft); color:var(--accent); }
+  .dashboard-mobile-home__briefing-copy { overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; font-size:12px; line-height:1.4; color:var(--text-secondary); }
+}
+
+@media (max-width: 700px) {
   .dashboard-mobile-home {
     display: block;
     width: 100%;

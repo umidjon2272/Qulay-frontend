@@ -48,10 +48,6 @@
 .ai-prompt { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 13px; border: 1px solid rgba(210, 205, 220, 0.46); border-radius: 13px; background: rgba(255, 255, 255, 0.5); color: #5c5665; font: inherit; font-size: 12px; font-weight: 620; text-align: left; cursor: pointer; transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease; }
 .ai-prompt svg { flex-shrink: 0; color: #8a6de1; }
 .ai-prompt:hover { border-color: rgba(130, 91, 234, 0.3); background: rgba(238, 232, 255, 0.6); transform: translateY(-2px); }
-.ai-welcome__voice { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; border: 0; background: transparent; color: #8267d9; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
-
-.ai-page__mobile-bar { display: none; }
-
 .ai-voice-loading {
   position: fixed;
   inset: 0;
@@ -95,30 +91,26 @@
   .ai-page__workspace { display: block; height: 100%; min-height: 0; }
   .ai-page__rail { display: none; }
   .ai-page__main { display: flex; height: 100%; min-height: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .ai-page__mobile-bar { position: absolute; top: max(8px, env(safe-area-inset-top)); right: 11px; left: 11px; z-index: 4; display: flex; align-items: center; gap: 9px; min-height: 44px; pointer-events: none; }
-  .ai-page__mobile-bar button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: 13px; background: color-mix(in srgb, var(--surface-solid) 84%, transparent); color: var(--text-primary); pointer-events: auto; cursor: pointer; }
-  .ai-page__mobile-bar div { display: flex; flex-direction: column; gap: 1px; }
-  .ai-page__mobile-bar strong { color: var(--text-primary); font-size: 15px; }
-  .ai-page__mobile-bar span { color: #66cd9b; font-size: 10px; }
-  .ai-page__mobile-bar span i { display: inline-block; width: 5px; height: 5px; margin-right: 4px; border-radius: 50%; background: currentColor; }
-  .ai-page__mobile-bar button:nth-of-type(2) { margin-left: auto; color: #8065df; background: linear-gradient(135deg, rgba(118, 85, 223, 0.12), rgba(82, 190, 255, 0.1)); }
-  .ai-page__mobile-bar button:last-child { margin-left: 0; }
-  .ai-page__main > .chat-header { padding-top: max(61px, calc(51px + env(safe-area-inset-top))); border-bottom: 1px solid var(--border); }
-  .ai-page__main > .chat-header .chat-header__actions { display: none; }
+  .ai-page__main > .chat-header { border-bottom: 1px solid var(--border); }
   .ai-welcome {
-    justify-content: flex-start;
-    padding: 12px 13px 8px;
+    justify-content: flex-end;
+    padding: 8px 13px 10px;
     overflow-y: auto;
     overscroll-behavior-y: contain;
   }
-  .ai-welcome__content { display: flex; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: center; width: 100%; min-height: 0; }
-  .ai-welcome__orb { width: 68px; height: 68px; border-radius: 23px; }
-  .ai-welcome h1 { font-size: 27px; }
-  .ai-welcome p { margin: 9px 0 17px; font-size: 13px; }
-  .ai-prompts { display: flex; width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .ai-welcome__content { display: flex; flex: 0 0 auto; flex-direction: column; align-items: center; justify-content: flex-end; width: 100%; min-height: 0; }
+  /* Mobile empty chat is composer-first: the orb, greeting label, big question
+     and subtitle are fully removed from layout (not just shrunk) so the only
+     thing above the composer is, at most, a few compact suggestion chips. */
+  .ai-welcome__orb,
+  .ai-welcome__small,
+  .ai-welcome h1,
+  .ai-welcome p {
+    display: none;
+  }
+  .ai-prompts { display: flex; width: 100%; margin-top: 0; overflow-x: auto; scrollbar-width: none; }
   .ai-prompts::-webkit-scrollbar { display: none; }
-  .ai-prompt { flex: 0 0 208px; min-height: 46px; }
-  .ai-welcome__voice { margin-bottom: 6px; }
+  .ai-prompt { flex: 0 0 auto; min-height: 38px; padding: 0 11px; font-size: 11px; }
 }
 
 /* Mobile chat scroll contract: only .message-list owns vertical scrolling. */
@@ -201,12 +193,6 @@ html[data-theme="dark"] body #root .ai-welcome p { color: rgba(220,228,248,.68);
 html[data-theme="dark"] body #root .ai-prompt { border-color: rgba(160,177,220,.18); background: rgba(19,40,67,.78); color: rgba(235,240,255,.82); }
 html[data-theme="dark"] body #root .ai-prompt:hover { border-color: rgba(143,127,255,.45); background: rgba(115,96,226,.2); }
 
-@media (max-width: 700px) {
-  body #root .ai-page__mobile-bar { top: max(8px, env(safe-area-inset-top)); right: 10px; left: 10px; min-height: 46px; }
-  body #root .ai-page__mobile-bar button { width: 42px; height: 42px; border-radius: 14px; }
-  body #root .ai-page__main > .chat-header { padding-top: max(62px, calc(52px + env(safe-area-inset-top))); }
-  html[data-theme="dark"] body #root .ai-page__mobile-bar button { border-color: rgba(160,177,220,.18); background: rgba(13,31,53,.86); color: rgba(235,240,255,.82); box-shadow: inset 0 1px 0 rgba(255,255,255,.05); }
-}
 
 .ai-side-card__title--history { grid-template-columns: auto 1fr auto; }
 .ai-history__new { width:30px; height:30px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.09); border-radius:9px; background:rgba(255,255,255,.045); color:var(--text-primary,#f5f6fa); cursor:pointer; }

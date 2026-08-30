@@ -94,7 +94,7 @@ const Reminders = () => {
       ),
     [],
   );
-  useEffect(() => { void loadReminders().catch(() => showToast("Eslatmalarni yuklab bo'lmadi", "error")); }, [showToast]);
+  useEffect(() => { void loadReminders().catch(() => showToast(t("reminders.loadError", "Eslatmalarni yuklab bo'lmadi"), "error")); }, [showToast, t]);
 
   /* =========================
      TOGGLE
@@ -108,8 +108,8 @@ const Reminders = () => {
     try {
       await updateReminderRecord(id, { completed: !reminder.completed });
       setReminders(getReminders());
-      showToast(reminder.completed ? "Eslatma qayta faollashtirildi" : "Eslatma bajarildi", "success");
-    } catch { showToast("Eslatma holatini yangilab bo'lmadi", "error"); }
+      showToast(reminder.completed ? t("reminders.reactivated", "Eslatma qayta faollashtirildi") : t("reminders.completedToast", "Eslatma bajarildi"), "success");
+    } catch { showToast(t("reminders.statusUpdateError", "Eslatma holatini yangilab bo'lmadi"), "error"); }
   };
 
   /* =========================
@@ -119,12 +119,12 @@ const Reminders = () => {
   const confirmDelete = async () => {
     if (deleteId === null) return;
 
-    try { await deleteReminderRecord(deleteId); } catch { showToast("Eslatmani o'chirib bo'lmadi", "error"); return; }
+    try { await deleteReminderRecord(deleteId); } catch { showToast(t("reminders.deleteError", "Eslatmani o'chirib bo'lmadi"), "error"); return; }
     setReminders(getReminders());
 
     setDeleteId(null);
     setOpenMenuId(null);
-    showToast("Eslatma o‘chirildi", "success");
+    showToast(t("reminders.deletedToast", "Eslatma o'chirildi"), "success");
   };
 
   /* =========================
@@ -153,11 +153,11 @@ const Reminders = () => {
 
   const saveReminder = async () => {
     if (!newTitle.trim()) {
-      showToast("Eslatma nomini kiriting", "error");
+      showToast(t("reminders.titleRequired", "Eslatma nomini kiriting"), "error");
       return;
     }
     if (!newDate || !newTime || savingRef.current) {
-      if (!newDate || !newTime) showToast("Sana va vaqtni tanlang", "error");
+      if (!newDate || !newTime) showToast(t("reminders.dateTimeRequired", "Sana va vaqtni tanlang"), "error");
       return;
     }
 
@@ -186,10 +186,10 @@ const Reminders = () => {
       }
 
       setReminders(getReminders());
-      showToast(editId !== null ? "Eslatma yangilandi" : "Eslatma yaratildi", "success");
+      showToast(editId !== null ? t("reminders.updatedToast", "Eslatma yangilandi") : t("reminders.createdToast", "Eslatma yaratildi"), "success");
       closeReminderModal();
     } catch {
-      showToast("Eslatmani saqlab bo'lmadi", "error");
+      showToast(t("reminders.saveError", "Eslatmani saqlab bo'lmadi"), "error");
     } finally {
       savingRef.current = false;
     }
@@ -257,8 +257,8 @@ const Reminders = () => {
       await updateReminderRecord(reminder.id, { dateKey, date: getDateLabel(dateKey), time, completed: false });
       setReminders(getReminders());
       setOpenMenuId(null);
-      showToast(`Eslatma ${minutes} daqiqaga kechiktirildi`, "success");
-    } catch { showToast("Eslatmani kechiktirib bo'lmadi", "error"); }
+      showToast(t("reminders.snoozedToast", "Eslatma {minutes} daqiqaga kechiktirildi", { minutes }), "success");
+    } catch { showToast(t("reminders.snoozeError", "Eslatmani kechiktirib bo'lmadi"), "error"); }
   };
 
   const filteredReminders =
@@ -326,7 +326,7 @@ const Reminders = () => {
       <header className="reminders-header">
         <div>
           <span className="reminders-header__eyebrow">
-            PERSONAL REMINDERS
+            {t("reminders.eyebrow", "PERSONAL REMINDERS")}
           </span>
 
           <h1>{t("reminders.title", "Eslatmalar")}</h1>
@@ -359,7 +359,7 @@ const Reminders = () => {
 
           <div>
             <span>
-              FAOL ESLATMALAR
+              {t("reminders.activeStat.label", "FAOL ESLATMALAR")}
             </span>
 
             <strong>
@@ -367,8 +367,7 @@ const Reminders = () => {
             </strong>
 
             <p>
-              Hozircha bajarilishi kerak
-              bo‘lgan eslatmalar
+              {t("reminders.activeStat.hint", "Hozircha bajarilishi kerak bo'lgan eslatmalar")}
             </p>
           </div>
         </div>
@@ -379,21 +378,21 @@ const Reminders = () => {
           </div>
 
           <div>
-            <span>BUGUN</span>
+            <span>{t("reminders.todayStat.label", "BUGUN")}</span>
 
             <strong>
               {todayCount}
             </strong>
 
             <p>
-              Bugungi eslatmalar
+              {t("reminders.todayStat.hint", "Bugungi eslatmalar")}
             </p>
           </div>
         </div>
 
         <div className="reminders-stat">
           <div className="reminders-stat__small-icon reminders-stat__small-icon--danger"><Clock3 size={16} /></div>
-          <div><span>KECHIKKAN</span><strong>{overdueCount}</strong><p>Vaqti o'tgan, hali bajarilmagan</p></div>
+          <div><span>{t("reminders.overdue", "KECHIKKAN")}</span><strong>{overdueCount}</strong><p>{t("reminders.overdueStat.hint", "Vaqti o'tgan, hali bajarilmagan")}</p></div>
         </div>
 
         <div className="reminders-stat">
@@ -403,7 +402,7 @@ const Reminders = () => {
 
           <div>
             <span>
-              BAJARILGAN
+              {t("reminders.done", "BAJARILGAN")}
             </span>
 
             <strong>
@@ -411,7 +410,7 @@ const Reminders = () => {
             </strong>
 
             <p>
-              Yakunlangan eslatmalar
+              {t("reminders.doneStat.hint", "Yakunlangan eslatmalar")}
             </p>
           </div>
         </div>
@@ -447,7 +446,7 @@ const Reminders = () => {
           <input
             type="text"
             placeholder={t("reminders.search", "Eslatma qidirish...")}
-            aria-label="Eslatmalardan qidirish"
+            aria-label={t("reminders.searchAria", "Eslatmalardan qidirish")}
             value={search}
             onChange={(event) =>
               setSearch(
@@ -471,7 +470,7 @@ const Reminders = () => {
           <div className="reminders-list__header">
             <div>
               <span>
-                REMINDER CENTER
+                {t("reminders.centerEyebrow", "REMINDER CENTER")}
               </span>
 
               <h2>
@@ -585,7 +584,7 @@ const Reminders = () => {
                             : reminder.id
                           );
                       }}
-                      aria-label={`${reminder.title} uchun amallar`}
+                      aria-label={t("reminders.actionsAria", "{title} uchun amallar", { title: reminder.title })}
                       aria-expanded={openMenuId === reminder.id}
                     >
                       <MoreHorizontal
@@ -635,8 +634,8 @@ const Reminders = () => {
                           />
 
                           {reminder.completed
-                            ? "Bajarilmagan qilish"
-                            : "Bajarilgan deb belgilash"}
+                            ? t("reminders.markIncomplete", "Bajarilmagan qilish")
+                            : t("reminders.markComplete", "Bajarilgan deb belgilash")}
                         </button>
 
                         <button
@@ -680,8 +679,7 @@ const Reminders = () => {
               </h3>
 
               <p>
-                Boshqa filter yoki
-                qidiruvni sinab ko‘ring.
+                {t("reminders.emptyHint", "Boshqa filter yoki qidiruvni sinab ko'ring.")}
               </p>
             </div>
           )}
@@ -699,11 +697,11 @@ const Reminders = () => {
           </div>
 
           <span className="reminders-side__eyebrow">
-            NEXT REMINDER
+            {t("reminders.sideEyebrow", "NEXT REMINDER")}
           </span>
 
           <h2>
-            Keyingi eslatma
+            {t("reminders.nextTitle", "Keyingi eslatma")}
           </h2>
 
           {nextReminder ? (
@@ -723,8 +721,7 @@ const Reminders = () => {
                   </strong>
 
                   <span>
-                    {nextReminder.dateKey ? getDateLabel(nextReminder.dateKey, new Date(), locale) : nextReminder.date} ·
-                    eslatma
+                    {t("reminders.nextReminderMeta", "{date} · eslatma", { date: nextReminder.dateKey ? getDateLabel(nextReminder.dateKey, new Date(), locale) : nextReminder.date })}
                   </span>
                 </div>
               </div>
@@ -735,15 +732,12 @@ const Reminders = () => {
               </div>
 
               <p className="reminders-side__text">
-                Muhim ishlarni unutmaslik
-                uchun eslatmalaringizni
-                oldindan belgilang.
+                {t("reminders.sideText", "Muhim ishlarni unutmaslik uchun eslatmalaringizni oldindan belgilang.")}
               </p>
             </>
           ) : (
             <p className="reminders-side__text">
-              Hozircha faol eslatma
-              mavjud emas.
+              {t("reminders.noActiveReminder", "Hozircha faol eslatma mavjud emas.")}
             </p>
           )}
 
@@ -756,7 +750,7 @@ const Reminders = () => {
           >
             <Plus size={14} />
 
-            Eslatma qo‘shish
+            {t("reminders.addButton", "Eslatma qo'shish")}
           </button>
         </aside>
       </section>
@@ -784,7 +778,7 @@ const Reminders = () => {
               onClick={
                 closeReminderModal
               }
-              aria-label="Eslatma oynasini yopish"
+              aria-label={t("reminders.closeModalAria", "Eslatma oynasini yopish")}
             >
               <X size={16} />
             </button>
@@ -799,8 +793,8 @@ const Reminders = () => {
 
             <span className="reminder-modal__eyebrow">
               {editId !== null
-                ? "EDIT REMINDER"
-                : "NEW REMINDER"}
+                ? t("reminders.editEyebrow", "EDIT REMINDER")
+                : t("reminders.newEyebrow", "NEW REMINDER")}
             </span>
 
             <h2>
@@ -811,14 +805,14 @@ const Reminders = () => {
 
             <p>
               {editId !== null
-                ? "Eslatma ma’lumotlarini yangilang."
-                : "Muhim ishingizni eslab qolish uchun yangi eslatma yarating."}
+                ? t("reminders.editHint", "Eslatma ma'lumotlarini yangilang.")
+                : t("reminders.createHint", "Muhim ishingizni eslab qolish uchun yangi eslatma yarating.")}
             </p>
 
             <input
               type="text"
               placeholder={t("reminders.name", "Eslatma nomi")}
-              aria-label="Eslatma nomi"
+              aria-label={t("reminders.name", "Eslatma nomi")}
               value={newTitle}
               onChange={(event) =>
                 setNewTitle(
@@ -830,7 +824,7 @@ const Reminders = () => {
             <textarea
               rows={3}
               placeholder={t("reminders.description", "Qisqacha tavsif...")}
-              aria-label="Eslatma tavsifi"
+              aria-label={t("reminders.descriptionAria", "Eslatma tavsifi")}
               value={newDescription}
               onChange={(event) =>
                 setNewDescription(
@@ -984,12 +978,11 @@ const Reminders = () => {
             </div>
 
             <h3>
-              Eslatmani o‘chirasizmi?
+              {t("reminders.deleteConfirmTitle", "Eslatmani o'chirasizmi?")}
             </h3>
 
             <p>
-              Bu amalni qaytarib bo‘lmaydi.
-              Eslatma butunlay o‘chiriladi.
+              {t("reminders.deleteConfirmDescription", "Bu amalni qaytarib bo'lmaydi. Eslatma butunlay o'chiriladi.")}
             </p>
 
             <div className="delete-modal__actions">

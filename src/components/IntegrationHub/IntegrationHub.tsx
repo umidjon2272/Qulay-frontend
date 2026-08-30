@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { useIntegrations } from "../../hooks/useIntegrations";
 import { ApiError } from "../../services/api/apiClient";
+import { integrationsHealthApi, type IntegrationsHealth, type IntegrationHealth } from "../../services/api/integrationsHealthApi";
 import {
   connectTelegram,
   disconnectTelegram,
@@ -27,6 +28,20 @@ type TelegramStep = "phone" | "code" | "password";
 
 const errorMessage = (error: unknown, fallback = "Integratsiya bilan ulanishda xatolik yuz berdi.") => error instanceof ApiError ? error.message : fallback;
 
+const HEALTH_LABELS: Record<IntegrationHealth["state"], string> = {
+  CONNECTED: "Ulangan",
+  TEMPORARY_ISSUE: "Vaqtincha muammo",
+  RECONNECT_REQUIRED: "Qayta ruxsat kerak",
+  DISCONNECTED: "Uzilgan",
+};
+
+const healthForItem = (health: IntegrationsHealth | null, id: string): IntegrationHealth | null => {
+  if (!health) return null;
+  if (id === "google-calendar" || id === "google-drive") return health.google;
+  if (id === "telegram") return health.telegram;
+  return null;
+};
+
 const telegramDeliveryMessage = (delivery: TelegramDeliveryType | null): string => {
   switch (delivery) {
     case "telegram_app": return "Kod boshqa ochiq Telegram qurilmangizga yuborildi.";
@@ -41,7 +56,7 @@ const telegramDeliveryMessage = (delivery: TelegramDeliveryType | null): string 
 
 const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: IntegrationHubProps) => {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const { showToast } = useToast();
   const [searchParams] = useSearchParams();
   const focusedIntegration = searchParams.get("focus");
@@ -59,7 +74,14 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const [telegramResendAvailableAt, setTelegramResendAvailableAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [health, setHealth] = useState<IntegrationsHealth | null>(null);
   const connectTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void integrationsHealthApi.get().then((result) => { if (active) setHealth(result); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (telegramStep !== "code" || telegramResendAvailableAt === null) return undefined;
@@ -176,45 +198,63 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       <div className="integration-hub__grid" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
         {visible.map((item) => {
           const Icon = item.icon;
+          const itemHealth = healthForItem(health, item.id);
+          const needsReconnect = itemHealth?.state === "RECONNECT_REQUIRED";
           return <article key={item.id} className={`integration-card integration-card--${item.color} ${focusedIntegration === item.id ? "integration-card--focused" : ""}`}>
-            <div className="integration-card__top"><div className="integration-card__icon"><Icon size={20} /></div>{item.comingSoon ? <span className="integration-card__soon">{t("integrations.soon", "Tez kunda")}</span> : item.connected && <span className="integration-card__connected"><Check size={10} /> {t("integrations.connected", "Ulangan")}</span>}</div>
+            <div className="integration-card__top">
+              <div className="integration-card__icon"><Icon size={20} /></div>
+              {item.comingSoon ? <span className="integration-card__soon">{t("integrations.soon", "Tez kunda")}</span>
+                : itemHealth ? <span className={`integration-card__connected integration-card__connected--${itemHealth.state.toLowerCase()}`}>{itemHealth.state === "CONNECTED" && <Check size={10} />} {HEALTH_LABELS[itemHealth.state]}</span>
+                : item.connected && <span className="integration-card__connected"><Check size={10} /> {t("integrations.connected", "Ulangan")}</span>}
+            </div>
             <div className="integration-card__info"><h3>{item.name}</h3><p>{item.description}</p></div>
-            <button type="button" className={`integration-card__button ${item.connected ? "integration-card__button--connected" : ""}`} disabled={item.comingSoon} onClick={() => { if (item.comingSoon) return; if (navigateOnSelect) { navigate(`/settings?tab=integrations&focus=${item.id}`); return; } setSelectedId(item.id); }}>{item.comingSoon ? t("integrations.unavailable", "Hozircha mavjud emas") : item.connected ? t("integrations.manage", "Boshqarish") : connectingId === item.id ? "Ulanmoqda..." : t("integrations.connect", "Ulash")}{!item.comingSoon && <ArrowUpRight size={13} />}</button>
+            <button type="button" className={`integration-card__button ${item.connected ? "integration-card__button--connected" : ""}`} disabled={item.comingSoon} onClick={() => { if (item.comingSoon) return; if (navigateOnSelect) { navigate(`/settings?tab=integrations&focus=${item.id}`); return; } setSelectedId(item.id); }}>{item.comingSoon ? t("integrations.unavailable", "Hozircha mavjud emas") : item.connected ? t("integrations.manage", "Boshqarish") : needsReconnect ? "Qayta ulash" : connectingId === item.id ? "Ulanmoqda..." : t("integrations.connect", "Ulash")}{!item.comingSoon && <ArrowUpRight size={13} />}</button>
           </article>;
         })}
       </div>
 
       {selected && <div className="integration-modal__overlay" onClick={closeModal}>
         <div className="integration-modal" onClick={(event) => event.stopPropagation()}>
-          <button type="button" className="integration-modal__close" onClick={closeModal} aria-label="Integratsiya oynasini yopish"><X size={17} /></button>
+          <button type="button" className="integration-modal__close" onClick={closeModal} aria-label={t("integrations.modal.close", "Integratsiya oynasini yopish")}><X size={17} /></button>
           <div className={`integration-modal__icon integration-modal__icon--${selected.color}`}>{SelectedIcon && <SelectedIcon size={23} />}</div>
           <h2>{selected.name}</h2>
           <p>{selected.id === "telegram" && selected.connected ? "Telegram ulangan" : selected.connected ? `${selected.name} Qulay AI bilan ulangan.` : `${selected.name}ni Qulay AI bilan ulang.`}</p>
-          {selected.id === "telegram" && selected.connected && telegramTemporaryError && <span className="integration-modal__error">Telegram bilan vaqtinchalik aloqa muammosi</span>}
+          {selected.id === "telegram" && selected.connected && telegramTemporaryError && <span className="integration-modal__error">{t("integrations.telegram.temporaryIssue", "Telegram bilan vaqtinchalik aloqa muammosi")}</span>}
+          {(() => {
+            const itemHealth = healthForItem(health, selected.id);
+            if (!itemHealth) return null;
+            return (
+              <div className="integration-modal__health">
+                <span className={`integration-modal__health-badge integration-modal__health-badge--${itemHealth.state.toLowerCase()}`}>{HEALTH_LABELS[itemHealth.state]}</span>
+                {itemHealth.lastSuccessfulSyncAt && <small>{t("integrations.lastSuccessfulSync", "Oxirgi muvaffaqiyatli sinxronizatsiya")}: {new Date(itemHealth.lastSuccessfulSyncAt).toLocaleString(locale)}</small>}
+                {itemHealth.lastErrorCode && <small>{t("common.error", "Xato")}: {itemHealth.lastErrorCode}</small>}
+              </div>
+            );
+          })()}
 
           {selected.connected ? <>
-            <div className="integration-modal__security"><ShieldCheck size={17} /><div><strong>Ulangan hisob</strong><span>{selected.username || "Faol ulanish"}</span></div></div>
+            <div className="integration-modal__security"><ShieldCheck size={17} /><div><strong>{t("integrations.connectedAccount", "Ulangan hisob")}</strong><span>{selected.username || t("integrations.activeConnection", "Faol ulanish")}</span></div></div>
             <button type="button" className="integration-modal__connect integration-modal__connect--danger" onClick={() => void disconnectSelected()} disabled={telegramBusy}><Unlink size={15} /> {telegramBusy ? "Uzilmoqda..." : selected.id === "telegram" ? "Uzish" : "Ulanishni uzish"}</button>
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
           </> : selected.id === "telegram" ? <>
             <label className="integration-modal__label">{telegramStep === "phone" ? "Telefon raqam" : telegramStep === "code" ? "Telegram kodi" : "2FA parol"}</label>
             {telegramStep === "phone" && <input type="tel" className="integration-modal__field" placeholder="+998901234567" value={telegramPhone} onChange={(event) => setTelegramPhone(event.target.value)} autoComplete="tel" />}
             {telegramStep === "code" && <input type="text" inputMode="numeric" className="integration-modal__field" placeholder="12345" value={telegramCode} onChange={(event) => setTelegramCode(event.target.value)} autoComplete="one-time-code" />}
-            {telegramStep === "password" && <input type="password" className="integration-modal__field" placeholder="Telegram 2FA paroli" value={telegramPassword} onChange={(event) => setTelegramPassword(event.target.value)} autoComplete="current-password" />}
+            {telegramStep === "password" && <input type="password" className="integration-modal__field" placeholder={t("integrations.telegram.twoFactorPassword", "Telegram 2FA paroli")} value={telegramPassword} onChange={(event) => setTelegramPassword(event.target.value)} autoComplete="current-password" />}
             {telegramStep === "code" && <span className="integration-modal__note integration-modal__note--delivery">{telegramDeliveryMessage(telegramDelivery)}</span>}
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
             <button type="button" className="integration-modal__connect" onClick={() => void submitTelegramStep()} disabled={telegramBusy}>{telegramBusy ? "Tekshirilmoqda..." : telegramStep === "phone" ? "Kodni yuborish" : telegramStep === "code" ? "Kodni tasdiqlash" : "Ulanishni yakunlash"}<ExternalLink size={15} /></button>
             {telegramStep === "code" && <button type="button" className="integration-modal__resend" onClick={() => void resendTelegramStep()} disabled={telegramBusy || resendRemainingSeconds > 0}>{resendRemainingSeconds > 0 ? `Qayta yuborish (${resendRemainingSeconds}s)` : "Qayta yuborish"}</button>}
-            <span className="integration-modal__note">Session Qulay AI serverida shifrlangan holda saqlanadi.</span>
+            <span className="integration-modal__note">{t("integrations.telegram.sessionEncrypted", "Session Qulay AI serverida shifrlangan holda saqlanadi.")}</span>
           </> : (selected.id === "google-calendar" || selected.id === "google-drive") ? <>
             <button type="button" className="integration-modal__connect" onClick={() => { if (connectingId) return; setConnectingId(selected.id); void getGoogleConnectUrl().then(({ url }) => { window.location.assign(url); }).catch((error) => { const message = errorMessage(error, "Google OAuth oynasini ochib bo'lmadi."); setTelegramError(message); showToast(message, "error"); setConnectingId(null); }); }} disabled={connectingId === selected.id}>{connectingId === selected.id ? "Google oynatilmoqda..." : "Google bilan ulash"}<ExternalLink size={15} /></button>
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
-            <span className="integration-modal__note">Google OAuth oynasida Calendar va Drive ruxsatlarini tasdiqlang.</span>
+            <span className="integration-modal__note">{t("integrations.google.oauthHint", "Google OAuth oynasida Calendar va Drive ruxsatlarini tasdiqlang.")}</span>
           </> : <>
-            <label className="integration-modal__label">Username</label>
+            <label className="integration-modal__label">{t("integrations.username", "Username")}</label>
             <input type="text" className="integration-modal__field" placeholder="@username" value={username} onChange={(event) => setUsername(event.target.value)} />
             <button type="button" className="integration-modal__connect" onClick={() => { if (connectingId) return; setConnectingId(selected.id); connectTimerRef.current = window.setTimeout(() => { connect(selected.id, username); closeModal(); }, 650); }} disabled={connectingId === selected.id}>{connectingId === selected.id ? "Ulanmoqda..." : `${selected.name}ni ulash`}<ExternalLink size={15} /></button>
-            <span className="integration-modal__note">OAuth ulanishi keyingi bosqichda qo‘shiladi.</span>
+            <span className="integration-modal__note">{t("integrations.oauthComingSoon", "OAuth ulanishi keyingi bosqichda qo‘shiladi.")}</span>
           </>}
         </div>
       </div>}

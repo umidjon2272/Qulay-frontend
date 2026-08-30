@@ -1,8 +1,9 @@
 import { Eye, EyeOff, KeyRound, X } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
-import { ApiError } from "../../services/api/apiClient";
+import { getApiErrorMessage } from "../../services/api/apiClient";
 import { changePassword } from "../../services/authService";
+import { useI18n } from "../../i18n/useI18n";
 
 import "./ChangePasswordModal.scss";
 
@@ -13,29 +14,13 @@ type ChangePasswordModalProps = {
 
 type PasswordField = "currentPassword" | "newPassword" | "confirmPassword";
 
-const fieldLabels: Record<PasswordField, string> = {
-  currentPassword: "Joriy parol",
-  newPassword: "Yangi parol",
-  confirmPassword: "Yangi parolni takrorlang",
-};
-
-const getErrorMessage = (error: unknown): string => {
-  if (!(error instanceof ApiError)) return "Server bilan bog'lanib bo'lmadi.";
-  const serverMessage = typeof error.message === "string" ? error.message : "";
-
-  if (error.status === 400) {
-    if (serverMessage.includes("Joriy parol")) return "Joriy parol noto'g'ri";
-    if (serverMessage.includes("mos emas")) return "Yangi parollar mos emas";
-    if (serverMessage.includes("bir xil")) return "Yangi parol eski parol bilan bir xil bo'lmasin";
-    if (serverMessage.includes("8") || serverMessage.includes("length")) return "Yangi parol kamida 8 ta belgidan iborat bo'lsin";
-    return "Kiritilgan ma'lumotlarni tekshiring.";
-  }
-  if (error.status === 401) return "Sessiya muddati tugagan. Qayta kiring.";
-  if (error.status >= 500) return "Serverda vaqtinchalik xatolik yuz berdi.";
-  return "Server bilan bog'lanib bo'lmadi.";
-};
-
 const ChangePasswordModal = ({ onCancel, onSuccess }: ChangePasswordModalProps) => {
+  const { t } = useI18n();
+  const fieldLabels: Record<PasswordField, string> = {
+    currentPassword: t("changePassword.current", "Joriy parol"),
+    newPassword: t("changePassword.new", "Yangi parol"),
+    confirmPassword: t("changePassword.confirm", "Yangi parolni takrorlang"),
+  };
   const [values, setValues] = useState<Record<PasswordField, string>>({
     currentPassword: "",
     newPassword: "",
@@ -71,15 +56,15 @@ const ChangePasswordModal = ({ onCancel, onSuccess }: ChangePasswordModalProps) 
     event.preventDefault();
     if (busy) return;
     if (!values.currentPassword.trim() || !values.newPassword.trim() || !values.confirmPassword.trim()) {
-      setError("Barcha maydonlarni to'ldiring.");
+      setError(t("changePassword.fillAll", "Barcha maydonlarni to'ldiring."));
       return;
     }
     if (values.newPassword.length < 8) {
-      setError("Yangi parol kamida 8 ta belgidan iborat bo'lsin");
+      setError(t("changePassword.tooShort", "Yangi parol kamida 8 ta belgidan iborat bo'lsin"));
       return;
     }
     if (values.newPassword !== values.confirmPassword) {
-      setError("Yangi parollar mos emas");
+      setError(t("changePassword.mismatch", "Yangi parollar mos emas"));
       return;
     }
 
@@ -88,7 +73,7 @@ const ChangePasswordModal = ({ onCancel, onSuccess }: ChangePasswordModalProps) 
       const response = await changePassword(values);
       if (response.requiresRelogin) await onSuccess();
     } catch (requestError) {
-      setError(getErrorMessage(requestError));
+      setError(getApiErrorMessage(requestError));
     } finally {
       setBusy(false);
     }
@@ -97,12 +82,12 @@ const ChangePasswordModal = ({ onCancel, onSuccess }: ChangePasswordModalProps) 
   return (
     <div className="change-password__overlay" onClick={busy ? undefined : onCancel}>
       <section className="change-password" role="dialog" aria-modal="true" aria-labelledby="change-password-title" onClick={(event) => event.stopPropagation()}>
-        <button type="button" className="change-password__close" onClick={onCancel} aria-label="Yopish" disabled={busy}>
+        <button type="button" className="change-password__close" onClick={onCancel} aria-label={t("common.close", "Yopish")} disabled={busy}>
           <X size={17} />
         </button>
         <div className="change-password__icon"><KeyRound size={20} /></div>
-        <h2 id="change-password-title">Parolni o'zgartirish</h2>
-        <p>Hisobingiz xavfsizligi uchun yangi parol kiriting.</p>
+        <h2 id="change-password-title">{t("changePassword.title", "Parolni o'zgartirish")}</h2>
+        <p>{t("changePassword.subtitle", "Hisobingiz xavfsizligi uchun yangi parol kiriting.")}</p>
 
         <form onSubmit={submit}>
           {(Object.keys(fieldLabels) as PasswordField[]).map((field) => (
@@ -127,8 +112,8 @@ const ChangePasswordModal = ({ onCancel, onSuccess }: ChangePasswordModalProps) 
 
           {error && <p className="change-password__error" role="alert">{error}</p>}
           <div className="change-password__actions">
-            <button type="button" className="change-password__cancel" onClick={onCancel} disabled={busy}>Bekor qilish</button>
-            <button type="submit" className="change-password__submit" disabled={busy}>{busy ? "Yangilanmoqda..." : "Parolni yangilash"}</button>
+            <button type="button" className="change-password__cancel" onClick={onCancel} disabled={busy}>{t("common.cancel", "Bekor qilish")}</button>
+            <button type="submit" className="change-password__submit" disabled={busy}>{busy ? t("changePassword.updating", "Yangilanmoqda...") : t("changePassword.submit", "Parolni yangilash")}</button>
           </div>
         </form>
       </section>

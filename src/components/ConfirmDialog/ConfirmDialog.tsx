@@ -1,5 +1,6 @@
 import { AlertTriangle, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useI18n } from "../../i18n/useI18n";
 
 import "./ConfirmDialog.scss";
 
@@ -14,10 +15,11 @@ type ConfirmDialogProps = {
 const ConfirmDialog = ({
   title,
   description,
-  confirmLabel = "Tasdiqlash",
+  confirmLabel,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) => {
+  const { t } = useI18n();
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -53,15 +55,15 @@ const ConfirmDialog = ({
       aria-labelledby="confirm-dialog-title"
       onClick={(event) => event.stopPropagation()}
     >
-      <button type="button" className="confirm-dialog__close" onClick={onCancel} aria-label="Yopish" disabled={busy}>
+      <button type="button" className="confirm-dialog__close" onClick={onCancel} aria-label={t("common.close", "Yopish")} disabled={busy}>
         <X size={17} />
       </button>
       <div className="confirm-dialog__icon"><AlertTriangle size={20} /></div>
       <h2 id="confirm-dialog-title">{title}</h2>
       <p>{description}</p>
       <div className="confirm-dialog__actions">
-        <button type="button" className="confirm-dialog__cancel" onClick={onCancel} disabled={busy}>Bekor qilish</button>
-        <button type="button" className="confirm-dialog__confirm" onClick={confirm} disabled={busy}>{busy ? "Saqlanmoqda..." : confirmLabel}</button>
+        <button type="button" className="confirm-dialog__cancel" onClick={onCancel} disabled={busy}>{t("common.cancel", "Bekor qilish")}</button>
+        <button type="button" className="confirm-dialog__confirm" onClick={confirm} disabled={busy}>{busy ? t("common.saving", "Saqlanmoqda...") : (confirmLabel || t("common.confirm", "Tasdiqlash"))}</button>
       </div>
     </section>
   </div>

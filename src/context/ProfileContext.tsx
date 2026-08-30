@@ -8,6 +8,7 @@ import {
 
 import { getProfile, loadProfile } from "../services/profileService";
 import { subscribeToWorkspaceData } from "../services/workspaceEvents";
+import { getSettings, updateSettings } from "../services/settingsService";
 import { ProfileContext } from "./ProfileContextValue";
 import { useAuth } from "../hooks/useAuth";
 
@@ -29,7 +30,12 @@ export const ProfileProvider = ({ children }: { children: ReactNode }) => {
     const current = getProfile();
     if (!current.name) setNameState(fallbackName);
     if (!current.email) setEmailState(user.email);
-    void loadProfile().catch(() => undefined);
+    void loadProfile().then((profile) => {
+      // The backend-stored language preference is the source of truth on a fresh
+      // device/session — apply it locally so useI18n reflects it without a reload.
+      const desired = profile.language === "ru" ? "Русский" : "O'zbekcha";
+      if (getSettings().language !== desired) updateSettings({ language: desired });
+    }).catch(() => undefined);
   }, [fallbackName, status, user]);
 
   useEffect(() => subscribeToWorkspaceData("profile", () => {
