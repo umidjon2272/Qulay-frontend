@@ -22,11 +22,11 @@ const Files = lazy(() => import("../pages/Files/Files"));
 const Settings = lazy(() => import("../pages/Settings/Settings"));
 const Integrations = lazy(() => import("../pages/Integrations/Integrations"));
 const Finance = lazy(() => import("../pages/Finance/Finance"));
-const Approvals = lazy(() => import("../pages/Approvals/Approvals"));
 const Billing = lazy(() => import("../pages/Billing/Billing"));
 const NotFound = lazy(() => import("../pages/NotFound/NotFound"));
 const AdminConsole = lazy(() => import("../pages/Admin/AdminConsole"));
 const AdminLogin = lazy(() => import("../pages/Admin/AdminLogin"));
+const Legal = lazy(() => import("../pages/Legal/Legal"));
 
 const PageFallback = () => {
   const { t } = useI18n();
@@ -59,6 +59,8 @@ export const router = createBrowserRouter([
   { path: "/login", element: withSuspense(<Login />) },
   { path: "/forgot-password", element: withSuspense(<ForgotPassword />) },
   { path: "/reset-password", element: withSuspense(<ResetPassword />) },
+  { path: "/privacy", element: withSuspense(<Legal kind="privacy" />) },
+  { path: "/terms", element: withSuspense(<Legal kind="terms" />) },
   {
     element: (
       <RequireAuth>
@@ -80,7 +82,7 @@ export const router = createBrowserRouter([
       { path: "/reminders", element: withSuspense(<Reminders />) },
       { path: "/files", element: withSuspense(<Files />) },
       { path: "/finance", element: withSuspense(<Finance />) },
-      { path: "/approvals", element: withSuspense(<Approvals />) },
+      { path: "/approvals", element: <Navigate to="/ai-assistant" replace /> },
       { path: "/contacts", element: <Navigate to="/dashboard" replace /> },
       { path: "/memory", element: <Navigate to="/settings?tab=ai" replace /> },
       { path: "/billing", element: withSuspense(<Billing />) },

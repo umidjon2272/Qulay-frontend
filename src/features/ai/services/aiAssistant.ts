@@ -2,6 +2,7 @@ import { routeMessage } from "../router/chatRouter";
 import type { AIAction } from "../actions/actionTypes";
 import type { TelegramSelection } from "../router/routerTypes";
 import { agentApi } from "../../../services/api/agentApi";
+import { getLocale } from "../../../i18n/useI18n";
 
 export type { AIAction } from "../actions/actionTypes";
 export type { TelegramCandidate, TelegramSelection } from "../router/routerTypes";
@@ -42,6 +43,7 @@ export const getAIReply = async (
     const result = await agentApi.chat(input, options.conversationId ?? undefined, options.signal);
     throwIfAborted(options.signal);
     const pending = result.pendingConfirmation;
+    const ru = getLocale() === 'ru';
     return {
       text: result.message,
       conversationId: result.conversationId,
@@ -49,10 +51,10 @@ export const getAIReply = async (
       action: pending ? {
         type: "confirmAgentAction",
         payload: { actionId: pending.id, tool: pending.tool, preview: pending.preview },
-        label: "AI amali",
+        label: ru ? "Действие AI" : "AI amali",
         confirmationMessage: result.message,
-        success: "✅ Amal bajarildi.",
-        error: "Amalni bajarishda xatolik yuz berdi.",
+        success: ru ? "✅ Действие выполнено." : "✅ Amal bajarildi.",
+        error: ru ? "Не удалось выполнить действие." : "Amalni bajarishda xatolik yuz berdi.",
       } : undefined,
     };
   }

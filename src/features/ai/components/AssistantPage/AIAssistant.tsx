@@ -1,5 +1,5 @@
-import { lazy, Suspense, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BellPlus,
   CalendarDays,
@@ -16,6 +16,7 @@ import {
 import { useAIChat } from "../../hooks/useAIChat";
 import { useI18n } from "../../../../i18n/useI18n";
 import { usePlatform } from "../../../../context/PlatformContext";
+import { agentApi } from "../../../../services/api/agentApi";
 
 import ChatHeader from "../ChatHeader/ChatHeader";
 import ChatHistoryDrawer from "../ChatHistoryDrawer/ChatHistoryDrawer";
@@ -62,6 +63,7 @@ const AIAssistant = () => {
   const { name: platformName } = usePlatform();
   const suggestedPrompts = [t("ai.todayPlan", "Bugungi rejamni ayt"), t("ai.newTask", "Yangi vazifa yarat"), t("ai.newReminder", "Eslatma qo'sh")];
   const navigate = useNavigate();
+  const [searchParams,setSearchParams]=useSearchParams();
   const hasConversation = messages.length > 1;
   const filteredConversations = useMemo(() => {
     const query = historySearch.trim().toLocaleLowerCase();
@@ -71,6 +73,7 @@ const AIAssistant = () => {
     () => conversations.find((item) => item.id === activeConversationId)?.title,
     [conversations, activeConversationId],
   );
+  useEffect(()=>{const actionId=searchParams.get('action');if(!actionId)return;void agentApi.listActions('PENDING',1,100).then((result)=>{const action=result.items.find((item)=>item.id===actionId);if(action?.conversationId)void loadConversation(action.conversationId);setSearchParams({}, {replace:true});}).catch(()=>setSearchParams({}, {replace:true}));},[loadConversation,searchParams,setSearchParams]);
 
   const commitConversationRename = async (id: string) => {
     const title = editingTitle.trim();
@@ -91,6 +94,12 @@ const AIAssistant = () => {
   };
 
   const closeVoiceMode = () => setIsVoiceModeOpen(false);
+  const startNewChat = () => {
+    newChat();
+    setIsHistoryDrawerOpen(false);
+    setInput("");
+    window.setTimeout(() => document.querySelector<HTMLTextAreaElement>(".ai-page .chat-input textarea")?.focus(), 0);
+  };
   const focusTextComposer = () => {
     closeVoiceMode();
     window.setTimeout(() => {
@@ -183,7 +192,8 @@ const AIAssistant = () => {
             title={activeConversationTitle}
             onClear={clearChat}
             onOpenHistory={() => setIsHistoryDrawerOpen(true)}
-            onNewChat={newChat}
+            onNewChat={startNewChat}
+            onBack={() => navigate("/dashboard")}
           />
 
           {!hasConversation ? (

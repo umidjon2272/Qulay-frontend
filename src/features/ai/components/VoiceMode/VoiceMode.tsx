@@ -19,6 +19,8 @@ import type { AIAction } from "../../actions/actionTypes";
 import type { ChatMessage } from "../../context/AIChatContextValue";
 import { useAIChat } from "../../hooks/useAIChat";
 import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
+import { cancelAIAction } from "../../actions/actionExecutor";
+import { subscriptionApi } from "../../../../services/api/subscriptionApi";
 
 import VoiceOrb, { type VoiceOrbState } from "../VoiceOrb/VoiceOrb";
 
@@ -49,11 +51,15 @@ const getActionDetails = (t: TFn, action: AIAction) => {
       return { title: t("voiceMode.action.createNote", "Qayd yozish"), subject: action.payload.title, meta: t("voiceMode.action.newNote", "Yangi qayd") };
     case "getTodayPlan":
       return { title: t("voiceMode.action.getTodayPlan", "Bugungi rejani ko'rish"), subject: t("briefing.title", "Bugungi reja"), meta: t("voiceMode.action.preparing", "Tayyorlanmoqda") };
+    case "confirmAgentAction":
+      return { title: t("voiceMode.action.confirmAgent", "AI amalini tasdiqlash"), subject: action.label, meta: typeof action.payload.preview === "object" ? JSON.stringify(action.payload.preview) : String(action.payload.preview ?? "") };
+    case "sendTelegramMessage":
+      return { title: t("voiceMode.action.telegram", "Telegram xabarini yuborish"), subject: action.payload.recipientName, meta: action.payload.text };
   }
 };
 
-const isConfirmation = (text: string) => /tasdiq|tasdiqlay|ha,?\s*(mayli|albatta)?|confirm/i.test(text);
-const isCancellation = (text: string) => /bekor|yo'q|yoq|cancel/i.test(text);
+const isConfirmation = (text: string) => /tasdiq|tasdiqlay|ha,?\s*(mayli|albatta)?|confirm|подтвержда|да[,\s]*(можно|конечно)?/i.test(text);
+const isCancellation = (text: string) => /bekor|yo'q|yoq|cancel|отмен|нет/i.test(text);
 
 const getLatest = (messages: ChatMessage[], role: ChatMessage["role"]) =>
   [...messages].reverse().find((message) => message.id !== 0 && message.role === role);
@@ -75,6 +81,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
   const [voiceReply, setVoiceReply] = useState(() => getSettings().ai.voiceReply);
   const lastSpokenIdRef = useRef<number | null>(null);
+  const sessionStartedAtRef = useRef<number | null>(null);
 
   const latestAI = useMemo(() => getLatest(messages, "ai"), [messages]);
   const latestAIRef = useRef<ChatMessage | undefined>(latestAI);
@@ -101,13 +108,13 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     }
 
     if (pendingAction && actionStatus === "pending" && isCancellation(normalized)) {
-      setActionStatus("cancelled");
-      showToast(t("voiceMode.actionCancelled", "Amal bekor qilindi"), "success");
+      setActionStatus("loading");
+      void cancelAIAction(pendingAction).then((result) => { setActionStatus(result.success ? "cancelled" : "pending"); showToast(result.message, result.success ? "success" : "error"); });
       return;
     }
 
     sendMessage(transcript);
-  }, [actionStatus, executeAction, pendingAction, sendMessage, showToast, t]);
+  }, [actionStatus, executeAction, pendingAction, sendMessage, showToast]);
 
   const { isSupported, isListening, interimTranscript, start, stop, requestPermission } = useSpeechRecognition({
     onResult: handleResult,
@@ -121,7 +128,9 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     setMuted(false);
     setVoiceError("");
     setActionStatus("pending");
-  }, [open]);
+    sessionStartedAtRef.current = Date.now();
+    void subscriptionApi.mine().then((info) => { if (info.usage.voiceMinutes.used >= info.usage.voiceMinutes.limit) setVoiceError(t("billing.voiceLimitReached", "Ovozli daqiqalar limiti tugadi.")); }).catch(() => undefined);
+  }, [open, t]);
 
   useEffect(() => {
     setActionStatus("pending");
@@ -192,6 +201,11 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   const handleEnd = () => {
     stop();
     stopSpeaking();
+    if (sessionStartedAtRef.current) {
+      const seconds = Math.max(1, Math.ceil((Date.now() - sessionStartedAtRef.current) / 1000));
+      sessionStartedAtRef.current = null;
+      void subscriptionApi.logVoiceUsage(seconds).catch(() => undefined);
+    }
     onClose();
   };
 
@@ -209,6 +223,10 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     setActionStatus("loading");
     const result = await executeAction(pendingAction);
     setActionStatus(result.success ? "success" : "pending");
+  };
+  const handleActionCancel = async () => {
+    if (!pendingAction || actionStatus !== "pending") return;
+    setActionStatus("loading"); const result = await cancelAIAction(pendingAction); setActionStatus(result.success ? "cancelled" : "pending"); showToast(result.message, result.success ? "success" : "error");
   };
 
   return (
@@ -266,7 +284,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
                   <Check size={14} />
                   {actionStatus === "loading" ? t("voiceMode.saving", "Saqlanmoqda") : t("common.confirm", "Tasdiqlash")}
                 </button>
-                <button type="button" onClick={() => setActionStatus("cancelled")} disabled={actionStatus === "loading"}>
+                <button type="button" onClick={() => void handleActionCancel()} disabled={actionStatus === "loading"}>
                   {t("common.cancel", "Bekor qilish")}
                 </button>
               </div>

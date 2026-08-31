@@ -1,4 +1,4 @@
-import { Menu, Minus, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowLeft, Menu, Minus, Plus, Sparkles, Trash2, X } from "lucide-react";
 
 import { usePlatform } from "../../../../context/PlatformContext";
 import { useI18n } from "../../../../i18n/useI18n";
@@ -12,13 +12,15 @@ type ChatHeaderProps = {
   onClear?: () => void;
   onOpenHistory?: () => void;
   onNewChat?: () => void;
+  onBack?: () => void;
 };
 
-const ChatHeader = ({ title, onClose, onMinimize, onClear, onOpenHistory, onNewChat }: ChatHeaderProps) => {
+const ChatHeader = ({ title, onClose, onMinimize, onClear, onOpenHistory, onNewChat, onBack }: ChatHeaderProps) => {
   const { name: platformName } = usePlatform();
   const { t } = useI18n();
   return (
     <header className="chat-header">
+      {onBack && <button type="button" className="chat-header__btn chat-header__btn--back" onClick={onBack} title={t("nav.home", "Bosh sahifa")} aria-label={t("ai.backHome", "Bosh sahifaga qaytish")}><ArrowLeft size={19} /></button>}
       {onOpenHistory && (
         <button
           type="button"

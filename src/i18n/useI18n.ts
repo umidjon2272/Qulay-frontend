@@ -284,6 +284,12 @@ Object.assign(RU, {
   "ai.chat.dialog": "Окно диалога Qulay AI",
   "contacts.usernamePlaceholder": "имя пользователя",
   "contacts.tagsPlaceholder": "VIP, клиент, продажи",
+  "nav.finance": "Финансы", "nav.notes": "Заметки", "nav.integrations": "Интеграции", "nav.notifications": "Уведомления", "nav.billing": "Тарифы и лимиты",
+  "ai.backHome": "Вернуться на главную",
+  "billing.aiCredits": "AI кредиты", "billing.voiceMinutes": "Голосовые минуты", "billing.aiCreditUnit": "AI кредит", "billing.voiceMinuteUnit": "голосовая минута", "billing.voiceLimitReached": "Лимит голосовых минут исчерпан.",
+  "admin.plan.title": "Тарифы и реальные лимиты", "admin.plan.detail": "Эти значения применяются на странице тарифа пользователя и в ограничениях backend.", "admin.plan.name": "Название", "admin.plan.price": "Цена", "admin.plan.currency": "Валюта", "admin.plan.saved": "Тариф сохранён", "admin.plan.assign": "Назначить тариф",
+  "ai.action.calendarMeeting": "Встреча в календаре", "ai.action.todaySummary": "Задачи, напоминания и встречи будут собраны вместе.", "ai.action.prepared": "Действие подготовлено AI", "ai.action.agent": "AI агент", "ai.action.cancelled": "Отменено", "ai.action.recipient": "Получатель", "ai.action.message": "Сообщение",
+  "voiceMode.action.confirmAgent": "Подтвердить действие AI", "voiceMode.action.telegram": "Отправить сообщение в Telegram",
 });
 
 export const useI18n = () => {

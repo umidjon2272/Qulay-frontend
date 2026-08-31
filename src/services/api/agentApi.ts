@@ -10,6 +10,7 @@ export type AgentChatResponse = {
 export type AgentActionStatus = 'PENDING' | 'EXECUTING' | 'EXECUTED' | 'CANCELLED' | 'EXPIRED' | 'FAILED';
 export type AgentAction = {
   id: string;
+  conversationId: string | null;
   toolName: string;
   input: unknown;
   preview: unknown;

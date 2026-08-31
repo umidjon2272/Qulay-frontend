@@ -133,3 +133,13 @@ export const executeAIAction = async (
     return { success: false, message: fallback };
   }
 };
+
+export const cancelAIAction = async (action: AIAction): Promise<AIActionExecutionResult> => {
+  if (action.type !== "confirmAgentAction") return { success: true, message: "Amal bekor qilindi." };
+  try {
+    const result = await agentApi.confirm(action.payload.actionId, false);
+    return { success: result.status === "cancelled", message: result.message || "Amal bekor qilindi." };
+  } catch (error) {
+    return { success: false, message: getApiErrorMessage(error, action.error) };
+  }
+};

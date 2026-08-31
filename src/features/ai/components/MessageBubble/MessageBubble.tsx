@@ -5,6 +5,7 @@ import type { ChatMessage } from "../../context/AIChatContextValue";
 import type { AIAction } from "../../actions/actionTypes";
 import { useAIChat } from "../../hooks/useAIChat";
 import { useI18n } from "../../../../i18n/useI18n";
+import { cancelAIAction } from "../../actions/actionExecutor";
 
 import ActionConfirmation from "../ActionConfirmation/ActionConfirmation";
 import TelegramSelectionCard from "../TelegramSelection/TelegramSelection";
@@ -73,7 +74,14 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
                   setActionFeedback(action.error);
                 }
               }}
-              onDismiss={() => { setActionFeedback(""); setActionStatus("cancelled"); }}
+              onDismiss={() => {
+                if (actionStatus !== "pending") return;
+                setActionStatus("loading");
+                void cancelAIAction(action).then((result) => {
+                  setActionFeedback(result.success ? "" : result.message);
+                  setActionStatus(result.success ? "cancelled" : "pending");
+                });
+              }}
             />
           )}
           {!isUser && actionFeedback && <p className="message-bubble__action-error" role="alert">{actionFeedback}</p>}

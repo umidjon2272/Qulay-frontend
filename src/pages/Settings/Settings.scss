@@ -1223,6 +1223,15 @@ html[data-theme="dark"] body #root .settings-row-icon {
 .settings-field-grid label { display:grid; gap:7px; color:var(--text-secondary, #bcc2cf); font-size:12px; font-weight:700; }
 .settings-time-range input,
 .settings-field-grid select { height:42px; padding:0 11px; border:1px solid rgba(255,255,255,.1); border-radius:11px; background:rgba(255,255,255,.055); color:var(--text-primary, #f8f9fc); outline:none; }
+html[data-theme="dark"] body #root .settings-card h2,
+html[data-theme="dark"] body #root .settings-toggle-row strong,
+html[data-theme="dark"] body #root .settings-card label { color:#f7f9ff; }
+html[data-theme="dark"] body #root .settings-card > p,
+html[data-theme="dark"] body #root .settings-toggle-row span,
+html[data-theme="dark"] body #root .settings-root__group small,
+html[data-theme="dark"] body #root .settings-subpage__header p { color:#c4cede; }
+html[data-theme="dark"] body #root .settings-time-range input,
+html[data-theme="dark"] body #root .settings-field-grid select { color:#f7f9ff;background:#0b1a2e;border-color:rgba(181,201,237,.25); }
 .settings-time-range span { padding-bottom:12px; color:#8e96a5; }
 .settings-field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:18px 0; }
 @media (max-width: 640px) { .settings-field-grid { grid-template-columns:1fr; } .settings-time-range { grid-template-columns:1fr; } .settings-time-range span { display:none; } }

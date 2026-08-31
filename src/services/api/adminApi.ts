@@ -19,7 +19,9 @@ export type AdminUserDetail = AdminUser & {
   security: { activeRefreshSessions: number; passwordResetRequests: number };
   integrations: { telegram: { connected: boolean; status: string }; google: { connected: boolean; status: string } };
   lastActivity: string | null;
+  subscription?: { tier: AdminPlan['tier']; status: string; currentPeriodEnd: string | null } | null;
 };
+export type AdminPlan = { tier: 'STARTER'|'PRO'|'BUSINESS'; name:string; monthlyPrice:number; currency:'UZS'|'USD'; isActive:boolean; limits:{ aiCreditsPerMonth:number; toolActionsPerMonth:number; voiceMinutesPerMonth:number; files:number; storageMb:number; memories:number } };
 export type AdminPage<T> = { items: T[]; meta: { page: number; limit: number; total: number; totalPages: number } };
 
 type RateLimitInfo = { max: number; windowMinutes: number };
@@ -125,4 +127,7 @@ export const adminApi = {
   system: () => request<AdminSystem>("/admin/system"),
   settings: () => request<unknown>("/admin/settings").then(normalizeAdminSettings),
   updatePlatformSettings: (input: { name?: string; registrationEnabled?: boolean }) => request<{ name: string; registrationEnabled: boolean; updatedAt: string }>("/admin/settings/platform", { method: "PATCH", body: JSON.stringify(input) }),
+  plans: () => request<AdminPlan[]>("/admin/plans"),
+  updatePlan: (tier: AdminPlan['tier'], input: Partial<Omit<AdminPlan,'tier'|'limits'>&AdminPlan['limits']>) => request<AdminPlan>(`/admin/plans/${tier}`, { method: 'PATCH', body: JSON.stringify(input) }),
+  assignSubscription: (userId: string, tier: AdminPlan['tier'], status = 'ACTIVE') => request(`/admin/users/${userId}/subscription`, { method: 'PATCH', body: JSON.stringify({ tier, status }) }),
 };

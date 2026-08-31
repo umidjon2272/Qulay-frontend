@@ -98,6 +98,7 @@ const TopBar = () => {
     if (entity.includes("REMINDER")) return "/reminders";
     if (entity.includes("MEETING") || entity.includes("CALENDAR")) return "/calendar";
     if (entity.includes("FILE")) return "/files";
+    if (entity.includes("AI_AGENT_ACTION") && notification.entityId) return `/ai-assistant?action=${notification.entityId}`;
     if (entity.includes("TELEGRAM") || entity.includes("AI")) return "/ai-assistant";
     return null;
   };

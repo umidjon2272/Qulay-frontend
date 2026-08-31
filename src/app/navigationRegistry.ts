@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Bell, CalendarDays, CheckSquare, CreditCard, FolderOpen, LayoutDashboard, Link2, ListTodo, NotebookPen, Settings, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
+import { Bell, CalendarDays, CheckSquare, CreditCard, FolderOpen, LayoutDashboard, Link2, ListTodo, NotebookPen, Settings, Sparkles, WalletCards } from "lucide-react";
 
 export type NavigationPlacement = "desktop" | "mobilePrimary" | "mobileMore";
 export type NavigationModule = {
@@ -20,7 +20,6 @@ export const navigationRegistry: NavigationModule[] = [
   { id: "notes", path: "/files?view=notes", label: "Qaydlar", translationKey: "nav.notes", icon: NotebookPen, desktop: false, mobilePrimary: false, mobileMore: true, order: 70 },
   { id: "files", path: "/files", label: "Fayllar", translationKey: "nav.files", icon: FolderOpen, desktop: true, mobilePrimary: false, mobileMore: true, order: 80 },
   { id: "integrations", path: "/integrations", label: "Integratsiyalar", translationKey: "nav.integrations", icon: Link2, desktop: false, mobilePrimary: false, mobileMore: true, order: 90 },
-  { id: "approvals", path: "/approvals", label: "Tasdiqlashlar", translationKey: "nav.approvals", icon: ShieldCheck, desktop: true, mobilePrimary: false, mobileMore: true, order: 95 },
   { id: "notifications", path: "/settings?tab=notifications", label: "Bildirishnomalar", translationKey: "nav.notifications", icon: Bell, desktop: false, mobilePrimary: false, mobileMore: true, order: 100, badgeSource: "notifications" },
   { id: "billing", path: "/billing", label: "Tarif va limitlar", translationKey: "nav.billing", icon: CreditCard, desktop: true, mobilePrimary: false, mobileMore: true, order: 110 },
   { id: "settings", path: "/settings", label: "Sozlamalar", translationKey: "nav.settings", icon: Settings, desktop: true, mobilePrimary: false, mobileMore: true, order: 120 },

@@ -20,6 +20,7 @@ import type { TelegramSelection } from "../router/routerTypes";
 import { getAIReply } from "../../../services/aiService";
 import { addMessage as addConversationMessage, createConversation, deleteConversation as removeConversation, listConversations, listMessages, updateConversation } from "../../../services/api/conversationApi";
 import type { Conversation } from "../../../services/api/conversationApi";
+import { agentApi } from "../../../services/api/agentApi";
 import { usePlatform } from "../../../context/PlatformContext";
 import { getLocale, useI18n, type AppLocale } from "../../../i18n/useI18n";
 import {
@@ -274,7 +275,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     for (const controller of pendingRequestsRef.current.values()) controller.abort();
     pendingRequestsRef.current.clear();
     try {
-      const result = await listMessages(id, 1, 200);
+      const [result, pendingResult] = await Promise.all([listMessages(id, 1, 200), agentApi.listActions('PENDING',1,100).catch(()=>null)]);
       if (!mountedRef.current) return;
       const loaded: ChatMessage[] = result.items
         .filter((message) => message.role === "USER" || message.role === "ASSISTANT")
@@ -284,6 +285,12 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           text: message.content,
           time: new Date(message.createdAt).toLocaleTimeString(locale === "ru" ? "ru-RU" : "uz-UZ", { hour: "2-digit", minute: "2-digit" }),
         }));
+      const pending = pendingResult?.items.find((item)=>item.conversationId===id);
+      if (pending) {
+        const action: AIAction = { type:'confirmAgentAction', payload:{actionId:pending.id,tool:pending.toolName,preview:pending.preview}, label: locale==='ru'?'Действие AI':'AI amali', confirmationMessage: locale==='ru'?'Подтвердить действие?':'Amalni tasdiqlaysizmi?', success:locale==='ru'?'✅ Действие выполнено.':'✅ Amal bajarildi.', error:locale==='ru'?'Не удалось выполнить действие.':'Amalni bajarishda xatolik yuz berdi.' };
+        const lastAiIndex=[...loaded].map((m,i)=>({m,i})).reverse().find(({m})=>m.role==='ai')?.i;
+        if(lastAiIndex===undefined) loaded.push({id:loaded.length+1,role:'ai',text:action.confirmationMessage,time:formatTime(),action}); else loaded[lastAiIndex]={...loaded[lastAiIndex],action};
+      }
       messageIdRef.current = loaded.length;
       const nextMessages = loaded.length ? [{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }, ...loaded] : [{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }];
       activeConversationIdRef.current = id;

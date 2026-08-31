@@ -21,7 +21,7 @@ type ActionDetails = {
   summary: string;
 };
 
-const getActionDetails = (action: AIAction): ActionDetails => {
+const getActionDetails = (action: AIAction, t: (key:string,fallback:string)=>string): ActionDetails => {
   switch (action.type) {
     case "createTask":
       return {
@@ -29,7 +29,7 @@ const getActionDetails = (action: AIAction): ActionDetails => {
         date: action.payload.dateLabel,
         time: action.payload.time,
         priority: action.payload.priority,
-        target: "Vazifalar",
+        target: t("nav.tasks", "Vazifalar"),
         summary: action.payload.description,
       };
     case "createReminder":
@@ -38,7 +38,7 @@ const getActionDetails = (action: AIAction): ActionDetails => {
         date: action.payload.dateLabel,
         time: action.payload.time,
         priority: action.payload.priority,
-        target: "Eslatmalar",
+        target: t("nav.reminders", "Eslatmalar"),
         summary: action.payload.description,
       };
     case "createMeeting":
@@ -46,21 +46,21 @@ const getActionDetails = (action: AIAction): ActionDetails => {
         title: action.payload.title,
         date: action.payload.dateLabel,
         time: action.payload.time,
-        target: "Kalendar",
-        summary: [action.payload.participant, action.payload.location, action.payload.reminder].filter(Boolean).join(" · ") || "Calendar uchrashuvi",
+        target: t("nav.calendar", "Kalendar"),
+        summary: [action.payload.participant, action.payload.location, action.payload.reminder].filter(Boolean).join(" · ") || t("ai.action.calendarMeeting", "Kalendar uchrashuvi"),
       };
     case "createNote":
       return {
         title: action.payload.title,
-        target: "Qaydlar",
+        target: t("nav.notes", "Qaydlar"),
         summary: action.payload.content,
       };
     case "getTodayPlan":
       return {
-        title: "Bugungi reja",
-        date: "Bugun",
-        target: "Bugungi reja",
-        summary: "Task, reminder va uchrashuvlar jamlanadi.",
+        title: t("briefing.title", "Bugungi reja"),
+        date: t("common.today", "Bugun"),
+        target: t("briefing.title", "Bugungi reja"),
+        summary: t("ai.action.todaySummary", "Vazifa, eslatma va uchrashuvlar jamlanadi."),
       };
     case "sendTelegramMessage":
       return {
@@ -74,8 +74,8 @@ const getActionDetails = (action: AIAction): ActionDetails => {
       const preview = action.payload.preview;
       const summary = preview && typeof preview === "object"
         ? Object.entries(preview as Record<string, unknown>).slice(0, 5).map(([key, value]) => `${key}: ${String(value ?? "—")}`).join(" · ")
-        : String(preview ?? "AI tayyorlagan amal");
-      return { title: action.label, target: "AI agent", summary };
+        : String(preview ?? t("ai.action.prepared", "AI tayyorlagan amal"));
+      return { title: action.label, target: t("ai.action.agent", "AI agent"), summary };
     }
   }
 };
@@ -92,7 +92,7 @@ const getActionIcon = (action: AIAction) => {
 
 const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConfirmationProps) => {
   const t = (key: string, fallback: string) => translate(key, fallback, getLocale());
-  const details = getActionDetails(action);
+  const details = getActionDetails(action, t);
   const Icon = getActionIcon(action);
   const resolved = status === "success" || status === "cancelled";
 
@@ -103,9 +103,9 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
       </div>
 
       <div className="action-confirmation__content">
-        <strong className="action-confirmation__name">{status === "success" ? "Bajarildi" : status === "cancelled" ? "Bekor qilindi" : action.label}</strong>
+        <strong className="action-confirmation__name">{status === "success" ? t("common.completed", "Bajarildi") : status === "cancelled" ? t("ai.action.cancelled", "Bekor qilindi") : action.label}</strong>
         <span className="action-confirmation__title">
-          {action.type === "sendTelegramMessage" ? `Qabul qiluvchi: ${details.title}` : details.title}
+          {action.type === "sendTelegramMessage" ? `${t("ai.action.recipient", "Qabul qiluvchi")}: ${details.title}` : details.title}
         </span>
         {(details.date || details.time) && (
           <span className="action-confirmation__meta">
@@ -114,14 +114,14 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
         )}
         <span className="action-confirmation__meta">{details.target}{details.priority ? ` · ${details.priority}` : ""}</span>
         <span className="action-confirmation__summary">
-          {action.type === "sendTelegramMessage" ? `Xabar: ${details.summary}` : details.summary}
+          {action.type === "sendTelegramMessage" ? `${t("ai.action.message", "Xabar")}: ${details.summary}` : details.summary}
         </span>
       </div>
 
       {!resolved && <div className="action-confirmation__actions">
         <button type="button" className="action-confirmation__confirm" onClick={onConfirm} disabled={status === "loading"}>
           <Check size={13} />
-          {status === "loading" ? "Saqlanmoqda..." : "Tasdiqlash"}
+          {status === "loading" ? t("common.saving", "Saqlanmoqda...") : t("common.confirm", "Tasdiqlash")}
         </button>
 
         <button
