@@ -233,7 +233,14 @@ const AIAssistant = () => {
         </section>
       </section>
 
-      <ChatHistoryDrawer open={isHistoryDrawerOpen} onClose={() => setIsHistoryDrawerOpen(false)} />
+      <ChatHistoryDrawer
+        open={isHistoryDrawerOpen}
+        onClose={() => setIsHistoryDrawerOpen(false)}
+        onHome={() => {
+          setIsHistoryDrawerOpen(false);
+          navigate("/dashboard", { replace: true });
+        }}
+      />
 
       {isVoiceModeOpen && (
         <Suspense fallback={<div className="ai-voice-loading" role="status"><span />{t("ai.voiceLoading", "Voice Mode yuklanmoqda")}</div>}>

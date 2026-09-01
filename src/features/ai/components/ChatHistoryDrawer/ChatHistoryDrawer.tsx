@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { MessageSquareText, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Home, MessageSquareText, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import { useAIChat } from "../../hooks/useAIChat";
 import { listConversations, type Conversation } from "../../../../services/api/conversationApi";
@@ -11,6 +11,7 @@ import "./ChatHistoryDrawer.scss";
 type ChatHistoryDrawerProps = {
   open: boolean;
   onClose: () => void;
+  onHome: () => void;
 };
 
 type Bucket = "today" | "yesterday" | "week" | "older";
@@ -27,7 +28,7 @@ const bucketFor = (isoDate: string): Bucket => {
 
 const BUCKET_ORDER: Bucket[] = ["today", "yesterday", "week", "older"];
 
-const ChatHistoryDrawer = ({ open, onClose }: ChatHistoryDrawerProps) => {
+const ChatHistoryDrawer = ({ open, onClose, onHome }: ChatHistoryDrawerProps) => {
   const { t } = useI18n();
   const {
     conversations,
@@ -112,6 +113,10 @@ const ChatHistoryDrawer = ({ open, onClose }: ChatHistoryDrawerProps) => {
           <h2><MessageSquareText size={16} /> {t("ai.history", "So'nggi suhbatlar")}</h2>
           <button type="button" onClick={closeDrawer} aria-label={t("common.close", "Yopish")}><X size={18} /></button>
         </header>
+
+        <button type="button" className="chat-history-drawer__home" onClick={onHome}>
+          <Home size={15} /> {t("nav.home", "Bosh sahifa")}
+        </button>
 
         <button type="button" className="chat-history-drawer__new" onClick={() => { newChat(); closeDrawer(); }}>
           <Plus size={16} /> {t("ai.newChat", "Yangi chat")}
