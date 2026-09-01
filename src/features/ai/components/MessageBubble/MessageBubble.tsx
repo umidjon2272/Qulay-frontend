@@ -24,12 +24,13 @@ type ActionStatus = "pending" | "loading" | "success" | "cancelled" | "failed";
 
 const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: MessageBubbleProps) => {
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
-  const [actionFeedback, setActionFeedback] = useState("");
+  const [actionFeedback, setActionFeedback] = useState(message.actionResult ?? "");
   const [copied, setCopied] = useState(false);
   const { resolveTelegramSelection, cancelAction } = useAIChat();
   const { t } = useI18n();
 
   useEffect(() => { if (message.actionStatus) setActionStatus(message.actionStatus); }, [message.actionStatus]);
+  useEffect(() => { if (message.actionResult) setActionFeedback(message.actionResult); }, [message.actionResult]);
 
   const isUser = message.role === "user";
   const action = message.action;
@@ -54,12 +55,13 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
 
       <div className="message-bubble__body">
         <div className="message-bubble__glass">
-          {isUser ? <p>{message.text}</p> : <MessageMarkdown text={message.text} />}
+          {isUser ? <p>{message.text}</p> : !action && <MessageMarkdown text={message.text} />}
 
           {!isUser && action && (
             <ActionConfirmation
               action={action}
               status={actionStatus}
+              result={actionFeedback}
               onConfirm={async () => {
                 if (actionStatus !== "pending") return;
                 setActionStatus("loading");
@@ -68,7 +70,7 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
                   const result = await onAction(action);
                   const success = Boolean(result && typeof result === "object" && "success" in result && result.success);
                   setActionStatus(success ? "success" : "failed");
-                  if (!success && result && typeof result === "object" && "message" in result && typeof result.message === "string") {
+                  if (result && typeof result === "object" && "message" in result && typeof result.message === "string") {
                     setActionFeedback(result.message);
                   }
                 } catch {
@@ -86,7 +88,7 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
               }}
             />
           )}
-          {!isUser && actionFeedback && <p className="message-bubble__action-error" role="alert">{actionFeedback}</p>}
+          {!isUser && actionFeedback && actionStatus === "failed" && <p className="message-bubble__action-error" role="alert">{actionFeedback}</p>}
 
           {!isUser && selection && (
             <TelegramSelectionCard

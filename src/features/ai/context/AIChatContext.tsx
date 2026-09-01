@@ -465,7 +465,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         }
         setMessages((current) => current.map((message) => {
           if (message.action?.type !== "confirmAgentAction") return message;
-          if (message.action.payload.actionId === reply.resolvedActionId) return { ...message, actionStatus: reply.resolvedActionStatus ?? "success" };
+          if (message.action.payload.actionId === reply.resolvedActionId) return { ...message, text: reply.text, actionResult: reply.text, actionStatus: reply.resolvedActionStatus ?? "success" };
           if (reply.action && (!message.actionStatus || message.actionStatus === "pending")) return { ...message, actionStatus: "cancelled" };
           return message;
         }));
@@ -478,7 +478,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           telegramSelection: reply.telegramSelection,
         };
 
-        setMessages((current) => appendMessage(current, aiMessage));
+        if (!reply.resolvedActionId) setMessages((current) => appendMessage(current, aiMessage));
         if (!reply.serverPersisted) void conversationPromise.then(async (id) => { await persistConversationMessage(id, trimmed, "USER"); await persistConversationMessage(id, reply.text, "ASSISTANT"); });
       })
       .catch((error: unknown) => {
@@ -532,7 +532,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       if (result.success) executedActionsRef.current.add(actionKey);
 
       if (mountedRef.current && generation === generationRef.current) {
-        setMessages(current => appendMessage(current.map(m => m.action && JSON.stringify(m.action) === actionKey ? { ...m, actionStatus: result.success ? "success" : "failed" } : m), { id: nextMessageId(), role: "ai", text: result.message, time: formatTime() }));
+        setMessages(current => current.map(m => m.action && JSON.stringify(m.action) === actionKey ? { ...m, text: result.message, actionStatus: result.success ? "success" : "failed", actionResult: result.message } : m));
         if (action.type !== "confirmAgentAction") void persistConversationMessage(conversationId, result.message, "ASSISTANT");
       }
 
@@ -554,7 +554,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     executingActionsRef.current.add(actionKey);
     try {
       const result = await cancelAIAction(action);
-      if (mountedRef.current && generation === generationRef.current) setMessages(current => appendMessage(current.map(m => m.action && JSON.stringify(m.action) === actionKey ? { ...m, actionStatus: result.success ? "cancelled" : "failed" } : m), { id: nextMessageId(), role: "ai", text: result.message, time: formatTime() }));
+      if (mountedRef.current && generation === generationRef.current) setMessages(current => current.map(m => m.action && JSON.stringify(m.action) === actionKey ? { ...m, text: result.message, actionStatus: result.success ? "cancelled" : "failed", actionResult: result.message } : m));
       return result;
     } finally { executingActionsRef.current.delete(actionKey); }
   }, []);

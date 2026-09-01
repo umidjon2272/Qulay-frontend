@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { AudioLines, FolderOpen, Mic, Paperclip, Send, Square } from "lucide-react";
+import { ArrowUp, AudioLines, FolderOpen, Mic, Paperclip, Square } from "lucide-react";
 
 import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
 import { useToast } from "../../../../hooks/useToast";
@@ -107,8 +107,6 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
     submit();
   };
 
-  const showVoiceTrigger = Boolean(onVoice) && !value.trim();
-
   return (
     <form className="chat-input-area" onSubmit={handleSubmit}>
       {(isListening || isProcessing) && (
@@ -170,7 +168,7 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
           {isListening ? <Square size={14} /> : <Mic size={16} />}
         </button>
 
-        {showVoiceTrigger ? (
+        {onVoice && (
           <button
             type="button"
             className="chat-input__voice-trigger"
@@ -181,16 +179,16 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
           >
             <AudioLines size={17} />
           </button>
-        ) : (
-          <button
-            type="submit"
-            className="chat-input__send"
-            disabled={disabled || sending || !value.trim()}
-            aria-label={t("common.send", "Yuborish")}
-          >
-            <Send size={16} />
-          </button>
         )}
+        <button
+          type="submit"
+          className="chat-input__send"
+          disabled={disabled || sending || isProcessing || !value.trim()}
+          aria-label={t("common.send", "Yuborish")}
+          title={t("common.send", "Yuborish")}
+        >
+          <ArrowUp size={19} strokeWidth={2.4} />
+        </button>
       </div>
     </form>
   );

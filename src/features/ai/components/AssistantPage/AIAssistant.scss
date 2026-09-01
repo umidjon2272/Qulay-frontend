@@ -194,8 +194,9 @@ html[data-theme="dark"] body #root .ai-prompt { border-color: rgba(160,177,220,.
 html[data-theme="dark"] body #root .ai-prompt:hover { border-color: rgba(143,127,255,.45); background: rgba(115,96,226,.2); }
 
 
-.ai-side-card__title--history { grid-template-columns: auto 1fr auto; }
-.ai-history__new { width:30px; height:30px; display:grid; place-items:center; border:1px solid rgba(255,255,255,.09); border-radius:9px; background:rgba(255,255,255,.045); color:var(--text-primary,#f5f6fa); cursor:pointer; }
+.ai-side-card__title--history { display:grid; grid-template-columns:auto 1fr auto; }
+.ai-history__new { width:36px; min-width:36px; height:36px; min-height:36px; padding:0; display:grid; place-items:center; flex-shrink:0; border:1px solid var(--border); border-radius:10px; background:transparent; color:var(--text-primary,#f5f6fa); cursor:pointer; }
+.ai-history__new svg { width:19px; height:19px; }
 .ai-history__row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px; align-items:center; border-radius:10px; transition:background .16s ease; }
 .ai-history__row:hover, .ai-history__row.is-active { background:rgba(127,92,238,.1); }
 .ai-history__open { min-width:0; display:grid !important; gap:3px !important; padding:9px 8px !important; text-align:left; color:var(--text-secondary,#c4c8d2) !important; }
@@ -230,7 +231,7 @@ html:root body #root .ai-page .ai-side-card { border: 0; border-radius: 0; backg
 html:root body #root .ai-page .ai-side-card__title { padding-inline: 8px; }
 html:root body #root .ai-page .ai-side-card__icon { display: none; }
 html:root body #root .ai-page .ai-side-card button { font-size: 13px; min-height: 38px; background: transparent; }
-html:root body #root .ai-page .ai-history__new { width: 30px; min-height: 30px; margin-left: auto; flex-shrink: 0; }
+html:root body #root .ai-page .ai-history__new { width: 36px; min-width: 36px; height: 36px; min-height: 36px; padding: 0; margin-left: auto; display: grid; place-items: center; flex-shrink: 0; }
 html:root body #root .ai-page .ai-history__actions button { width: 26px; min-height: 28px; }
 html:root body #root .ai-page .ai-history__row.is-active { background: color-mix(in srgb, var(--accent) 12%, transparent); }
 html:root body #root .ai-page .ai-side-card--history { display: flex; flex-direction: column; overflow: hidden; }
@@ -240,7 +241,7 @@ html:root body #root .ai-page .chat-header__identity { flex: 1; }
 html:root body #root .ai-page .chat-header__icon, html:root body #root .ai-page .chat-header__status { display: none; }
 html:root body #root .ai-page .chat-header__text strong { font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 html:root body #root .ai-page .message-list { padding: 24px 28px; }
-html:root body #root .ai-page .message-list__inner { width: min(100%, 820px); gap: 28px; }
+html:root body #root .ai-page .message-list__inner { width: min(100%, 820px); gap: 18px; }
 html:root body #root .ai-page .message-bubble--ai { width: 100%; max-width: 100%; }
 html:root body #root .ai-page .message-bubble--ai .message-bubble__body { width: 100%; }
 html:root body #root .ai-page .message-bubble__avatar { display: none; }
@@ -248,6 +249,7 @@ html:root body #root .ai-page .message-bubble--ai .message-bubble__glass { backg
 html:root body #root .ai-page .message-bubble--user { max-width: 80%; }
 html:root body #root .ai-page .message-bubble--user .message-bubble__glass { border-radius: 20px; box-shadow: none; padding: 12px 18px; background: color-mix(in srgb, var(--accent) 18%, var(--bg-secondary)); border: 0; }
 html:root body #root .ai-page .message-bubble--user p { color: var(--text-primary); font-size: 15px; line-height: 1.65; }
+html:root body #root .ai-page .message-markdown { font-size: 16px; line-height: 1.6; }
 html:root body #root .ai-page .chat-input-area { width: min(100%, 876px); padding: 14px 28px 24px; margin-inline: auto; background: transparent; }
 html:root body #root .ai-page .chat-input { min-height: 64px; height: auto; border-radius: 22px; padding: 10px 12px; box-shadow: none; background: var(--bg-secondary); border: 1px solid var(--border); align-items: flex-end; }
 html:root body #root .ai-page .chat-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 10%, transparent); }
@@ -266,7 +268,8 @@ html:root body #root .ai-page .chat-header__btn--newchat { display: grid; }
   html:root body #root .ai-page .chat-header { min-height: 56px; padding: 8px 12px; }
   html:root body #root .ai-page .chat-header__btn--panel { display: none; }
   html:root body #root .ai-page .message-list { padding: 16px; }
-  html:root body #root .ai-page .message-list__inner { gap: 24px; }
+  html:root body #root .ai-page .message-list__inner { gap: 14px; }
+  html:root body #root .ai-page .ai-history__new { width:44px; min-width:44px; height:44px; min-height:44px; }
   html:root body #root .ai-page .chat-input-area { padding: 10px 12px max(12px, env(safe-area-inset-bottom)); }
   html:root body #root .ai-page .chat-input textarea { font-size: 16px; }
   html:root body #root .ai-page .message-bubble--user { max-width: 90%; }

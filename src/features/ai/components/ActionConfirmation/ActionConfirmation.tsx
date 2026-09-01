@@ -8,6 +8,7 @@ import "./ActionConfirmation.scss";
 type ActionConfirmationProps = {
   action: AIAction;
   status: "pending" | "loading" | "success" | "cancelled" | "failed";
+  result?: string;
   onConfirm: () => void | Promise<void>;
   onDismiss: () => void;
 };
@@ -82,11 +83,14 @@ const getActionDetails = (action: AIAction, t: (key:string,fallback:string)=>str
           let display = String(val);
           if (key === 'amount') display = Number(val).toLocaleString(ru ? 'ru-RU' : 'uz-UZ', { maximumFractionDigits: 2 });
           if (key === 'type') display = val === 'INCOME' ? (ru ? 'Доход' : 'Daromad') : val === 'EXPENSE' ? (ru ? 'Расход' : 'Xarajat') : String(val);
-          if (/^(transactionDate|dueAt|remindAt|startAt|endAt|start|end)$/.test(key) && !Number.isNaN(Date.parse(String(val)))) display = new Date(String(val)).toLocaleString(ru ? 'ru-RU' : 'uz-UZ', { timeZone: typeof item.timezone === 'string' ? item.timezone : undefined });
+          if (/^(transactionDate|dueAt|remindAt|startAt|endAt|start|end)$/.test(key) && !Number.isNaN(Date.parse(String(val)))) {
+            const hasMeaningfulTime = !/T00:00:00(?:\.000)?(?:Z|[+-]\d\d:\d\d)?$/.test(String(val));
+            display = new Intl.DateTimeFormat(ru ? 'ru-RU' : 'uz-UZ', { timeZone: typeof item.timezone === 'string' ? item.timezone : undefined, year: 'numeric', month: 'long', day: 'numeric', ...(hasMeaningfulTime ? { hour: '2-digit', minute: '2-digit' } : {}) }).format(new Date(String(val)));
+          }
           return `${fieldLabels[key]}: ${display}`;
         }).join('\n') || (item.changes ? format(item.changes) : t('ai.action.prepared', 'AI tayyorlagan amal'));
       };
-      return { title: action.payload.tool === '__batch__' ? (ru ? 'Несколько действий' : 'Bir nechta amal') : '', target: t('ai.action.agent', 'AI agent'), summary: format(preview) };
+      return { title: action.payload.tool === '__batch__' ? (ru ? 'Несколько действий' : 'Bir nechta amal') : '', target: '', summary: format(preview) };
     }
   }
 };
@@ -101,7 +105,7 @@ const getActionIcon = (action: AIAction) => {
   return Flag;
 };
 
-const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConfirmationProps) => {
+const ActionConfirmation = ({ action, status, result, onConfirm, onDismiss }: ActionConfirmationProps) => {
   const t = (key: string, fallback: string) => translate(key, fallback, getLocale());
   const details = getActionDetails(action, t);
   const Icon = getActionIcon(action);
@@ -114,7 +118,8 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
       </div>
 
       <div className="action-confirmation__content">
-        <strong className="action-confirmation__name">{status === "success" ? t("common.completed", "Bajarildi") : status === "cancelled" ? t("ai.action.cancelled", "Bekor qilindi") : status === "failed" ? t("ai.action.failed", "Bajarilmadi — holatini tekshiring") : action.label}</strong>
+        <strong className="action-confirmation__name">{status === "loading" ? t("ai.action.executing", "Bajarilmoqda") : status === "success" ? t("common.completed", "Bajarildi") : status === "cancelled" ? t("ai.action.cancelled", "Bekor qilindi") : status === "failed" ? t("ai.action.failed", "Xatolik") : t("ai.action.awaiting", "Tasdiq kutilmoqda")}</strong>
+        {resolved && result ? <span className="action-confirmation__result">{result}</span> : <>
         <span className="action-confirmation__title">
           {action.type === "sendTelegramMessage" ? `${t("ai.action.recipient", "Qabul qiluvchi")}: ${details.title}` : details.title}
         </span>
@@ -123,10 +128,11 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
             {[details.date, details.time].filter(Boolean).join(" · ")}
           </span>
         )}
-        <span className="action-confirmation__meta">{details.target}{details.priority ? ` · ${details.priority}` : ""}</span>
+        {(details.target || details.priority) && <span className="action-confirmation__meta">{details.target}{details.target && details.priority ? " · " : ""}{details.priority}</span>}
         <span className="action-confirmation__summary">
           {action.type === "sendTelegramMessage" ? `${t("ai.action.message", "Xabar")}: ${details.summary}` : details.summary}
         </span>
+        </>}
       </div>
 
       {!resolved && <div className="action-confirmation__actions">

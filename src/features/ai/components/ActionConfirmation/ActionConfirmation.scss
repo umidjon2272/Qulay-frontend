@@ -108,6 +108,14 @@
   color: #6c6478;
 }
 
+.action-confirmation__result {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
 .action-confirmation__actions {
   display: flex;
   align-items: center;

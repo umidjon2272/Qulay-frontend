@@ -14,6 +14,7 @@ export type ChatMessage = {
   time: string;
   action?: AIAction;
   actionStatus?: "pending" | "loading" | "success" | "cancelled" | "failed";
+  actionResult?: string;
   telegramSelection?: TelegramSelection;
 };
 
