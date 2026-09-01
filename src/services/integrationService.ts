@@ -86,6 +86,16 @@ export const verifyTelegramCode = (code: string) =>
 export const verifyTelegramPassword = (password: string) =>
   request<{ status: "connected" }>("/integrations/telegram/verify-password", { method: "POST", body: JSON.stringify({ password }) });
 
+export type TelegramQrResult =
+  | { status: "pending"; qrUrl?: string; expiresAt?: string }
+  | { status: "success" | "password_required" | "error" };
+
+export const startTelegramQrLogin = () =>
+  request<TelegramQrResult>("/integrations/telegram/qr/start", { method: "POST" });
+
+export const getTelegramQrStatus = () =>
+  request<TelegramQrResult>("/integrations/telegram/qr/status");
+
 export const getTelegramStatus = () => request<TelegramStatus>("/integrations/telegram/status");
 
 export const disconnectTelegram = () =>
