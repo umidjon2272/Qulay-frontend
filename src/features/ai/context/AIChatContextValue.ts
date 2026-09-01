@@ -13,6 +13,7 @@ export type ChatMessage = {
   text: string;
   time: string;
   action?: AIAction;
+  actionStatus?: "pending" | "loading" | "success" | "cancelled" | "failed";
   telegramSelection?: TelegramSelection;
 };
 
@@ -25,6 +26,7 @@ export type AIChatContextValue = {
   isTyping: boolean;
   sendMessage: (text: string) => void;
   executeAction: (action: AIAction) => Promise<AIActionExecutionResult>;
+  cancelAction: (action: AIAction) => Promise<AIActionExecutionResult>;
   resolveTelegramSelection: (messageId: number, candidate: TelegramCandidate, selection: TelegramSelection) => Promise<void>;
   clearChat: () => void;
   conversations: Conversation[];

@@ -275,3 +275,6 @@ html[data-theme="dark"] body #root .action-confirmation--cancelled { border-colo
   html[data-theme="dark"] body #root .action-confirmation { grid-template-columns: 30px minmax(0, 1fr) auto; }
   html[data-theme="dark"] body #root .action-confirmation__actions { grid-column: auto; width: auto; margin-top: 0; align-self: center; }
 }
+
+.action-confirmation__summary { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.65; }
+.action-confirmation--failed { border-color: var(--danger, #dc5260); }

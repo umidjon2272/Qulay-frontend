@@ -5,6 +5,7 @@ import { localizedErrorMessage } from "../../i18n/errorMessages";
 
 const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3000/api").replace(/\/$/, "");
 const REQUEST_TIMEOUT_MS = 30_000;
+const AI_REQUEST_TIMEOUT_MS = 240_000;
 const AUTH_REQUEST_TIMEOUT_MS = 20_000;
 
 export class ApiError extends Error {
@@ -85,10 +86,13 @@ const rawRequest = async <T>(path: string, options: RequestInit = {}, token?: st
   const controller = new AbortController();
   const timeout = window.setTimeout(
     () => controller.abort(),
-    isAuthEndpoint(path) ? AUTH_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
+    isAuthEndpoint(path) ? AUTH_REQUEST_TIMEOUT_MS : path.startsWith("/ai/") ? AI_REQUEST_TIMEOUT_MS : REQUEST_TIMEOUT_MS,
   );
+  const abortFromCaller = () => controller.abort(options.signal?.reason);
+  if (options.signal?.aborted) abortFromCaller();
+  else options.signal?.addEventListener("abort", abortFromCaller, { once: true });
   const headers = new Headers(options.headers);
-  if (!headers.has("Content-Type") && options.body) headers.set("Content-Type", "application/json");
+  if (!headers.has("Content-Type") && options.body && !(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   try {
@@ -104,12 +108,14 @@ const rawRequest = async <T>(path: string, options: RequestInit = {}, token?: st
     }
     return body as T;
   } catch (error) {
+    if (options.signal?.aborted) throw Object.assign(new Error("Request aborted"), { name: "AbortError" });
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("Server response timeout");
     }
     throw error;
   } finally {
     window.clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", abortFromCaller);
   }
 };
 

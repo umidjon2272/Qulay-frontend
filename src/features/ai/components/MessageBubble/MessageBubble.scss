@@ -254,3 +254,19 @@ html[data-theme="dark"] body #root .message-bubble__speak.is-speaking { border-c
   font-size: 12px;
   line-height: 1.45;
 }
+
+body #root .message-markdown { color: var(--text-primary); font-size: 15px; line-height: 1.75; overflow-wrap: anywhere; }
+body #root .message-markdown p { margin: 0 0 14px; color: inherit; font-size: inherit; line-height: inherit; white-space: normal; }
+body #root .message-markdown > :last-child { margin-bottom: 0; }
+body #root .message-markdown h1, body #root .message-markdown h2, body #root .message-markdown h3 { margin: 20px 0 10px; font-size: 1.15em; color: inherit; }
+body #root .message-markdown ul, body #root .message-markdown ol { margin: 10px 0 16px; padding-left: 24px; }
+body #root .message-markdown li { margin: 7px 0; }
+body #root .message-markdown pre { overflow-x: auto; padding: 16px; border-radius: 12px; background: var(--bg-secondary); max-width: 100%; }
+body #root .message-markdown code { font-size: .88em; padding: 2px 4px; background: var(--bg-secondary); border-radius: 4px; }
+body #root .message-markdown pre code { padding: 0; }
+body #root .message-markdown a { color: var(--accent); text-decoration: underline; }
+body #root .message-markdown blockquote { margin: 14px 0; border-left: 3px solid var(--accent); padding-left: 16px; color: var(--text-secondary); }
+body #root .message-markdown__table { max-width: 100%; overflow-x: auto; margin: 16px 0; }
+body #root .message-markdown table { border-collapse: collapse; width: 100%; font-size: 14px; }
+body #root .message-markdown th, body #root .message-markdown td { border: 1px solid var(--border); padding: 9px 12px; text-align: left; }
+body #root .message-markdown th { background: var(--bg-secondary); }

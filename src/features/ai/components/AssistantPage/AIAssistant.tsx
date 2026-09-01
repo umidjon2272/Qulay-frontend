@@ -16,6 +16,7 @@ import {
 import { useAIChat } from "../../hooks/useAIChat";
 import { useI18n } from "../../../../i18n/useI18n";
 import { usePlatform } from "../../../../context/PlatformContext";
+import { readStorageString, writeStorageString } from "../../../../services/storage";
 import { agentApi } from "../../../../services/api/agentApi";
 
 import ChatHeader from "../ChatHeader/ChatHeader";
@@ -41,7 +42,6 @@ const AIAssistant = () => {
     isTyping,
     sendMessage,
     executeAction,
-    clearChat,
     conversations,
     activeConversationId,
     historyLoading,
@@ -53,6 +53,7 @@ const AIAssistant = () => {
     speak,
     stopSpeaking,
   } = useAIChat();
+  const [panelOpen, setPanelOpen] = useState(() => readStorageString("qulay.ai.panel") !== "closed");
   const [input, setInput] = useState("");
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
@@ -108,7 +109,7 @@ const AIAssistant = () => {
   };
 
   return (
-    <main className="ai-page">
+    <main className={`ai-page ${panelOpen ? "" : "ai-page--panel-hidden"}`}>
       <div className="ai-page__ambient ai-page__ambient--one" />
       <div className="ai-page__ambient ai-page__ambient--two" />
 
@@ -189,8 +190,9 @@ const AIAssistant = () => {
 
         <section className="ai-page__main">
           <ChatHeader
+            panelOpen={panelOpen}
+            onTogglePanel={() => { setPanelOpen(v => { writeStorageString("qulay.ai.panel", v ? "closed" : "open"); return !v; }); }}
             title={activeConversationTitle}
-            onClear={clearChat}
             onOpenHistory={() => setIsHistoryDrawerOpen(true)}
             onNewChat={startNewChat}
             onBack={() => navigate("/dashboard")}

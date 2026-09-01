@@ -1,11 +1,11 @@
-import { useState } from "react";
+import MessageMarkdown from './MessageMarkdown';
+import { useState, useEffect } from "react";
 import { Check, Copy, Sparkles, User, Volume2, VolumeX } from "lucide-react";
 
 import type { ChatMessage } from "../../context/AIChatContextValue";
 import type { AIAction } from "../../actions/actionTypes";
 import { useAIChat } from "../../hooks/useAIChat";
 import { useI18n } from "../../../../i18n/useI18n";
-import { cancelAIAction } from "../../actions/actionExecutor";
 
 import ActionConfirmation from "../ActionConfirmation/ActionConfirmation";
 import TelegramSelectionCard from "../TelegramSelection/TelegramSelection";
@@ -20,19 +20,21 @@ type MessageBubbleProps = {
   onAction: (action: AIAction) => Promise<unknown>;
 };
 
-type ActionStatus = "pending" | "loading" | "success" | "cancelled";
+type ActionStatus = "pending" | "loading" | "success" | "cancelled" | "failed";
 
 const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: MessageBubbleProps) => {
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
   const [actionFeedback, setActionFeedback] = useState("");
   const [copied, setCopied] = useState(false);
-  const { resolveTelegramSelection } = useAIChat();
+  const { resolveTelegramSelection, cancelAction } = useAIChat();
   const { t } = useI18n();
+
+  useEffect(() => { if (message.actionStatus) setActionStatus(message.actionStatus); }, [message.actionStatus]);
 
   const isUser = message.role === "user";
   const action = message.action;
   const selection = message.telegramSelection;
-  const canSpeak = typeof window !== "undefined" && Boolean(window.speechSynthesis);
+  const canSpeak = typeof window !== "undefined" && typeof Audio !== "undefined";
   const canCopy = typeof navigator !== "undefined" && Boolean(navigator.clipboard);
 
   const copyText = async () => {
@@ -52,7 +54,7 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
 
       <div className="message-bubble__body">
         <div className="message-bubble__glass">
-          <p>{message.text}</p>
+          {isUser ? <p>{message.text}</p> : <MessageMarkdown text={message.text} />}
 
           {!isUser && action && (
             <ActionConfirmation
@@ -65,7 +67,7 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
                 try {
                   const result = await onAction(action);
                   const success = Boolean(result && typeof result === "object" && "success" in result && result.success);
-                  setActionStatus(success ? "success" : "pending");
+                  setActionStatus(success ? "success" : "failed");
                   if (!success && result && typeof result === "object" && "message" in result && typeof result.message === "string") {
                     setActionFeedback(result.message);
                   }
@@ -77,7 +79,7 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
               onDismiss={() => {
                 if (actionStatus !== "pending") return;
                 setActionStatus("loading");
-                void cancelAIAction(action).then((result) => {
+                void cancelAction(action).then((result) => {
                   setActionFeedback(result.success ? "" : result.message);
                   setActionStatus(result.success ? "cancelled" : "pending");
                 });

@@ -1,5 +1,7 @@
 import {
   ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen,
   LogOut,
   Settings,
   Sparkles,
@@ -21,6 +23,10 @@ import "./Sidebar.scss";
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [expandedInChat, setExpandedInChat] = useState(false);
+  const isChat = location.pathname === "/ai-assistant";
+  const collapsed = isChat && !expandedInChat;
+  useEffect(() => setExpandedInChat(false), [location.pathname]);
   const { open: openAIChat } = useAIChat();
   const { name, email, avatar } = useProfile();
   const { logout } = useAuth();
@@ -69,7 +75,8 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className={`sidebar ${moreOpen ? "sidebar--more-open" : ""}`}>
+    <aside className={`sidebar ${collapsed ? "sidebar--collapsed" : ""} ${moreOpen ? "sidebar--more-open" : ""}`}>
+      {isChat && <button type="button" className="sidebar__collapse" onClick={() => setExpandedInChat(v => !v)} aria-label={collapsed ? t("nav.expand", "Asosiy menyuni ochish") : t("nav.collapse", "Asosiy menyuni yig‘ish")} aria-expanded={!collapsed}>{collapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}</button>}
       <div className="sidebar__brand">
         <div className="sidebar__logo"><Sparkles size={20} /></div>
         <div className="sidebar__brand-text"><strong>{platformName}</strong><span>{t("nav.workspace", "AI ish maydoni")}</span></div>
@@ -80,7 +87,7 @@ const Sidebar = () => {
         {desktopItems.map((item) => {
           const Icon = item.icon;
           return (
-            <NavLink key={item.path} to={item.path} className={`sidebar__link ${location.pathname === item.path ? "sidebar__link--active" : ""}`}>
+            <NavLink key={item.path} to={item.path} title={t(item.translationKey, item.label)} aria-label={t(item.translationKey, item.label)} className={`sidebar__link ${location.pathname === item.path ? "sidebar__link--active" : ""}`}>
               <span className="sidebar__link-icon"><Icon size={19} /></span>
               <span className="sidebar__link-text">{t(item.translationKey, item.label)}</span>
               <ChevronRight className="sidebar__arrow" size={15} />

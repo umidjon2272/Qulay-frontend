@@ -25,6 +25,11 @@ type ChatInputProps = {
 
 const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = true }: ChatInputProps) => {
   const { showToast } = useToast();
+  useEffect(() => {
+    const handleVoiceError = (event: Event) => showToast(String((event as CustomEvent).detail), 'error');
+    window.addEventListener('qulay:voice-error', handleVoiceError);
+    return () => window.removeEventListener('qulay:voice-error', handleVoiceError);
+  }, [showToast]);
   const { t } = useI18n();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -34,7 +39,7 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
   const [sending, setSending] = useState(false);
   useCloseOnOutsideClick(attachOpen, () => setAttachOpen(false));
 
-  const { isSupported, isListening, interimTranscript, start, stop } = useSpeechRecognition({
+  const { isSupported, isListening, isProcessing, interimTranscript, start, stop, finish } = useSpeechRecognition({
     onResult: (transcript) => {
       const nextValue = valueRef.current ? `${valueRef.current} ${transcript}` : transcript;
       valueRef.current = nextValue;
@@ -75,7 +80,7 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
     }
 
     if (isListening) {
-      stop();
+      finish();
     } else {
       showToast(t("ai.voiceStarted", "Ovozli kiritish ishga tushdi"), "voice");
       start();
@@ -83,14 +88,15 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
   };
 
   const submit = () => {
-    if (disabled || sending || !value.trim()) return;
+    if (disabled || sending || isProcessing || !value.trim()) return;
+    stop();
     setSending(true);
     onSend();
     window.setTimeout(() => setSending(false), 300);
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === "Enter" && !event.shiftKey) {
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       submit();
     }
@@ -105,7 +111,7 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
 
   return (
     <form className="chat-input-area" onSubmit={handleSubmit}>
-      {isListening && (
+      {(isListening || isProcessing) && (
         <Suspense fallback={null}>
           <VoiceInput interimText={interimTranscript} />
         </Suspense>
@@ -117,7 +123,7 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
             type="button"
             className="chat-input__icon-btn chat-input__attach-btn"
             onClick={(event) => { event.stopPropagation(); setAttachOpen((value_) => !value_); }}
-            disabled={disabled}
+            disabled={disabled || isProcessing}
             aria-label={t("ai.attach", "Fayl biriktirish")}
             aria-expanded={attachOpen}
             title={t("ai.attach", "Fayl biriktirish")}
@@ -146,7 +152,7 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
           }}
           onKeyDown={handleKeyDown}
           placeholder={t("ai.messagePlaceholder", "Xabar yozing...")}
-          disabled={disabled}
+          disabled={disabled || isProcessing}
           autoFocus={autoFocus}
           rows={1}
           maxLength={4000}
@@ -157,7 +163,7 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
           type="button"
           className={`chat-input__icon-btn chat-input__mic ${isListening ? "is-listening" : ""}`}
           onClick={handleMicClick}
-          disabled={disabled}
+          disabled={disabled || isProcessing}
           aria-label={isListening ? t("ai.stopRecording", "Yozishni to'xtatish") : t("ai.voiceMessage", "Ovozli xabar")}
           title={isListening ? t("common.stop", "To'xtatish") : t("ai.voiceMessage", "Ovozli xabar")}
         >
@@ -169,7 +175,7 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
             type="button"
             className="chat-input__voice-trigger"
             onClick={onVoice}
-            disabled={disabled}
+            disabled={disabled || isProcessing}
             aria-label={t("ai.voice", "Voice Mode'ni ochish")}
             title={t("ai.voice", "Voice Mode'ni ochish")}
           >

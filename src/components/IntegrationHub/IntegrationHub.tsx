@@ -46,16 +46,17 @@ const healthForItem = (health: IntegrationsHealth | null, id: string): Integrati
   return null;
 };
 
-const telegramDeliveryMessage = (delivery: TelegramDeliveryType | null): string => {
-  switch (delivery) {
-    case "telegram_app": return "Kod boshqa ochiq Telegram qurilmangizga yuborildi.";
-    case "email": return "Kod Telegram akkauntingizga bog'langan emailga yuborildi.";
-    case "sms": return "Kod SMS orqali yuborildi.";
-    case "call": return "Kod qo'ng'iroq orqali aytib beriladi.";
-    case "fragment": return "Kod Fragment orqali olinadi.";
-    case "firebase_sms": return "Kod avtomatik tekshiruv orqali yuborildi.";
-    default: return "Tasdiqlash kodi yuborildi.";
-  }
+const telegramDeliveryMessage = (delivery: TelegramDeliveryType | null, ru = false): string => {
+  const messages: Record<string, [string, string]> = {
+    telegram_app: ['Kod shu raqam bilan kirilgan Telegram ilovasidagi “Telegram” xizmat chatiga yuborildi. Telefon yoki kompyuteringizdagi Telegramni tekshiring.', 'Код отправлен в служебный чат «Telegram» в приложении, где выполнен вход с этим номером. Проверьте телефон или компьютер.'],
+    email: ['Kod Telegramga bog‘langan emailingizga yuborildi. Spam papkasini ham tekshiring.', 'Код отправлен на привязанную почту. Проверьте также папку «Спам».'],
+    email_setup: ['Telegram avval kirish emailini sozlashni talab qildi. QR orqali ulaning yoki rasmiy Telegram ilovasida emailni sozlang.', 'Telegram требует настроить почту для входа. Используйте QR или настройте почту в официальном приложении.'],
+    sms: ['Kod SMS orqali yuborildi.', 'Код отправлен по SMS.'],
+    call: ['Kod telefon qo‘ng‘irog‘i orqali beriladi.', 'Код будет передан по телефону.'],
+    fragment: ['Kod Fragment hisobingiz orqali olinadi.', 'Код доступен через ваш аккаунт Fragment.'],
+    firebase_sms: ['Telegram bu raqam uchun rasmiy mobil ilovadagi SMS tekshiruvini talab qildi. QR orqali ulaning.', 'Для этого номера Telegram требует SMS-проверку в официальном мобильном приложении. Используйте QR.'],
+  };
+  return messages[delivery ?? '']?.[ru ? 1 : 0] ?? (ru ? 'Telegram принял запрос, но не сообщил способ доставки. Проверьте активное приложение или используйте QR.' : 'Telegram so‘rovni qabul qildi, lekin kod keladigan usulni ko‘rsatmadi. Ochiq Telegram ilovasini tekshiring yoki QR orqali ulaning.');
 };
 
 const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: IntegrationHubProps) => {
@@ -78,6 +79,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const [telegramError, setTelegramError] = useState<string | null>(null);
   const [telegramTemporaryError, setTelegramTemporaryError] = useState(false);
   const [telegramDelivery, setTelegramDelivery] = useState<TelegramDeliveryType | null>(null);
+  const [telegramNextDelivery, setTelegramNextDelivery] = useState<TelegramDeliveryType | null>(null);
   const [telegramResendAvailableAt, setTelegramResendAvailableAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [connectingId, setConnectingId] = useState<string | null>(null);
@@ -147,7 +149,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       connectTimerRef.current = null;
     }
     setConnectingId(null); setSelectedId(null); setUsername(""); setTelegramPhone(""); setTelegramCode(""); setTelegramPassword(""); setTelegramStep("phone"); setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramQrImage(null); setTelegramBusy(false); setTelegramError(null);
-    setTelegramDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false);
+    setTelegramDelivery(null); setTelegramNextDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false);
   };
 
   const finishTelegramConnection = async () => {
@@ -187,13 +189,27 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     return () => { active = false; window.clearInterval(id); };
   }, [selectedId, telegramLoginMethod, telegramStep, telegramQrExpiresAt]);
 
+  useEffect(() => {
+    if (selectedId !== 'telegram' || telegramLoginMethod !== 'phone') return;
+    let active = true;
+    void getTelegramStatus().then(status => {
+      if (!active || !status.pendingLogin) return;
+      setTelegramStep('code');
+      setTelegramDelivery(status.pendingLogin.delivery);
+      setTelegramNextDelivery(status.pendingLogin.nextDelivery);
+      setTelegramResendAvailableAt(Date.now() + status.pendingLogin.timeoutSeconds * 1000);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [selectedId, telegramLoginMethod]);
+
   const submitTelegramStep = async () => {
     if (telegramBusy) return;
     setTelegramBusy(true); setTelegramError(null);
     try {
       if (telegramStep === "phone") {
-        const result = await connectTelegram(telegramPhone.trim());
+        const result = await connectTelegram(telegramPhone.trim().replace(/[\s()-]/g, "").replace(/^00/, "+"));
         setTelegramDelivery(result.delivery);
+        setTelegramNextDelivery(result.nextDelivery);
         setTelegramResendAvailableAt(result.timeoutSeconds ? Date.now() + result.timeoutSeconds * 1000 : null);
         setTelegramStep("code");
       } else if (telegramStep === "code") {
@@ -206,20 +222,25 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       }
     } catch (error) {
       setTelegramError(errorMessage(error));
+      const retry = (error as { details?: { retryAfterSeconds?: number } })?.details?.retryAfterSeconds;
+      if (typeof retry === 'number' && retry > 0) setTelegramResendAvailableAt(Date.now() + retry * 1000);
     } finally {
       setTelegramBusy(false);
     }
   };
 
   const resendTelegramStep = async () => {
-    if (telegramBusy || resendRemainingSeconds > 0) return;
+    if (telegramBusy || resendRemainingSeconds > 0 || !telegramNextDelivery) return;
     setTelegramBusy(true); setTelegramError(null);
     try {
       const result = await resendTelegramCode();
       setTelegramDelivery(result.delivery);
+        setTelegramNextDelivery(result.nextDelivery);
       setTelegramResendAvailableAt(result.timeoutSeconds ? Date.now() + result.timeoutSeconds * 1000 : null);
     } catch (error) {
       setTelegramError(errorMessage(error));
+      const retry = (error as { details?: { retryAfterSeconds?: number } })?.details?.retryAfterSeconds;
+      if (typeof retry === 'number' && retry > 0) setTelegramResendAvailableAt(Date.now() + retry * 1000);
     } finally {
       setTelegramBusy(false);
     }
@@ -288,18 +309,18 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
           </> : selected.id === "telegram" ? <>
             <div className="integration-modal__login-tabs" role="tablist" aria-label="Telegram ulash usuli">
-              <button type="button" role="tab" aria-selected={telegramLoginMethod === "phone"} className={telegramLoginMethod === "phone" ? "is-active" : ""} onClick={() => { setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramError(null); setTelegramStep("phone"); }}>Telefon orqali</button>
-              <button type="button" role="tab" aria-selected={telegramLoginMethod === "qr"} className={telegramLoginMethod === "qr" ? "is-active" : ""} onClick={() => { setTelegramLoginMethod("qr"); setTelegramError(null); void startQr(); }}>QR orqali</button>
+              <button type="button" role="tab" aria-selected={telegramLoginMethod === "phone"} className={telegramLoginMethod === "phone" ? "is-active" : ""} disabled={telegramBusy} onClick={() => { setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramError(null); setTelegramStep("phone"); }}>Telefon orqali</button>
+              <button type="button" role="tab" aria-selected={telegramLoginMethod === "qr"} className={telegramLoginMethod === "qr" ? "is-active" : ""} disabled={telegramBusy} onClick={() => { setTelegramLoginMethod("qr"); setTelegramError(null); void startQr(); }}>QR orqali</button>
             </div>
             {telegramLoginMethod === "phone" ? <>
               <label className="integration-modal__label">{telegramStep === "phone" ? "Telefon raqam" : telegramStep === "code" ? "Telegram kodi" : "2FA parol"}</label>
               {telegramStep === "phone" && <input type="tel" className="integration-modal__field" placeholder="+998901234567" value={telegramPhone} onChange={(event) => setTelegramPhone(event.target.value)} autoComplete="tel" />}
-              {telegramStep === "code" && <input type="text" inputMode="numeric" className="integration-modal__field" placeholder="12345" value={telegramCode} onChange={(event) => setTelegramCode(event.target.value)} autoComplete="one-time-code" />}
+              {telegramStep === "code" && <input type="text" className="integration-modal__field" placeholder={locale === "ru" ? "Код Telegram" : "Telegram kodi"} value={telegramCode} onChange={(event) => setTelegramCode(event.target.value)} autoComplete="one-time-code" />}
               {telegramStep === "password" && <input type="password" className="integration-modal__field" placeholder={t("integrations.telegram.twoFactorPassword", "Telegram 2FA paroli")} value={telegramPassword} onChange={(event) => setTelegramPassword(event.target.value)} autoComplete="current-password" />}
-              {telegramStep === "code" && <span className="integration-modal__note integration-modal__note--delivery">{telegramDeliveryMessage(telegramDelivery)}</span>}
+              {telegramStep === "code" && <span className="integration-modal__note integration-modal__note--delivery">{telegramDeliveryMessage(telegramDelivery, locale === "ru")}</span>}
               {telegramError && <span className="integration-modal__error">{telegramError}</span>}
               <button type="button" className="integration-modal__connect" onClick={() => void submitTelegramStep()} disabled={telegramBusy}>{telegramBusy ? "Tekshirilmoqda..." : telegramStep === "phone" ? "Kodni yuborish" : telegramStep === "code" ? "Kodni tasdiqlash" : "Ulanishni yakunlash"}<ExternalLink size={15} /></button>
-              {telegramStep === "code" && <button type="button" className="integration-modal__resend" onClick={() => void resendTelegramStep()} disabled={telegramBusy || resendRemainingSeconds > 0}>{resendRemainingSeconds > 0 ? `Qayta yuborish (${resendRemainingSeconds}s)` : "Qayta yuborish"}</button>}
+              {telegramStep === "code" && <button type="button" className="integration-modal__resend" onClick={() => void resendTelegramStep()} disabled={telegramBusy || resendRemainingSeconds > 0 || !telegramNextDelivery}>{resendRemainingSeconds > 0 ? `${locale === "ru" ? "Повторить через" : "Qayta yuborish"} (${resendRemainingSeconds}s)` : !telegramNextDelivery ? (locale === "ru" ? "Повторная отправка недоступна" : "Qayta yuborish hozir mavjud emas") : telegramNextDelivery === "sms" ? (locale === "ru" ? "Отправить по SMS" : "SMS orqali yuborish") : (locale === "ru" ? "Отправить повторно" : "Qayta yuborish")}</button>}
               {telegramStep === "code" && <span className="integration-modal__note">Kod kelmasa, QR orqali ulashni sinab ko'ring.</span>}
             </> : <div className="integration-modal__qr-panel">
               {telegramStep === "password" ? <>

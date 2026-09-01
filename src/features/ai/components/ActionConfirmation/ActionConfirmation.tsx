@@ -7,7 +7,7 @@ import "./ActionConfirmation.scss";
 
 type ActionConfirmationProps = {
   action: AIAction;
-  status: "pending" | "loading" | "success" | "cancelled";
+  status: "pending" | "loading" | "success" | "cancelled" | "failed";
   onConfirm: () => void | Promise<void>;
   onDismiss: () => void;
 };
@@ -72,10 +72,21 @@ const getActionDetails = (action: AIAction, t: (key:string,fallback:string)=>str
       };
     case "confirmAgentAction": {
       const preview = action.payload.preview;
-      const summary = preview && typeof preview === "object"
-        ? Object.entries(preview as Record<string, unknown>).slice(0, 5).map(([key, value]) => `${key}: ${String(value ?? "—")}`).join(" · ")
-        : String(preview ?? t("ai.action.prepared", "AI tayyorlagan amal"));
-      return { title: action.label, target: t("ai.action.agent", "AI agent"), summary };
+      const ru = getLocale() === 'ru';
+      const fieldLabels: Record<string, string> = { title: ru ? 'Название' : 'Nomi', amount: ru ? 'Сумма' : 'Summa', currency: ru ? 'Валюта' : 'Valyuta', type: ru ? 'Тип' : 'Turi', transactionDate: ru ? 'Дата' : 'Sana', recipient: ru ? 'Получатель' : 'Qabul qiluvchi', text: ru ? 'Сообщение' : 'Xabar', value: ru ? 'Сведения' : 'Ma’lumot', firstName: ru ? 'Имя' : 'Ism', lastName: ru ? 'Фамилия' : 'Familiya', dueAt: ru ? 'Срок' : 'Muddat', remindAt: ru ? 'Время' : 'Vaqt', startAt: ru ? 'Начало' : 'Boshlanish', endAt: ru ? 'Окончание' : 'Tugash', start: ru ? 'Начало' : 'Boshlanish', end: ru ? 'Окончание' : 'Tugash', description: ru ? 'Описание' : 'Izoh', content: ru ? 'Текст' : 'Matn', note: ru ? 'Заметка' : 'Izoh', location: ru ? 'Место' : 'Joy', phone: ru ? 'Телефон' : 'Telefon', email: 'Email', displayName: ru ? 'Имя' : 'Ism', key: ru ? 'Тема' : 'Mavzu', priority: ru ? 'Приоритет' : 'Muhimlik' };
+      const format = (value: unknown): string => {
+        if (Array.isArray(value)) return value.map((item, index) => `${index + 1}. ${format(item && typeof item === 'object' && 'preview' in item ? item.preview : item)}`).join('\n\n');
+        if (!value || typeof value !== 'object') return String(value ?? '');
+        const item = value as Record<string, unknown>;
+        return Object.entries(item).filter(([key, val]) => val != null && fieldLabels[key]).map(([key, val]) => {
+          let display = String(val);
+          if (key === 'amount') display = Number(val).toLocaleString(ru ? 'ru-RU' : 'uz-UZ', { maximumFractionDigits: 2 });
+          if (key === 'type') display = val === 'INCOME' ? (ru ? 'Доход' : 'Daromad') : val === 'EXPENSE' ? (ru ? 'Расход' : 'Xarajat') : String(val);
+          if (/^(transactionDate|dueAt|remindAt|startAt|endAt|start|end)$/.test(key) && !Number.isNaN(Date.parse(String(val)))) display = new Date(String(val)).toLocaleString(ru ? 'ru-RU' : 'uz-UZ', { timeZone: typeof item.timezone === 'string' ? item.timezone : undefined });
+          return `${fieldLabels[key]}: ${display}`;
+        }).join('\n') || (item.changes ? format(item.changes) : t('ai.action.prepared', 'AI tayyorlagan amal'));
+      };
+      return { title: action.payload.tool === '__batch__' ? (ru ? 'Несколько действий' : 'Bir nechta amal') : '', target: t('ai.action.agent', 'AI agent'), summary: format(preview) };
     }
   }
 };
@@ -94,7 +105,7 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
   const t = (key: string, fallback: string) => translate(key, fallback, getLocale());
   const details = getActionDetails(action, t);
   const Icon = getActionIcon(action);
-  const resolved = status === "success" || status === "cancelled";
+  const resolved = status === "success" || status === "cancelled" || status === "failed";
 
   return (
     <div className={`action-confirmation action-confirmation--${status}`}>
@@ -103,7 +114,7 @@ const ActionConfirmation = ({ action, status, onConfirm, onDismiss }: ActionConf
       </div>
 
       <div className="action-confirmation__content">
-        <strong className="action-confirmation__name">{status === "success" ? t("common.completed", "Bajarildi") : status === "cancelled" ? t("ai.action.cancelled", "Bekor qilindi") : action.label}</strong>
+        <strong className="action-confirmation__name">{status === "success" ? t("common.completed", "Bajarildi") : status === "cancelled" ? t("ai.action.cancelled", "Bekor qilindi") : status === "failed" ? t("ai.action.failed", "Bajarilmadi — holatini tekshiring") : action.label}</strong>
         <span className="action-confirmation__title">
           {action.type === "sendTelegramMessage" ? `${t("ai.action.recipient", "Qabul qiluvchi")}: ${details.title}` : details.title}
         </span>

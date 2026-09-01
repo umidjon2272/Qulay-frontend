@@ -1,6 +1,6 @@
+import ActionConfirmation from '../ActionConfirmation/ActionConfirmation';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Check,
   Keyboard,
   Mic,
   MicOff,
@@ -15,11 +15,9 @@ import { getSettings } from "../../../../services/settingsService";
 import { subscribeToWorkspaceData } from "../../../../services/workspaceEvents";
 import { useToast } from "../../../../hooks/useToast";
 import { useI18n } from "../../../../i18n/useI18n";
-import type { AIAction } from "../../actions/actionTypes";
 import type { ChatMessage } from "../../context/AIChatContextValue";
 import { useAIChat } from "../../hooks/useAIChat";
 import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
-import { cancelAIAction } from "../../actions/actionExecutor";
 import { subscriptionApi } from "../../../../services/api/subscriptionApi";
 
 import VoiceOrb, { type VoiceOrbState } from "../VoiceOrb/VoiceOrb";
@@ -32,35 +30,7 @@ type VoiceModeProps = {
   onKeyboard: () => void;
 };
 
-type ActionStatus = "pending" | "loading" | "success" | "cancelled";
-type TFn = (key: string, fallback: string, params?: Record<string, string | number>) => string;
-
-const getActionDetails = (t: TFn, action: AIAction) => {
-  switch (action.type) {
-    case "createMeeting":
-      return {
-        title: t("voiceMode.action.createMeeting", "Uchrashuv yaratish"),
-        subject: action.payload.participant || action.payload.title,
-        meta: `${action.payload.dateLabel} · ${action.payload.time}`,
-      };
-    case "createTask":
-      return { title: t("voiceMode.action.createTask", "Vazifa yaratish"), subject: action.payload.title, meta: `${action.payload.dateLabel} · ${action.payload.time}` };
-    case "createReminder":
-      return { title: t("voiceMode.action.createReminder", "Eslatma qo'shish"), subject: action.payload.title, meta: `${action.payload.dateLabel} · ${action.payload.time}` };
-    case "createNote":
-      return { title: t("voiceMode.action.createNote", "Qayd yozish"), subject: action.payload.title, meta: t("voiceMode.action.newNote", "Yangi qayd") };
-    case "getTodayPlan":
-      return { title: t("voiceMode.action.getTodayPlan", "Bugungi rejani ko'rish"), subject: t("briefing.title", "Bugungi reja"), meta: t("voiceMode.action.preparing", "Tayyorlanmoqda") };
-    case "confirmAgentAction":
-      return { title: t("voiceMode.action.confirmAgent", "AI amalini tasdiqlash"), subject: action.label, meta: typeof action.payload.preview === "object" ? JSON.stringify(action.payload.preview) : String(action.payload.preview ?? "") };
-    case "sendTelegramMessage":
-      return { title: t("voiceMode.action.telegram", "Telegram xabarini yuborish"), subject: action.payload.recipientName, meta: action.payload.text };
-  }
-};
-
-const isConfirmation = (text: string) => /tasdiq|tasdiqlay|ha,?\s*(mayli|albatta)?|confirm|подтвержда|да[,\s]*(можно|конечно)?/i.test(text);
-const isCancellation = (text: string) => /bekor|yo'q|yoq|cancel|отмен|нет/i.test(text);
-
+type ActionStatus = "pending" | "loading" | "success" | "cancelled" | "failed";
 const getLatest = (messages: ChatMessage[], role: ChatMessage["role"]) =>
   [...messages].reverse().find((message) => message.id !== 0 && message.role === role);
 
@@ -70,6 +40,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     isTyping,
     sendMessage,
     executeAction,
+    cancelAction,
     speakingId,
     speak,
     stopSpeaking,
@@ -79,7 +50,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   const [muted, setMuted] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
-  const [voiceReply, setVoiceReply] = useState(() => getSettings().ai.voiceReply);
+  const [voiceReply, setVoiceReply] = useState(true);
   const lastSpokenIdRef = useRef<number | null>(null);
   const sessionStartedAtRef = useRef<number | null>(null);
 
@@ -92,31 +63,22 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     [messages],
   );
 
+  useEffect(() => {
+    const onVoiceError = (event: Event) => setVoiceError(String((event as CustomEvent).detail));
+    window.addEventListener("qulay:voice-error", onVoiceError);
+    return () => window.removeEventListener("qulay:voice-error", onVoiceError);
+  }, []);
+
   useEffect(() => subscribeToWorkspaceData("settings", () => {
     setVoiceReply(getSettings().ai.voiceReply);
   }), []);
 
   const handleResult = useCallback((transcript: string) => {
-    const normalized = transcript.toLocaleLowerCase("uz-UZ");
-
-    if (pendingAction && actionStatus === "pending" && isConfirmation(normalized)) {
-      setActionStatus("loading");
-      void executeAction(pendingAction).then((result) => {
-        setActionStatus(result.success ? "success" : "pending");
-      });
-      return;
-    }
-
-    if (pendingAction && actionStatus === "pending" && isCancellation(normalized)) {
-      setActionStatus("loading");
-      void cancelAIAction(pendingAction).then((result) => { setActionStatus(result.success ? "cancelled" : "pending"); showToast(result.message, result.success ? "success" : "error"); });
-      return;
-    }
-
+    // Approval and corrections are resolved centrally from the stored action.
     sendMessage(transcript);
-  }, [actionStatus, executeAction, pendingAction, sendMessage, showToast]);
+  }, [sendMessage]);
 
-  const { isSupported, isListening, interimTranscript, start, stop, requestPermission } = useSpeechRecognition({
+  const { isSupported, isListening, isProcessing, interimTranscript, start, stop, requestPermission } = useSpeechRecognition({
     onResult: handleResult,
     onError: (message) => setVoiceError(message),
   });
@@ -133,8 +95,8 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   }, [open, t]);
 
   useEffect(() => {
-    setActionStatus("pending");
-  }, [latestAI?.id]);
+    setActionStatus(latestAI?.actionStatus ?? "pending");
+  }, [latestAI?.id, latestAI?.actionStatus]);
 
   useEffect(() => {
     if (!open) {
@@ -143,11 +105,11 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
       return;
     }
 
-    if (muted || voiceError || isTyping || isListening || speakingId) return;
+    if (muted || voiceError || isTyping || isListening || isProcessing || speakingId) return;
 
     const timer = window.setTimeout(() => start(), 180);
     return () => window.clearTimeout(timer);
-  }, [isListening, isTyping, muted, open, speakingId, start, stop, stopSpeaking, voiceError]);
+  }, [isListening, isProcessing, isTyping, muted, open, speakingId, start, stop, stopSpeaking, voiceError]);
 
   useEffect(() => () => {
     stop();
@@ -158,8 +120,9 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     if (!open || !voiceReply || isTyping || !latestAI || latestAI.id === lastSpokenIdRef.current) return;
 
     lastSpokenIdRef.current = latestAI.id;
+    stop();
     speak(latestAI.id, latestAI.text);
-  }, [isTyping, latestAI, open, speak, voiceReply]);
+  }, [isTyping, latestAI, open, speak, stop, voiceReply]);
 
   useEffect(() => {
     if (!open) return;
@@ -178,7 +141,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     ? "error"
     : speakingId
       ? "speaking"
-      : isTyping
+      : isTyping || isProcessing
         ? "processing"
         : isListening
           ? "listening"
@@ -188,7 +151,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     ? t("voiceMode.state.error", "Ovozli suhbatda xatolik yuz berdi")
     : speakingId
       ? t("voiceMode.state.speaking", "Javob beryapman...")
-      : isTyping
+      : isTyping || isProcessing
         ? t("voiceMode.state.thinking", "O'ylayapman...")
         : isListening
           ? t("voiceMode.state.listening", "Tinglayapman...")
@@ -196,16 +159,10 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
             ? t("voiceMode.state.muted", "Mikrofon o'chiq")
             : t("voiceMode.state.idle", "Gapirishni boshlashingiz mumkin");
 
-  const actionDetails = pendingAction ? getActionDetails(t, pendingAction) : null;
 
   const handleEnd = () => {
     stop();
     stopSpeaking();
-    if (sessionStartedAtRef.current) {
-      const seconds = Math.max(1, Math.ceil((Date.now() - sessionStartedAtRef.current) / 1000));
-      sessionStartedAtRef.current = null;
-      void subscriptionApi.logVoiceUsage(seconds).catch(() => undefined);
-    }
     onClose();
   };
 
@@ -222,11 +179,11 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     if (!pendingAction || actionStatus !== "pending") return;
     setActionStatus("loading");
     const result = await executeAction(pendingAction);
-    setActionStatus(result.success ? "success" : "pending");
+    setActionStatus(result.success ? "success" : "failed");
   };
   const handleActionCancel = async () => {
     if (!pendingAction || actionStatus !== "pending") return;
-    setActionStatus("loading"); const result = await cancelAIAction(pendingAction); setActionStatus(result.success ? "cancelled" : "pending"); showToast(result.message, result.success ? "success" : "error");
+    setActionStatus("loading"); const result = await cancelAction(pendingAction); setActionStatus(result.success ? "cancelled" : "pending"); showToast(result.message, result.success ? "success" : "error");
   };
 
   return (
@@ -239,7 +196,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
             <span className="voice-mode__brand-dot" />
             <div>
               <strong>Qulay AI</strong>
-              <span>{t("voiceMode.subtitle", "Voice Mode · O'zbekcha")}</span>
+              <span>{t("voiceMode.aiVoice", "AI yaratgan ovoz") }</span>
             </div>
           </div>
 
@@ -271,25 +228,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
             {interimTranscript && <p className="voice-mode__interim">{interimTranscript}</p>}
           </div>
 
-          {actionDetails && (actionStatus === "pending" || actionStatus === "loading") && (
-            <section className="voice-mode__confirmation">
-              <div className="voice-mode__confirmation-icon"><Check size={16} /></div>
-              <div>
-                <strong>{actionDetails.title}</strong>
-                <span>{actionDetails.subject}</span>
-                <small>{actionDetails.meta}</small>
-              </div>
-              <div className="voice-mode__confirmation-actions">
-                <button type="button" onClick={() => void handleActionConfirm()} disabled={actionStatus === "loading"}>
-                  <Check size={14} />
-                  {actionStatus === "loading" ? t("voiceMode.saving", "Saqlanmoqda") : t("common.confirm", "Tasdiqlash")}
-                </button>
-                <button type="button" onClick={() => void handleActionCancel()} disabled={actionStatus === "loading"}>
-                  {t("common.cancel", "Bekor qilish")}
-                </button>
-              </div>
-            </section>
-          )}
+          {pendingAction && <ActionConfirmation action={pendingAction} status={actionStatus} onConfirm={handleActionConfirm} onDismiss={() => void handleActionCancel()} />}
 
           {voiceError && (
             <div className="voice-mode__error">
@@ -331,7 +270,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
           <button
             type="button"
             className="voice-mode__sound"
-            onClick={speakingId ? stopSpeaking : undefined}
+            onClick={() => { setVoiceReply(v => !v); stopSpeaking(); }}
             aria-label={speakingId ? t("voiceMode.stopSpeakingAria", "Ovozli javobni to'xtatish") : t("voiceMode.soundOnAria", "Ovoz yoqilgan")}
           >
             {speakingId ? <VolumeX size={16} /> : <Volume2 size={16} />}

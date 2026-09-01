@@ -1,4 +1,4 @@
-import { ArrowLeft, Menu, Minus, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { ArrowLeft, Menu, PanelLeft, Minus, Plus, Sparkles, Trash2, X } from "lucide-react";
 
 import { usePlatform } from "../../../../context/PlatformContext";
 import { useI18n } from "../../../../i18n/useI18n";
@@ -7,6 +7,8 @@ import "./ChatHeader.scss";
 
 type ChatHeaderProps = {
   title?: string;
+  onTogglePanel?: () => void;
+  panelOpen?: boolean;
   onClose?: () => void;
   onMinimize?: () => void;
   onClear?: () => void;
@@ -15,11 +17,12 @@ type ChatHeaderProps = {
   onBack?: () => void;
 };
 
-const ChatHeader = ({ title, onClose, onMinimize, onClear, onOpenHistory, onNewChat, onBack }: ChatHeaderProps) => {
+const ChatHeader = ({ title, onClose, onMinimize, onClear, onOpenHistory, onNewChat, onBack, onTogglePanel, panelOpen }: ChatHeaderProps) => {
   const { name: platformName } = usePlatform();
   const { t } = useI18n();
   return (
     <header className="chat-header">
+      {onTogglePanel && <button type="button" className="chat-header__btn chat-header__btn--panel" onClick={onTogglePanel} aria-expanded={panelOpen} aria-label={t("ai.togglePanel", "Tezkor amallar va tarix")} title={t("ai.togglePanel", "Tezkor amallar va tarix")}><PanelLeft size={20} /></button>}
       {onBack && <button type="button" className="chat-header__btn chat-header__btn--back" onClick={onBack} title={t("nav.home", "Bosh sahifa")} aria-label={t("ai.backHome", "Bosh sahifaga qaytish")}><ArrowLeft size={19} /></button>}
       {onOpenHistory && (
         <button

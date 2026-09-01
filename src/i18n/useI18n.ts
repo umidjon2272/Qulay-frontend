@@ -6,6 +6,9 @@ export type AppLocale = "uz" | "ru";
 
 /** Exported so the static i18n coverage test (see i18nCoverage.test.ts) can check every t() call site against this dictionary. */
 export const RU: Record<string, string> = {
+  "nav.expand": "Открыть основное меню", "nav.collapse": "Свернуть основное меню",
+  "ai.action.failed": "Не выполнено — проверьте состояние", "ai.togglePanel": "Быстрые действия и история",
+  "voiceMode.aiVoice": "Голос, созданный AI",
   "nav.main": "ГЛАВНОЕ", "nav.system": "СИСТЕМА", "nav.home": "Главная", "nav.ai": "AI помощник", "nav.calendar": "Календарь", "nav.tasks": "Задачи", "nav.reminders": "Напоминания", "nav.files": "Файлы", "nav.settings": "Настройки", "nav.profile": "Профиль", "nav.logout": "Выйти", "nav.ready": "Готов к работе", "nav.workspace": "AI рабочее пространство",
   "top.search": "Поиск...", "top.search.none": "Ничего не найдено.", "top.notifications": "Уведомления", "top.allRead": "Все прочитано", "top.new": "новых", "top.none": "Уведомлений пока нет.", "top.notificationSettings": "Настройки уведомлений", "top.now": "сейчас", "top.minutes": "мин", "top.hours": "ч", "top.days": "дн",
   "common.create": "Создать", "common.save": "Сохранить", "common.cancel": "Отмена", "common.delete": "Удалить", "common.edit": "Изменить", "common.search": "Поиск", "common.all": "Все", "common.today": "Сегодня", "common.completed": "Выполнено", "common.active": "Активные", "common.overdue": "Просрочено", "common.retry": "Повторить", "common.loading": "Загрузка...",

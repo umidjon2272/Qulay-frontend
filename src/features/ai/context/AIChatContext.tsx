@@ -1,3 +1,6 @@
+import { voiceApi, spokenText } from '../../../services/api/voiceApi';
+import { cancelAIAction } from '../actions/actionExecutor';
+import { getApiErrorMessage } from '../../../services/api/apiClient';
 import {
   useCallback,
   useEffect,
@@ -10,7 +13,7 @@ import {
 import { STORAGE_KEYS } from "../../../constants/storageKeys";
 import { readStorage, removeStorage, writeStorage } from "../../../services/storage";
 import { getSettings } from "../../../services/settingsService";
-import { subscribeToWorkspaceData } from "../../../services/workspaceEvents";
+import { notifyWorkspaceDataChanged, subscribeToWorkspaceData, type WorkspaceResource } from "../../../services/workspaceEvents";
 import { AUTH_SESSION_CHANGED, getAuthSession } from "../../../services/authService";
 import { executeAIAction, type AIActionExecutionResult } from "../actions/actionExecutor";
 import { isAIAction, type AIAction } from "../actions/actionTypes";
@@ -88,14 +91,20 @@ const isChatMessage = (value: unknown): value is ChatMessage => {
 const isChatHistory = (value: unknown): value is ChatMessage[] =>
   Array.isArray(value) && value.length > 0 && value.every(isChatMessage);
 
-const loadStoredMessages = (welcomeMessage = createWelcomeMessage()): ChatMessage[] => {
-  if (!getSettings().ai.saveHistory) return [welcomeMessage];
-
-  const stored = readStorage(STORAGE_KEYS.aiChatHistory, [welcomeMessage], isChatHistory);
-  if (stored.length <= MAX_CHAT_MESSAGES) return stored;
-
-  return [stored[0], ...stored.slice(-(MAX_CHAT_MESSAGES - 1))];
+// Scope cached history to its owner and keep the server conversation ID across reloads.
+const loadStoredSession = (): { conversationId: string | null; messages: ChatMessage[] } | null => {
+  const userId = getAuthSession()?.id;
+  if (!userId || !getSettings().ai.saveHistory) return null;
+  const stored = readStorage<unknown>(STORAGE_KEYS.aiChatHistory, null);
+  if (!isRecord(stored) || stored.userId !== userId || !isChatHistory(stored.messages)) return null;
+  return {
+    conversationId: typeof stored.conversationId === "string" ? stored.conversationId : null,
+    messages: stored.messages.slice(-MAX_CHAT_MESSAGES).map(message => message.actionStatus === "loading" ? { ...message, actionStatus: "pending" } : message),
+  };
 };
+
+const loadStoredMessages = (welcomeMessage = createWelcomeMessage()): ChatMessage[] =>
+  loadStoredSession()?.messages ?? [welcomeMessage];
 
 const appendMessage = (messages: ChatMessage[], message: ChatMessage): ChatMessage[] => {
   const next = [...messages, message];
@@ -113,12 +122,16 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const [saveHistory, setSaveHistory] = useState(() => getSettings().ai.saveHistory);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(() => loadStoredSession()?.conversationId ?? null);
+  const sessionUserIdRef = useRef(getAuthSession()?.id ?? null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const historyLoadingRef = useRef(false);
   const previousSaveHistoryRef = useRef(saveHistory);
-  const activeConversationIdRef = useRef<string | null>(null);
+  const activeConversationIdRef = useRef<string | null>(activeConversationId);
 
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const speechRequestRef = useRef<AbortController | null>(null);
+  const speechGenerationRef = useRef(0);
   const mountedRef = useRef(true);
   const generationRef = useRef(0);
   const messageIdRef = useRef(0);
@@ -160,15 +173,17 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => { activeConversationIdRef.current = activeConversationId; }, [activeConversationId]);
 
   useEffect(() => {
-    if (saveHistory) writeStorage(STORAGE_KEYS.aiChatHistory, messages);
+    const userId = getAuthSession()?.id;
+    if (saveHistory && userId === sessionUserIdRef.current && userId) writeStorage(STORAGE_KEYS.aiChatHistory, { userId, conversationId: activeConversationId, messages });
     else removeStorage(STORAGE_KEYS.aiChatHistory);
-  }, [messages, saveHistory]);
+  }, [messages, saveHistory, activeConversationId]);
 
   const refreshConversations = useCallback(async () => {
-    if (!getAuthSession()) { setConversations([]); return; }
+    const userId = getAuthSession()?.id;
+    if (!userId) { setConversations([]); return; }
     try {
       const result = await listConversations();
-      if (mountedRef.current) setConversations(result.items);
+      if (mountedRef.current && getAuthSession()?.id === userId) setConversations(result.items);
     } catch {
       // Chat stays usable even if history API is temporarily unavailable.
     }
@@ -191,6 +206,9 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
       pendingRequests.clear();
 
+      speechRequestRef.current?.abort();
+      audioRef.current?.pause();
+      speechGenerationRef.current += 1;
       if (typeof window !== "undefined") {
         window.speechSynthesis?.cancel();
       }
@@ -199,11 +217,16 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const handleAuthSessionChanged = () => {
-      if (getAuthSession()) {
+      const userId = getAuthSession()?.id ?? null;
+      if (userId === sessionUserIdRef.current) {
         void refreshConversations();
         return;
       }
+      sessionUserIdRef.current = userId;
       generationRef.current += 1;
+      speechRequestRef.current?.abort();
+      audioRef.current?.pause();
+      speechGenerationRef.current += 1;
       for (const controller of pendingRequestsRef.current.values()) controller.abort();
       pendingRequestsRef.current.clear();
       pendingTelegramSelectionRef.current = null;
@@ -215,6 +238,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       activeConversationIdRef.current = null;
       setIsTyping(false);
       setSpeakingId(null);
+      if (userId) void refreshConversations();
     };
 
     window.addEventListener(AUTH_SESSION_CHANGED, handleAuthSessionChanged);
@@ -231,10 +255,12 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const toggle = useCallback(() => setIsOpen((value) => !value), []);
 
   const ensureConversation = useCallback(async (title: string): Promise<string | null> => {
-    if (!getSettings().ai.saveHistory || !getAuthSession()) return null;
     if (activeConversationIdRef.current) return activeConversationIdRef.current;
+    if (!getSettings().ai.saveHistory || !getAuthSession()) return null;
+    const generation = generationRef.current;
     try {
       const conversation = await createConversation(title.slice(0, 80));
+      if (!mountedRef.current || generation !== generationRef.current) return null;
       activeConversationIdRef.current = conversation.id;
       if (mountedRef.current) {
         setActiveConversationId(conversation.id);
@@ -254,6 +280,9 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
   const newChat = useCallback(() => {
     generationRef.current += 1;
+    speechRequestRef.current?.abort();
+    audioRef.current?.pause();
+    speechGenerationRef.current += 1;
     for (const controller of pendingRequestsRef.current.values()) controller.abort();
     pendingRequestsRef.current.clear();
     pendingTelegramSelectionRef.current = null;
@@ -271,12 +300,15 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     if (!id || historyLoadingRef.current) return;
     historyLoadingRef.current = true;
     setHistoryLoading(true);
-    generationRef.current += 1;
+    const generation = ++generationRef.current;
+    speechRequestRef.current?.abort();
+    audioRef.current?.pause();
+    speechGenerationRef.current += 1;
     for (const controller of pendingRequestsRef.current.values()) controller.abort();
     pendingRequestsRef.current.clear();
     try {
       const [result, pendingResult] = await Promise.all([listMessages(id, 1, 200), agentApi.listActions('PENDING',1,100).catch(()=>null)]);
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || generation !== generationRef.current) return;
       const loaded: ChatMessage[] = result.items
         .filter((message) => message.role === "USER" || message.role === "ASSISTANT")
         .map((message, index) => ({
@@ -285,7 +317,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           text: message.content,
           time: new Date(message.createdAt).toLocaleTimeString(locale === "ru" ? "ru-RU" : "uz-UZ", { hour: "2-digit", minute: "2-digit" }),
         }));
-      const pending = pendingResult?.items.find((item)=>item.conversationId===id);
+      const pending = pendingResult?.items.find((item)=>item.conversationId===id && Date.parse(item.expiresAt) > Date.now());
       if (pending) {
         const action: AIAction = { type:'confirmAgentAction', payload:{actionId:pending.id,tool:pending.toolName,preview:pending.preview}, label: locale==='ru'?'Действие AI':'AI amali', confirmationMessage: locale==='ru'?'Подтвердить действие?':'Amalni tasdiqlaysizmi?', success:locale==='ru'?'✅ Действие выполнено.':'✅ Amal bajarildi.', error:locale==='ru'?'Не удалось выполнить действие.':'Amalni bajarishda xatolik yuz berdi.' };
         const lastAiIndex=[...loaded].map((m,i)=>({m,i})).reverse().find(({m})=>m.role==='ai')?.i;
@@ -298,9 +330,14 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       setMessages(nextMessages);
       pendingTelegramSelectionRef.current = null;
       setIsTyping(false);
+    } catch (error) {
+      if (mountedRef.current && generation === generationRef.current) {
+        setMessages(current => appendMessage(current, { id: ++messageIdRef.current, role: "ai", time: formatTime(), text: getApiErrorMessage(error, locale === "ru" ? "Не удалось открыть историю. Попробуйте ещё раз." : "Suhbat tarixini ochib bo‘lmadi. Qayta urinib ko‘ring.") }));
+      }
     } finally {
       historyLoadingRef.current = false;
       if (mountedRef.current) setHistoryLoading(false);
+      if (mountedRef.current && generation === generationRef.current) { setIsTyping(false); setSpeakingId(null); }
     }
   }, [platformName, locale]);
 
@@ -370,7 +407,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const sendMessage = useCallback((text: string) => {
     const trimmed = text.trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!trimmed || !mountedRef.current) return;
-    if (pendingRequestsRef.current.size > 0) return;
+    if (pendingRequestsRef.current.size > 0 || executingActionsRef.current.size > 0 || historyLoadingRef.current) return;
 
     const pendingSelection = pendingTelegramSelectionRef.current;
     if (pendingSelection) {
@@ -404,7 +441,8 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     };
 
     setMessages((current) => appendMessage(current, userMessage));
-    const preparedConversation = conversationPromise.then(async (id) => { await persistConversationMessage(id, trimmed, "USER"); return id; });
+    // The agent is the single writer of its user/assistant transcript.
+    const preparedConversation = conversationPromise;
     setIsTyping(true);
 
     void preparedConversation.then((conversationId) => getAIReply(trimmed, { signal: controller.signal, conversationId }))
@@ -417,6 +455,20 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
+        if (reply.resolvedActionStatus === "success") {
+          (["tasks", "reminders", "calendarEvents", "notes", "finance", "contacts", "memories"] satisfies WorkspaceResource[]).forEach(notifyWorkspaceDataChanged);
+        }
+        if (reply.conversationId) {
+          activeConversationIdRef.current = reply.conversationId;
+          setActiveConversationId(reply.conversationId);
+          void refreshConversations();
+        }
+        setMessages((current) => current.map((message) => {
+          if (message.action?.type !== "confirmAgentAction") return message;
+          if (message.action.payload.actionId === reply.resolvedActionId) return { ...message, actionStatus: reply.resolvedActionStatus ?? "success" };
+          if (reply.action && (!message.actionStatus || message.actionStatus === "pending")) return { ...message, actionStatus: "cancelled" };
+          return message;
+        }));
         const aiMessage: ChatMessage = {
           id: nextMessageId(),
           role: "ai",
@@ -427,7 +479,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         };
 
         setMessages((current) => appendMessage(current, aiMessage));
-        if (!reply.serverPersisted) void conversationPromise.then((id) => persistConversationMessage(id, reply.text, "ASSISTANT"));
+        if (!reply.serverPersisted) void conversationPromise.then(async (id) => { await persistConversationMessage(id, trimmed, "USER"); await persistConversationMessage(id, reply.text, "ASSISTANT"); });
       })
       .catch((error: unknown) => {
         if (
@@ -442,7 +494,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         setMessages((current) => appendMessage(current, {
             id: nextMessageId(),
             role: "ai",
-            text: "Kechirasiz, hozir javob tayyorlashda muammo yuz berdi. Iltimos, yana urinib ko'ring.",
+            text: getApiErrorMessage(error, "Javobni olishning imkoni bo‘lmadi. Suhbatni qayta ochib holatini tekshiring."),
             time: formatTime(),
           }));
       })
@@ -453,13 +505,15 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           setIsTyping(pendingRequestsRef.current.size > 0);
         }
       });
-  }, [ensureConversation, persistConversationMessage, resolveTelegramSelection]);
+  }, [ensureConversation, persistConversationMessage, resolveTelegramSelection, refreshConversations]);
 
   const executeAction = useCallback(async (action: AIAction): Promise<AIActionExecutionResult> => {
     if (!mountedRef.current) {
       return { success: false, message: action.error };
     }
 
+    const generation = generationRef.current;
+    const conversationId = activeConversationIdRef.current;
     const actionKey = JSON.stringify(action);
     if (executedActionsRef.current.has(actionKey)) {
       return { success: true, message: "Bu amal allaqachon bajarilgan." };
@@ -469,6 +523,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     }
 
     executingActionsRef.current.add(actionKey);
+    setMessages(current => current.map(m => m.action && JSON.stringify(m.action) === actionKey ? { ...m, actionStatus: "loading" } : m));
     setIsTyping(true);
 
     try {
@@ -476,10 +531,9 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
       if (result.success) executedActionsRef.current.add(actionKey);
 
-      if (mountedRef.current) {
-        // The confirmation card is the visible result in the active chat.
-        // Persist the outcome for restored history without adding a duplicate success bubble.
-        void persistConversationMessage(activeConversationIdRef.current, result.message, "ASSISTANT");
+      if (mountedRef.current && generation === generationRef.current) {
+        setMessages(current => appendMessage(current.map(m => m.action && JSON.stringify(m.action) === actionKey ? { ...m, actionStatus: result.success ? "success" : "failed" } : m), { id: nextMessageId(), role: "ai", text: result.message, time: formatTime() }));
+        if (action.type !== "confirmAgentAction") void persistConversationMessage(conversationId, result.message, "ASSISTANT");
       }
 
       return result;
@@ -487,39 +541,68 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       return { success: false, message: action.error };
     } finally {
       executingActionsRef.current.delete(actionKey);
-      if (mountedRef.current) {
+      if (mountedRef.current && generation === generationRef.current) {
         setIsTyping(pendingRequestsRef.current.size > 0);
       }
     }
   }, [persistConversationMessage]);
 
+  const cancelAction = useCallback(async (action: AIAction): Promise<AIActionExecutionResult> => {
+    const generation = generationRef.current;
+    const actionKey = JSON.stringify(action);
+    if (executingActionsRef.current.has(actionKey)) return { success: false, message: "Amal bajarilmoqda." };
+    executingActionsRef.current.add(actionKey);
+    try {
+      const result = await cancelAIAction(action);
+      if (mountedRef.current && generation === generationRef.current) setMessages(current => appendMessage(current.map(m => m.action && JSON.stringify(m.action) === actionKey ? { ...m, actionStatus: result.success ? "cancelled" : "failed" } : m), { id: nextMessageId(), role: "ai", text: result.message, time: formatTime() }));
+      return result;
+    } finally { executingActionsRef.current.delete(actionKey); }
+  }, []);
+
   const clearChat = newChat;
 
-  const speak = useCallback((id: number, text: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) return;
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = locale === "ru" ? "ru-RU" : "uz-UZ";
-    utterance.onend = () => {
-      if (mountedRef.current) setSpeakingId(null);
-    };
-    utterance.onerror = () => {
-      if (mountedRef.current) setSpeakingId(null);
-    };
-
-    setSpeakingId(id);
-    window.speechSynthesis.speak(utterance);
-  }, [locale]);
-
   const stopSpeaking = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.speechSynthesis?.cancel();
-    }
-
+    speechGenerationRef.current += 1;
+    speechRequestRef.current?.abort();
+    speechRequestRef.current = null;
+    audioRef.current?.pause();
+    audioRef.current = null;
+    window.speechSynthesis?.cancel();
     if (mountedRef.current) setSpeakingId(null);
   }, []);
+
+  const speak = useCallback((id: number, text: string) => {
+    stopSpeaking();
+    const generation = speechGenerationRef.current;
+    const controller = new AbortController();
+    speechRequestRef.current = controller;
+    setSpeakingId(id);
+    // Chunk long answers at sentence boundaries; do not silently cut off the reply.
+    const clean = spokenText(text);
+    const chunks = clean.match(/.{1,1800}(?:[.!?]\s|$)|.{1,1800}/gs) ?? [clean];
+    void (async () => {
+      for (const chunk of chunks) {
+        if (!chunk.trim() || controller.signal.aborted) return;
+        const result = await voiceApi.speak(chunk, controller.signal);
+        if (!mountedRef.current || generation !== speechGenerationRef.current) return;
+        const audio = new Audio(`data:${result.mimeType};base64,${result.audio}`);
+        audioRef.current = audio;
+        await new Promise<void>((resolve, reject) => {
+          const abort = () => { audio.pause(); resolve(); };
+          controller.signal.addEventListener("abort", abort, { once: true });
+          audio.onended = () => { controller.signal.removeEventListener("abort", abort); resolve(); };
+          audio.onerror = () => { controller.signal.removeEventListener("abort", abort); reject(new Error("Audio playback failed")); };
+          void audio.play().catch(reject);
+        });
+      }
+    })().catch(() => {
+      if (controller.signal.aborted || generation !== speechGenerationRef.current) return;
+      // Surface playback/autoplay failures without silently pretending the answer was spoken.
+      window.dispatchEvent(new CustomEvent("qulay:voice-error", { detail: locale === "ru" ? "Не удалось воспроизвести ответ. Нажмите значок звука, чтобы повторить." : "Ovozli javobni ijro qilib bo‘lmadi. Ovoz tugmasini bosib qayta urinib ko‘ring." }));
+    }).finally(() => {
+      if (mountedRef.current && generation === speechGenerationRef.current) { audioRef.current = null; setSpeakingId(null); }
+    });
+  }, [locale, stopSpeaking]);
 
   const value = useMemo(
     () => ({
@@ -531,6 +614,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       isTyping,
       sendMessage,
       executeAction,
+      cancelAction,
       resolveTelegramSelection,
       clearChat,
       conversations,
@@ -553,6 +637,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       isTyping,
       sendMessage,
       executeAction,
+      cancelAction,
       resolveTelegramSelection,
       clearChat,
       conversations,

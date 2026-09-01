@@ -13,6 +13,8 @@ export type AIReply = {
   telegramSelection?: TelegramSelection;
   serverPersisted?: boolean;
   conversationId?: string;
+  resolvedActionId?: string;
+  resolvedActionStatus?: "success" | "cancelled" | "failed";
 };
 
 type AIReplyOptions = {
@@ -21,6 +23,7 @@ type AIReplyOptions = {
 };
 
 let agentConfigured: boolean | null = null;
+let agentStatusCheckedAt = 0;
 
 const throwIfAborted = (signal?: AbortSignal) => {
   if (signal?.aborted) throw Object.assign(new Error("AI request aborted"), { name: "AbortError" });
@@ -36,10 +39,10 @@ export const getAIReply = async (
   options: AIReplyOptions = {},
 ): Promise<AIReply> => {
   throwIfAborted(options.signal);
-  if (agentConfigured === null) {
-    try { agentConfigured = (await agentApi.status()).configured; } catch { agentConfigured = false; }
+  if (agentConfigured === null || Date.now() - agentStatusCheckedAt > (agentConfigured ? 60_000 : 3_000)) {
+    try { agentConfigured = (await agentApi.status()).configured; agentStatusCheckedAt = Date.now(); } catch { agentConfigured = null; }
   }
-  if (agentConfigured) {
+  if (agentConfigured !== false) {
     const result = await agentApi.chat(input, options.conversationId ?? undefined, options.signal);
     throwIfAborted(options.signal);
     const pending = result.pendingConfirmation;
@@ -48,6 +51,8 @@ export const getAIReply = async (
       text: result.message,
       conversationId: result.conversationId,
       serverPersisted: true,
+      resolvedActionId: result.resolvedActionId,
+      resolvedActionStatus: result.resolvedActionStatus,
       action: pending ? {
         type: "confirmAgentAction",
         payload: { actionId: pending.id, tool: pending.tool, preview: pending.preview },

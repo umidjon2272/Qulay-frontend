@@ -3,6 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const getAIReplyMock = vi.fn();
 const buildConfirmationMock = vi.fn();
+vi.mock("../../../services/api/conversationApi", () => ({
+  listConversations: vi.fn().mockResolvedValue({ items: [] }),
+  createConversation: vi.fn().mockResolvedValue({ id: "new-chat", title: "New" }),
+  addMessage: vi.fn().mockResolvedValue({}),
+  listMessages: vi.fn().mockResolvedValue({ items: [] }),
+  updateConversation: vi.fn(), deleteConversation: vi.fn(),
+}));
 
 vi.mock("../../../services/aiService", () => ({
   getAIReply: (...args: unknown[]) => getAIReplyMock(...args),
@@ -22,10 +29,11 @@ const candidate = {
 };
 
 const Harness = () => {
-  const { messages, sendMessage } = useAIChat();
+  const { messages, sendMessage, activeConversationId } = useAIChat();
   return <>
     <button onClick={() => sendMessage("Azizga Salom deb yoz")}>start</button>
     <button onClick={() => sendMessage("1 chisini")}>select first</button>
+    <span data-testid="conversation">{activeConversationId}</span>
     <pre data-testid="messages">{JSON.stringify(messages)}</pre>
   </>;
 };
@@ -33,6 +41,7 @@ const Harness = () => {
 describe("AIChatProvider Telegram pending selection", () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     getAIReplyMock.mockReset().mockResolvedValue({
       text: "Bir nechta natija topildi.",
       telegramSelection: { mode: "send_recipient", pendingText: "Salom", candidates: [candidate] },
@@ -59,5 +68,30 @@ describe("AIChatProvider Telegram pending selection", () => {
     expect(screen.getByTestId("messages")).toHaveTextContent("90071992547409931234");
     expect(screen.getByTestId("messages")).toHaveTextContent("sendTelegramMessage");
     expect(screen.getByTestId("messages")).not.toHaveTextContent("Tushundim");
+  });
+});
+
+
+describe("chat continuity and account isolation", () => {
+  beforeEach(() => { localStorage.clear(); sessionStorage.clear(); getAIReplyMock.mockReset().mockResolvedValue({ text: "Javob", conversationId: "chat-a", serverPersisted: true }); });
+  const seed = (owner = "user-a") => {
+    localStorage.setItem("yechim_ai_auth_user", JSON.stringify({ id: "user-a" }));
+    localStorage.setItem("yechim_ai_chat_history", JSON.stringify({
+      userId: owner, conversationId: "chat-a",
+      messages: [{ id: 1, role: "ai", text: "Akmal sherigingiz", time: "10:00" }],
+    }));
+  };
+  it("continues the same backend conversation after reloading", async () => {
+    seed();
+    render(<AIChatProvider><Harness /></AIChatProvider>);
+    expect(screen.getByTestId("messages")).toHaveTextContent("Akmal sherigingiz");
+    fireEvent.click(screen.getByRole("button", { name: "start" }));
+    await waitFor(() => expect(getAIReplyMock).toHaveBeenCalledWith("Azizga Salom deb yoz", expect.objectContaining({ conversationId: "chat-a" })));
+  });
+  it("never restores a cached conversation owned by another account", () => {
+    seed("user-b");
+    render(<AIChatProvider><Harness /></AIChatProvider>);
+    expect(screen.getByTestId("messages")).not.toHaveTextContent("Akmal sherigingiz");
+    expect(screen.getByTestId("conversation")).toBeEmptyDOMElement();
   });
 });

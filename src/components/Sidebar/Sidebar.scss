@@ -1047,3 +1047,19 @@
     transition: opacity 180ms ease, transform 220ms cubic-bezier(.22,.8,.24,1);
   }
 }
+
+.sidebar__collapse { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 10px; color: var(--text-secondary); background: transparent; cursor: pointer; }
+@media (min-width: 701px) {
+  body #root .app-layout--ai .sidebar--collapsed { width: 60px; min-width: 60px; flex: 0 0 60px; padding: 14px 8px; border-radius: 0; }
+  body #root .sidebar--collapsed .sidebar__brand,
+  body #root .sidebar--collapsed .sidebar__section-title,
+  body #root .sidebar--collapsed .sidebar__link-text,
+  body #root .sidebar--collapsed .sidebar__arrow,
+  body #root .sidebar--collapsed .sidebar__user-info,
+  body #root .sidebar--collapsed .sidebar__user-arrow { display: none; }
+  body #root .sidebar--collapsed .sidebar__nav { margin-top: 18px; }
+  body #root .sidebar--collapsed .sidebar__link { justify-content: center; width: 44px; padding: 12px 0; }
+  body #root .sidebar--collapsed .sidebar__user { justify-content: center; padding: 12px 0; }
+  body #root .sidebar--collapsed .sidebar__profile-menu { left: 60px; bottom: 16px; width: 260px; z-index: 60; }
+}
+@media (max-width: 700px) { .sidebar__collapse { display: none; } }

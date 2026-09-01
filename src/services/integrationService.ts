@@ -54,6 +54,7 @@ export type TelegramStatus = {
   maskedPhone: string | null;
   connectedAt: string | null;
   temporaryError?: boolean;
+  pendingLogin?: { delivery: TelegramDeliveryType; nextDelivery: TelegramDeliveryType | null; timeoutSeconds: number } | null;
 };
 
 export type TelegramPeer = {
@@ -65,7 +66,7 @@ export type TelegramPeer = {
   lastActivity: string | null;
 };
 
-export type TelegramDeliveryType = "telegram_app" | "sms" | "call" | "email" | "fragment" | "firebase_sms" | "unknown";
+export type TelegramDeliveryType = "telegram_app" | "sms" | "call" | "email" | "fragment" | "firebase_sms" | "email_setup" | "unknown";
 
 export type TelegramCodeRequiredResult = {
   status: "code_required";
