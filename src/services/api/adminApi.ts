@@ -128,6 +128,7 @@ export const adminApi = {
   settings: () => request<unknown>("/admin/settings").then(normalizeAdminSettings),
   updatePlatformSettings: (input: { name?: string; registrationEnabled?: boolean }) => request<{ name: string; registrationEnabled: boolean; updatedAt: string }>("/admin/settings/platform", { method: "PATCH", body: JSON.stringify(input) }),
   runTelegramLoginDiagnostic: () => request<{ accepted: true; diagnosticId: string; deploymentVersion: string }>("/admin/diagnostics/telegram-login", { method: "POST" }),
+  getTelegramRuntimeDiagnostic: () => request<{ deploymentVersion: string; nodeVersion: string; nodeEngine: string | null; telegram: { declaredRange: string | null; lockedVersion: string | null; installedPackageVersion: string; gramJsRuntimeVersion: string; lockMatchesInstalled: boolean } }>("/admin/diagnostics/telegram-runtime"),
   plans: () => request<AdminPlan[]>("/admin/plans"),
   updatePlan: (tier: AdminPlan['tier'], input: Partial<Omit<AdminPlan,'tier'|'limits'>&AdminPlan['limits']>) => request<AdminPlan>(`/admin/plans/${tier}`, { method: 'PATCH', body: JSON.stringify(input) }),
   assignSubscription: (userId: string, tier: AdminPlan['tier'], status = 'ACTIVE') => request(`/admin/users/${userId}/subscription`, { method: 'PATCH', body: JSON.stringify({ tier, status }) }),
