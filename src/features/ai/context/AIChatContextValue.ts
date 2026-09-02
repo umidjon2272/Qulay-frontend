@@ -18,6 +18,9 @@ export type ChatMessage = {
   actionStatus?: "pending" | "loading" | "success" | "cancelled" | "failed";
   actionResult?: string;
   telegramSelection?: TelegramSelection;
+  streaming?: boolean;
+  incomplete?: boolean;
+  progress?: 'preparing' | 'checking_income' | 'searching_tasks' | 'waiting_confirmation' | 'executing';
 };
 
 export type AIChatContextValue = {
@@ -28,6 +31,7 @@ export type AIChatContextValue = {
   messages: ChatMessage[];
   isTyping: boolean;
   sendMessage: (text: string) => void;
+  stopResponse: () => void;
   executeAction: (action: AIAction) => Promise<AIActionExecutionResult>;
   cancelAction: (action: AIAction) => Promise<AIActionExecutionResult>;
   resolveTelegramSelection: (messageId: number, candidate: TelegramCandidate, selection: TelegramSelection) => Promise<void>;
@@ -45,7 +49,8 @@ export type AIChatContextValue = {
   deleteConversation: (id: string) => Promise<void>;
   renameConversation: (id: string, title: string) => Promise<void>;
   speakingId: number | null;
-  speak: (id: number, text: string) => void;
+  speak: (id: number, text: string, voice?: 'marin' | 'cedar') => void;
+  queueSpeech: (id: number, text: string, voice?: 'marin' | 'cedar') => void;
   stopSpeaking: () => void;
 };
 

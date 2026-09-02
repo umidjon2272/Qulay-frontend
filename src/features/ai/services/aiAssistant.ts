@@ -20,6 +20,8 @@ export type AIReply = {
 type AIReplyOptions = {
   signal?: AbortSignal;
   conversationId?: string | null;
+  onDelta?: (delta: string) => void;
+  onStatus?: (status: import('../../../services/api/agentApi').AgentProgress) => void;
 };
 
 let agentConfigured: boolean | null = null;
@@ -43,7 +45,9 @@ export const getAIReply = async (
     try { agentConfigured = (await agentApi.status()).configured; agentStatusCheckedAt = Date.now(); } catch { agentConfigured = null; }
   }
   if (agentConfigured !== false) {
-    const result = await agentApi.chat(input, options.conversationId ?? undefined, options.signal);
+    const result = options.onDelta || options.onStatus
+      ? await agentApi.stream(input, options.conversationId ?? undefined, event => event.type === 'delta' ? options.onDelta?.(event.delta) : options.onStatus?.(event.status), options.signal)
+      : await agentApi.chat(input, options.conversationId ?? undefined, options.signal);
     throwIfAborted(options.signal);
     const pending = result.pendingConfirmation;
     const ru = getLocale() === 'ru';

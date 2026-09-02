@@ -54,6 +54,7 @@ const AIAssistant = () => {
     speakingId,
     speak,
     stopSpeaking,
+    stopResponse,
   } = useAIChat();
   const [panelOpen, setPanelOpen] = useState(() => readStorageString("qulay.ai.panel") !== "closed");
   const [input, setInput] = useState("");
@@ -104,13 +105,6 @@ const AIAssistant = () => {
     setInput("");
     window.setTimeout(() => document.querySelector<HTMLTextAreaElement>(".ai-page .chat-input textarea")?.focus(), 0);
   };
-  const focusTextComposer = () => {
-    closeVoiceMode();
-    window.setTimeout(() => {
-      document.querySelector<HTMLTextAreaElement>(".ai-page .chat-input textarea")?.focus();
-    }, 0);
-  };
-
   return (
     <main className={`ai-page ${panelOpen ? "" : "ai-page--panel-hidden"}`}>
       <div className="ai-page__ambient ai-page__ambient--one" />
@@ -234,7 +228,7 @@ const AIAssistant = () => {
             />
           )}
 
-          <ChatInput value={input} onChange={setInput} onSend={handleSend} onVoice={openVoiceMode} disabled={isTyping || historyLoading || Boolean(historyError)} />
+          <ChatInput value={input} onChange={setInput} onSend={handleSend} onVoice={openVoiceMode} onStop={isTyping ? stopResponse : undefined} disabled={isTyping || historyLoading || Boolean(historyError)} />
         </section>
       </section>
 
@@ -252,7 +246,6 @@ const AIAssistant = () => {
           <VoiceMode
             open={isVoiceModeOpen}
             onClose={closeVoiceMode}
-            onKeyboard={focusTextComposer}
           />
         </Suspense>
       )}

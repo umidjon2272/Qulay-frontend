@@ -10,6 +10,7 @@ export const useSpeechRecognition = (options: Options = {}) => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [audioLevel, setAudioLevel] = useState(0);
   const callbacks = useRef(options); callbacks.current = options;
   const active = useRef<Recording | null>(null);
   const pending = useRef<AbortController | null>(null);
@@ -35,7 +36,7 @@ export const useSpeechRecognition = (options: Options = {}) => {
       if (state.recorder.state !== 'inactive') state.recorder.stop();
       release(state);
     }
-    if (mounted.current) { setIsListening(false); setIsProcessing(false); setInterimTranscript(''); }
+    if (mounted.current) { setIsListening(false); setIsProcessing(false); setInterimTranscript(''); setAudioLevel(0); }
   }, [release]);
 
   const finish = useCallback(() => {
@@ -100,6 +101,7 @@ export const useSpeechRecognition = (options: Options = {}) => {
           if (analyser) {
             analyser.getByteTimeDomainData(samples);
             const energy = Math.sqrt(samples.reduce((sum, v) => sum + ((v - 128) / 128) ** 2, 0) / samples.length);
+            setAudioLevel(Math.min(1, Math.max(0, (energy - 0.01) * 9)));
             if (energy > 0.018) { state.speechAt ||= Date.now(); state.lastSoundAt = Date.now(); state.voicedFrames += 1; }
           }
           if (elapsed >= 45_000 || (state.speechAt && Date.now() - state.lastSoundAt > 1300)) finish();
@@ -116,5 +118,5 @@ export const useSpeechRecognition = (options: Options = {}) => {
   }, [finish, isSupported, release, stop]);
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; stop(); }; }, [stop]);
-  return { isSupported, isListening, isProcessing, interimTranscript, start, stop, finish, requestPermission };
+  return { isSupported, isListening, isProcessing, interimTranscript, audioLevel, start, stop, finish, requestPermission };
 };

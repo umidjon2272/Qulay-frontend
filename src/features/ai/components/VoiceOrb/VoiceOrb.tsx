@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import type { CSSProperties } from "react";
 import { useI18n } from "../../../../i18n/useI18n";
 
 import "./VoiceOrb.scss";
@@ -7,18 +7,15 @@ export type VoiceOrbState = "idle" | "listening" | "processing" | "speaking" | "
 
 type VoiceOrbProps = {
   state: VoiceOrbState;
+  level?: number;
 };
 
-const VoiceOrb = ({ state }: VoiceOrbProps) => {
+const VoiceOrb = ({ state, level = 0 }: VoiceOrbProps) => {
   const { t } = useI18n();
   return (
-    <div className={`voice-orb voice-orb--${state}`} role="img" aria-label={t("voice.state", "AI holati: {{state}}", { state })}>
-      <span className="voice-orb__ring voice-orb__ring--outer" />
-      <span className="voice-orb__ring voice-orb__ring--middle" />
-      <span className="voice-orb__ring voice-orb__ring--inner" />
+    <div className={`voice-orb voice-orb--${state}`} style={{ '--voice-level': level } as CSSProperties} role="img" aria-label={t("voice.state", "AI holati: {{state}}", { state })}>
       <span className="voice-orb__core">
         <span className="voice-orb__shine" />
-        <Sparkles size={34} strokeWidth={1.7} />
       </span>
     </div>
   );

@@ -178,4 +178,31 @@ export const request = async <T>(path: string, options: RequestInit = {}, retry 
   }
 };
 
+/** Authenticated fetch that leaves the response body unbuffered for NDJSON/SSE consumers. */
+export const requestStream = async (path: string, options: RequestInit = {}): Promise<Response> => {
+  let accessToken = getTokens()?.accessToken;
+  if (accessToken && isAccessTokenExpiringSoon(accessToken)) accessToken = (await refreshAccessToken()).accessToken;
+  const headers = new Headers(options.headers);
+  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  const perform = (token?: string) => {
+    const nextHeaders = new Headers(headers);
+    if (token) nextHeaders.set('Authorization', `Bearer ${token}`); else nextHeaders.delete('Authorization');
+    return fetch(`${API_URL}${path}`, { ...options, headers: nextHeaders });
+  };
+  let response = await perform(accessToken);
+  if (response.status === 401 && getTokens()?.refreshToken) {
+    await response.body?.cancel().catch(() => undefined);
+    try { accessToken = (await refreshAccessToken()).accessToken; response = await perform(accessToken); }
+    catch (error) { invalidateSession(error); throw error; }
+  }
+  if (!response.ok) {
+    const text = await response.text();
+    let details: unknown = text;
+    try { details = text ? JSON.parse(text) : null; } catch { /* keep text */ }
+    throw new ApiError(response.status, typeof details === 'object' && details && 'message' in details ? String(details.message) : 'API request failed', details, errorCodeOf(details));
+  }
+  return response;
+};
+
 export const apiConfig = { baseUrl: API_URL };

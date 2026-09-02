@@ -1,4 +1,5 @@
-import { request } from './apiClient';
+import { request, requestStream } from './apiClient';
+import { consumeAgentStream } from './agentStream';
 
 export type AgentStatus = { configured: boolean; mode: 'MODEL' | 'SETUP_REQUIRED' };
 export type AgentChatResponse = {
@@ -7,7 +8,10 @@ export type AgentChatResponse = {
   resolvedActionId?: string;
   resolvedActionStatus?: "success" | "cancelled" | "failed";
   pendingConfirmation: null | { id: string; tool: string; preview: unknown; expiresAt: string };
+  timing?: { firstDeltaMs: number | null; totalMs: number };
 };
+export type AgentProgress = 'preparing' | 'checking_income' | 'searching_tasks' | 'waiting_confirmation' | 'executing';
+export type AgentStreamEvent = { type: 'status'; status: AgentProgress } | { type: 'delta'; delta: string };
 
 export type AgentActionStatus = 'PENDING' | 'EXECUTING' | 'EXECUTED' | 'CANCELLED' | 'EXPIRED' | 'FAILED';
 export type AgentAction = {
@@ -31,6 +35,10 @@ export const agentApi = {
     body: JSON.stringify({ message, conversationId }),
     signal,
   }),
+  stream: async (message: string, conversationId: string | undefined, onEvent: (event: AgentStreamEvent) => void, signal?: AbortSignal) => {
+    const response = await requestStream('/ai/agent/chat/stream', { method: 'POST', body: JSON.stringify({ message, conversationId }), signal });
+    return consumeAgentStream(response, onEvent, signal);
+  },
   confirm: (actionId: string, confirmed: boolean) => request<{ status: 'success' | 'cancelled' | 'failed'; message: string; data?: unknown }>(`/ai/agent/actions/${actionId}/confirm`, {
     method: 'POST',
     body: JSON.stringify({ confirmed }),

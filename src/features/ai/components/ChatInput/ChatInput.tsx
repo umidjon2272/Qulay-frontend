@@ -19,11 +19,12 @@ type ChatInputProps = {
   onChange: (value: string) => void;
   onSend: () => void;
   onVoice?: () => void;
+  onStop?: () => void;
   disabled?: boolean;
   autoFocus?: boolean;
 };
 
-const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = true }: ChatInputProps) => {
+const ChatInput = ({ value, onChange, onSend, onVoice, onStop, disabled, autoFocus = true }: ChatInputProps) => {
   const { showToast } = useToast();
   useEffect(() => {
     const handleVoiceError = (event: Event) => showToast(String((event as CustomEvent).detail), 'error');
@@ -182,12 +183,13 @@ const ChatInput = ({ value, onChange, onSend, onVoice, disabled, autoFocus = tru
         )}
         <button
           type="submit"
-          className="chat-input__send"
-          disabled={disabled || sending || isProcessing || !value.trim()}
-          aria-label={t("common.send", "Yuborish")}
-          title={t("common.send", "Yuborish")}
+          className={`chat-input__send ${onStop && disabled ? 'is-stop' : ''}`}
+          disabled={disabled && !onStop || sending || isProcessing || (!disabled && !value.trim())}
+          onClick={disabled && onStop ? (event) => { event.preventDefault(); onStop(); } : undefined}
+          aria-label={disabled && onStop ? "Javobni to‘xtatish" : t("common.send", "Yuborish")}
+          title={disabled && onStop ? "Javobni to‘xtatish" : t("common.send", "Yuborish")}
         >
-          <ArrowUp size={19} strokeWidth={2.4} />
+          {disabled && onStop ? <Square size={14} fill="currentColor" /> : <ArrowUp size={19} strokeWidth={2.4} />}
         </button>
       </div>
     </form>

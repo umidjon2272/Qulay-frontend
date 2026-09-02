@@ -41,6 +41,7 @@ const MessageList = ({
   };
   const isNearBottomRef = useRef(true);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const latestMessageText = messages.at(-1)?.text;
 
   useLayoutEffect(() => {
     if (olderScrollRef.current && !historyLoadingMore && listRef.current) {
@@ -78,7 +79,7 @@ const MessageList = ({
     // than leaving their position alone and offering the scroll-to-bottom button.
     if (!list || !isNearBottomRef.current || olderScrollRef.current) return;
     list.scrollTo({ top: list.scrollHeight, behavior: "smooth" });
-  }, [messages.length, isTyping]);
+  }, [messages.length, latestMessageText, isTyping]);
 
   const scrollToBottom = () => {
     const list = listRef.current;
@@ -105,7 +106,7 @@ const MessageList = ({
           />
         ))}
 
-        {isTyping && (
+        {isTyping && !messages.some(message => message.streaming) && (
           <div className="message-bubble message-bubble--ai">
             <div className="message-bubble__avatar">
               <Sparkles size={13} />

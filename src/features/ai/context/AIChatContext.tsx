@@ -136,6 +136,8 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const speechRequestRef = useRef<AbortController | null>(null);
   const speechGenerationRef = useRef(0);
+  const speechQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const queuedSpeechCountRef = useRef(0);
   const mountedRef = useRef(true);
   const generationRef = useRef(0);
   const messageIdRef = useRef(0);
@@ -331,6 +333,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           serverId: message.id,
           role: message.role === "USER" ? "user" as const : "ai" as const,
           text: message.content,
+          incomplete: message.isComplete === false,
           time: new Date(message.createdAt).toLocaleTimeString(locale === "ru" ? "ru-RU" : "uz-UZ", { hour: "2-digit", minute: "2-digit" }),
         }));
       const pending = pendingResult?.items.find((item)=>item.conversationId===id && Date.parse(item.expiresAt) > Date.now());
@@ -367,7 +370,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       if (!mountedRef.current || generation !== generationRef.current) return;
       const older: ChatMessage[] = result.items.filter(m => m.role === 'USER' || m.role === 'ASSISTANT').map(m => ({
         id: ++messageIdRef.current, serverId: m.id, role: m.role === 'USER' ? 'user' : 'ai', text: m.content,
-        time: new Date(m.createdAt).toLocaleTimeString(locale === 'ru' ? 'ru-RU' : 'uz-UZ', { hour: '2-digit', minute: '2-digit' }),
+        time: new Date(m.createdAt).toLocaleTimeString(locale === 'ru' ? 'ru-RU' : 'uz-UZ', { hour: '2-digit', minute: '2-digit' }), incomplete: m.isComplete === false,
       }));
       setMessages(current => { const ids = new Set(current.map(m => m.serverId)); return [...older.filter(m => !ids.has(m.serverId)), ...current]; });
       historyCursorRef.current = result.meta.nextCursor ?? null;
@@ -491,12 +494,29 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       time: formatTime(),
     };
 
-    setMessages((current) => appendMessage(current, userMessage));
+    const streamMessageId = nextMessageId();
+
+    setMessages((current) => appendMessage(appendMessage(current, userMessage), {
+      id: streamMessageId, role: 'ai', text: '', time: formatTime(), streaming: true, progress: 'preparing',
+    }));
     // The agent is the single writer of its user/assistant transcript.
     const preparedConversation = conversationPromise;
     setIsTyping(true);
 
-    void preparedConversation.then((conversationId) => getAIReply(trimmed, { signal: controller.signal, conversationId }))
+    void preparedConversation.then((conversationId) => getAIReply(trimmed, {
+      signal: controller.signal,
+      conversationId,
+      onDelta: (delta) => {
+        if (!mountedRef.current || generation !== generationRef.current || controller.signal.aborted) return;
+        setMessages(current => current.map(message => message.id === streamMessageId
+          ? { ...message, text: message.text + delta, progress: undefined }
+          : message));
+      },
+      onStatus: (progress) => {
+        if (!mountedRef.current || generation !== generationRef.current || controller.signal.aborted) return;
+        setMessages(current => current.map(message => message.id === streamMessageId ? { ...message, progress } : message));
+      },
+    }))
       .then((reply) => {
         if (
           !mountedRef.current ||
@@ -521,7 +541,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           return message;
         }));
         const aiMessage: ChatMessage = {
-          id: nextMessageId(),
+          id: streamMessageId,
           role: "ai",
           text: reply.text,
           time: formatTime(),
@@ -529,7 +549,12 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           telegramSelection: reply.telegramSelection,
         };
 
-        if (!reply.resolvedActionId) setMessages((current) => appendMessage(current, aiMessage));
+        pendingTelegramSelectionRef.current = reply.telegramSelection
+          ? { messageId: streamMessageId, selection: reply.telegramSelection }
+          : null;
+
+        if (!reply.resolvedActionId) setMessages((current) => current.map(message => message.id === streamMessageId ? aiMessage : message));
+        else setMessages(current => current.filter(message => message.id !== streamMessageId));
         if (!reply.serverPersisted) void conversationPromise.then(async (id) => { await persistConversationMessage(id, trimmed, "USER"); await persistConversationMessage(id, reply.text, "ASSISTANT"); });
       })
       .catch((error: unknown) => {
@@ -539,6 +564,9 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           controller.signal.aborted ||
           (isRecord(error) && error.name === "AbortError")
         ) {
+          setMessages(current => current.map(message => message.id === streamMessageId && message.text
+            ? { ...message, streaming: false, incomplete: true, progress: undefined }
+            : message).filter(message => message.id !== streamMessageId || Boolean(message.text)));
           return;
         }
 
@@ -558,6 +586,13 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         }
       });
   }, [ensureConversation, persistConversationMessage, resolveTelegramSelection, refreshConversations]);
+
+  const stopResponse = useCallback(() => {
+    for (const controller of pendingRequestsRef.current.values()) controller.abort();
+    pendingRequestsRef.current.clear();
+    setIsTyping(false);
+    setMessages(current => current.map(message => message.streaming ? { ...message, streaming: false, incomplete: true, progress: undefined } : message));
+  }, []);
 
   const executeAction = useCallback(async (action: AIAction): Promise<AIActionExecutionResult> => {
     if (!mountedRef.current) {
@@ -620,10 +655,33 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     audioRef.current?.pause();
     audioRef.current = null;
     window.speechSynthesis?.cancel();
+    speechQueueRef.current = Promise.resolve();
+    queuedSpeechCountRef.current = 0;
     if (mountedRef.current) setSpeakingId(null);
   }, []);
 
-  const speak = useCallback((id: number, text: string) => {
+  const queueSpeech = useCallback((id: number, text: string, voice?: 'marin' | 'cedar') => {
+    const clean = spokenText(text).trim();
+    if (!clean) return;
+    if (!speechRequestRef.current || speechRequestRef.current.signal.aborted) speechRequestRef.current = new AbortController();
+    const controller = speechRequestRef.current;
+    const generation = speechGenerationRef.current;
+    queuedSpeechCountRef.current += 1;
+    setSpeakingId(id);
+    speechQueueRef.current = speechQueueRef.current.then(async () => {
+      if (controller.signal.aborted || generation !== speechGenerationRef.current) return;
+      const result = await voiceApi.speak(clean, controller.signal, voice);
+      if (controller.signal.aborted || generation !== speechGenerationRef.current) return;
+      await playVoiceAudio(result.audio, controller.signal);
+    }).catch(() => {
+      if (!controller.signal.aborted) window.dispatchEvent(new CustomEvent('qulay:voice-error', { detail: 'Ovozli javobni ijro qilib bo‘lmadi.' }));
+    }).finally(() => {
+      queuedSpeechCountRef.current = Math.max(0, queuedSpeechCountRef.current - 1);
+      if (mountedRef.current && generation === speechGenerationRef.current && queuedSpeechCountRef.current === 0) setSpeakingId(null);
+    });
+  }, []);
+
+  const speak = useCallback((id: number, text: string, voice?: 'marin' | 'cedar') => {
     stopSpeaking();
     // Start resume synchronously while a manual button click still has activation.
     const ready = prepareAudioPlayback();
@@ -638,7 +696,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       await ready;
       for (const chunk of chunks) {
         if (!chunk.trim() || controller.signal.aborted) return;
-        const result = await voiceApi.speak(chunk, controller.signal);
+        const result = await voiceApi.speak(chunk, controller.signal, voice);
         if (!mountedRef.current || generation !== speechGenerationRef.current) return;
         await playVoiceAudio(result.audio, controller.signal);
       }
@@ -660,6 +718,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       messages,
       isTyping,
       sendMessage,
+      stopResponse,
       executeAction,
       cancelAction,
       resolveTelegramSelection,
@@ -674,6 +733,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       renameConversation,
       speakingId,
       speak,
+      queueSpeech,
       stopSpeaking,
     }),
     [
@@ -684,6 +744,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       messages,
       isTyping,
       sendMessage,
+      stopResponse,
       executeAction,
       cancelAction,
       resolveTelegramSelection,
@@ -698,6 +759,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       renameConversation,
       speakingId,
       speak,
+      queueSpeech,
       stopSpeaking,
     ],
   );

@@ -2,7 +2,7 @@ import { request } from "./apiClient";
 import type { PaginatedResponse } from "./types";
 
 export type Conversation = { id: string; title: string; createdAt: string; updatedAt: string; messageCount?: number };
-export type Message = { id: string; conversationId: string; role: "USER" | "ASSISTANT" | "SYSTEM" | "TOOL"; content: string; createdAt: string };
+export type Message = { id: string; conversationId: string; role: "USER" | "ASSISTANT" | "SYSTEM" | "TOOL"; content: string; isComplete?: boolean; createdAt: string };
 
 export const listConversations = (search?: string) => {
   const query = new URLSearchParams({ limit: "100" });

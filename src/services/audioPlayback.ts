@@ -29,14 +29,24 @@ export const playVoiceAudio = async (base64: string, signal: AbortSignal): Promi
   if (signal.aborted) return;
   await new Promise<void>((resolve, reject) => {
     const source = audio.createBufferSource();
+    const analyser = typeof audio.createAnalyser === 'function' ? audio.createAnalyser() : null;
+    if (analyser) analyser.fftSize = 256;
     source.buffer = buffer;
-    source.connect(audio.destination);
+    if (analyser) { source.connect(analyser); analyser.connect(audio.destination); } else source.connect(audio.destination);
+    const samples = new Uint8Array(analyser?.frequencyBinCount ?? 0);
+    const meter = analyser ? window.setInterval(() => {
+      analyser.getByteFrequencyData(samples);
+      const level = samples.reduce((sum, value) => sum + value, 0) / samples.length / 180;
+      window.dispatchEvent(new CustomEvent('qulay:playback-level', { detail: Math.min(1, level) }));
+    }, 60) : 0;
     let finished = false;
     const cleanup = () => {
       if (finished) return;
       finished = true;
+      window.clearInterval(meter);
+      window.dispatchEvent(new CustomEvent('qulay:playback-level', { detail: 0 }));
       signal.removeEventListener("abort", abort);
-      source.disconnect();
+      source.disconnect(); analyser?.disconnect();
       resolve();
     };
     const abort = () => { try { source.stop(); } catch { /* already stopped */ } cleanup(); };

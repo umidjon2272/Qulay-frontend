@@ -1,14 +1,13 @@
 import ActionConfirmation from '../ActionConfirmation/ActionConfirmation';
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Keyboard,
   Mic,
   MicOff,
   PhoneOff,
   RotateCcw,
   Volume2,
   VolumeX,
-  X,
+  MessageSquareText,
 } from "lucide-react";
 
 import { getSettings } from "../../../../services/settingsService";
@@ -18,6 +17,7 @@ import { useI18n } from "../../../../i18n/useI18n";
 import type { ChatMessage } from "../../context/AIChatContextValue";
 import { useAIChat } from "../../hooks/useAIChat";
 import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
+import { useRealtimeVoice } from "../../hooks/useRealtimeVoice";
 import { subscriptionApi } from "../../../../services/api/subscriptionApi";
 import { prepareAudioPlayback, setVoiceAudioActive } from "../../../../services/audioPlayback";
 import { voiceReplyKey } from "./voiceReply";
@@ -29,14 +29,13 @@ import "./VoiceMode.scss";
 type VoiceModeProps = {
   open: boolean;
   onClose: () => void;
-  onKeyboard: () => void;
 };
 
 type ActionStatus = "pending" | "loading" | "success" | "cancelled" | "failed";
 const getLatest = (messages: ChatMessage[], role: ChatMessage["role"]) =>
   [...messages].reverse().find((message) => message.id !== 0 && message.role === role);
 
-const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
+const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
   const {
     messages,
     isTyping,
@@ -45,6 +44,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     cancelAction,
     speakingId,
     speak,
+    queueSpeech,
     stopSpeaking,
   } = useAIChat();
   const { showToast } = useToast();
@@ -53,7 +53,12 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   const [voiceError, setVoiceError] = useState("");
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
   const [voiceReply, setVoiceReply] = useState(() => getSettings().ai.voiceReply);
+  const [playbackLevel, setPlaybackLevel] = useState(0);
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [textInput, setTextInput] = useState('');
+  const [selectedVoice, setSelectedVoice] = useState<'marin' | 'cedar'>('marin');
   const lastSpokenKeyRef = useRef('');
+  const streamedSpeechRef = useRef<{ id: number; offset: number } | null>(null);
 
   const latestAI = useMemo(() => getLatest(messages, "ai"), [messages]);
   const latestAIRef = useRef<ChatMessage | undefined>(latestAI);
@@ -66,8 +71,10 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
 
   useEffect(() => {
     const onVoiceError = (event: Event) => setVoiceError(String((event as CustomEvent).detail));
+    const onPlaybackLevel = (event: Event) => setPlaybackLevel(Number((event as CustomEvent).detail) || 0);
     window.addEventListener("qulay:voice-error", onVoiceError);
-    return () => window.removeEventListener("qulay:voice-error", onVoiceError);
+    window.addEventListener("qulay:playback-level", onPlaybackLevel);
+    return () => { window.removeEventListener("qulay:voice-error", onVoiceError); window.removeEventListener("qulay:playback-level", onPlaybackLevel); };
   }, []);
 
   useEffect(() => subscribeToWorkspaceData("settings", () => {
@@ -79,10 +86,11 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     sendMessage(transcript);
   }, [sendMessage]);
 
-  const { isSupported, isListening, isProcessing, interimTranscript, start, stop, finish, requestPermission } = useSpeechRecognition({
+  const { isSupported, isListening, isProcessing, interimTranscript, audioLevel, start, stop, finish, requestPermission } = useSpeechRecognition({
     onResult: handleResult,
     onError: (message) => setVoiceError(message),
   });
+  const realtime = useRealtimeVoice({ active: open, onTranscript: handleResult, onSpeechStart: stopSpeaking });
 
   useEffect(() => {
     if (!open) return;
@@ -112,11 +120,11 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
       return;
     }
 
-    if (muted || voiceError || isTyping || isListening || isProcessing || speakingId !== null) return;
+    if (realtime.status !== 'unavailable' || muted || voiceError || isTyping || isListening || isProcessing || speakingId !== null) return;
 
     const timer = window.setTimeout(() => start(), 180);
     return () => window.clearTimeout(timer);
-  }, [isListening, isProcessing, isTyping, muted, open, speakingId, start, stop, stopSpeaking, voiceError]);
+  }, [isListening, isProcessing, isTyping, muted, open, realtime.status, speakingId, start, stop, stopSpeaking, voiceError]);
 
   useEffect(() => () => {
     stop();
@@ -125,11 +133,28 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
 
   useEffect(() => {
     const key = voiceReplyKey(latestAI);
-    if (!open || !voiceReply || isTyping || !latestAI || !key || key === lastSpokenKeyRef.current) return;
+    if (!open || !voiceReply || isTyping || latestAI?.streaming || (latestAI && streamedSpeechRef.current?.id === latestAI.id) || !latestAI || !key || key === lastSpokenKeyRef.current) return;
     lastSpokenKeyRef.current = key;
     stop();
-    speak(latestAI.id, latestAI.actionResult ?? latestAI.text);
-  }, [isTyping, latestAI, open, speak, stop, voiceReply]);
+    speak(latestAI.id, latestAI.actionResult ?? latestAI.text, selectedVoice);
+  }, [isTyping, latestAI, open, selectedVoice, speak, stop, voiceReply]);
+
+  useEffect(() => {
+    if (!open || !voiceReply || !latestAI || (!latestAI.streaming && !streamedSpeechRef.current)) return;
+    if (!streamedSpeechRef.current || streamedSpeechRef.current.id !== latestAI.id) streamedSpeechRef.current = { id: latestAI.id, offset: 0 };
+    const cursor = streamedSpeechRef.current;
+    const remaining = latestAI.text.slice(cursor.offset);
+    const matches = [...remaining.matchAll(/[^.!?]+[.!?](?:\s|$)/g)];
+    const chunks = matches.map(match => match[0].trim()).filter(Boolean);
+    if (!latestAI.streaming) {
+      const consumed = matches.reduce((total, match) => total + match[0].length, 0);
+      const tail = remaining.slice(consumed).trim(); if (tail) chunks.push(tail);
+    }
+    if (!chunks.length) return;
+    cursor.offset = latestAI.streaming ? cursor.offset + matches.reduce((total, match) => total + match[0].length, 0) : latestAI.text.length;
+    chunks.forEach(chunk => queueSpeech(latestAI.id, chunk, selectedVoice));
+    if (!latestAI.streaming) { lastSpokenKeyRef.current = voiceReplyKey(latestAI); streamedSpeechRef.current = null; }
+  }, [latestAI, open, queueSpeech, selectedVoice, voiceReply]);
 
   useEffect(() => {
     if (!open) return;
@@ -150,7 +175,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
       ? "speaking"
       : isTyping || isProcessing
         ? "processing"
-        : isListening
+        : isListening || (realtime.status === 'active' && !muted)
           ? "listening"
           : "idle";
 
@@ -160,11 +185,13 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
       ? t("voiceMode.state.speaking", "Javob beryapman...")
       : isTyping || isProcessing
         ? t("voiceMode.state.thinking", "O'ylayapman...")
-        : isListening
+        : isListening || (realtime.status === 'active' && !muted)
           ? t("voiceMode.state.listening", "Tinglayapman...")
           : muted
             ? t("voiceMode.state.muted", "Mikrofon o'chiq")
-            : t("voiceMode.state.idle", "Gapirishni boshlashingiz mumkin");
+            : realtime.status === 'connecting'
+              ? "Realtime ulanmoqda…"
+              : t("voiceMode.state.idle", "Gapirishni boshlashingiz mumkin");
 
 
   const handleEnd = () => {
@@ -208,9 +235,10 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
             </div>
           </div>
 
-          <button type="button" className="voice-mode__close" onClick={handleEnd} aria-label={t("voiceMode.closeAria", "Voice Mode'ni yopish")}>
-            <X size={19} />
-          </button>
+          <div className="voice-mode__header-actions">
+            <label className="voice-mode__voice-select"><span>Ovoz</span><select value={selectedVoice} onChange={event => setSelectedVoice(event.target.value as 'marin' | 'cedar')}><option value="marin">Marin</option><option value="cedar">Cedar</option></select></label>
+            <button type="button" className="voice-mode__close" onClick={() => setTranscriptOpen(value => !value)} aria-label="Transkriptni ochish"><MessageSquareText size={19} /></button>
+          </div>
         </header>
 
         <main className="voice-mode__body">
@@ -218,15 +246,17 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
             <span className="voice-mode__state-dot" />
             {stateText}
           </div>
+          {realtime.status === 'unavailable' && <span className="voice-mode__fallback">Standart ovoz rejimi</span>}
 
-          <VoiceOrb state={state} />
+          <VoiceOrb state={state} level={state === "listening" ? (realtime.status === 'active' ? realtime.level : audioLevel) : state === "speaking" ? playbackLevel : 0} />
 
           {speakingId !== null && <button type="button" className="voice-mode__control" onClick={() => {
             stopSpeaking(); setMuted(false); setVoiceError(''); start();
           }}><Mic size={18} /> Gapirish — javobni to‘xtatish</button>}
           {isListening && <button type="button" className="voice-mode__control" onClick={finish}>Gapirib bo‘ldim</button>}
 
-          <div className="voice-mode__transcript" aria-live="polite">
+          {!transcriptOpen && <p className="voice-mode__caption">{interimTranscript || transcriptMessages.at(-1)?.text || t("voiceMode.readyForVoiceChat", "Ovozli suhbatga tayyorman.")}</p>}
+          {transcriptOpen && <div className="voice-mode__transcript" aria-live="polite">
             {transcriptMessages.length > 0 ? transcriptMessages.map((message) => (
               <div className={`voice-mode__line voice-mode__line--${message.role}`} key={message.id}>
                 <span>{message.role === "user" ? t("voiceMode.you", "Siz") : "Qulay AI"}</span>
@@ -239,7 +269,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
               </div>
             )}
             {interimTranscript && <p className="voice-mode__interim">{interimTranscript}</p>}
-          </div>
+          </div>}
 
           {pendingAction && <ActionConfirmation action={pendingAction} status={actionStatus} onConfirm={handleActionConfirm} onDismiss={() => void handleActionCancel()} />}
 
@@ -255,15 +285,20 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
         </main>
 
         <footer className="voice-mode__controls">
+          <form className="voice-mode__composer" onSubmit={event => { event.preventDefault(); const value = textInput.trim(); if (value) { sendMessage(value); setTextInput(''); } }}>
+            <input value={textInput} onChange={event => setTextInput(event.target.value)} placeholder="Xabar yozing…" aria-label="Xabar yozing" />
+          </form>
           <button
             type="button"
             className={`voice-mode__control ${muted ? "is-active" : ""}`}
             onClick={() => {
               if (muted) {
                 setMuted(false);
+                realtime.setMuted(false);
                 setVoiceError("");
               } else {
                 setMuted(true);
+                realtime.setMuted(true);
                 stop();
               }
             }}
@@ -276,11 +311,6 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
           <button type="button" className="voice-mode__end" onClick={handleEnd} aria-label={t("voiceMode.endSessionAria", "Voice session'ni tugatish")}>
             <PhoneOff size={22} />
             <span>{t("voiceMode.end", "Tugatish")}</span>
-          </button>
-
-          <button type="button" className="voice-mode__control" onClick={onKeyboard} aria-label={t("voiceMode.switchToKeyboardAria", "Klaviaturaga o'tish")}>
-            <Keyboard size={20} />
-            <span>{t("voiceMode.keyboard", "Klaviatura")}</span>
           </button>
 
           <button

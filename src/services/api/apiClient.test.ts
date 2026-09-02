@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { request } from './apiClient';
+import { request, requestStream } from './apiClient';
 
 describe('voice upload and chat cancellation', () => {
   beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
@@ -24,5 +24,9 @@ describe('voice upload and chat cancellation', () => {
     controller.abort();
     await expect(result).rejects.toMatchObject({ name: 'AbortError' });
     expect(networkSignal?.aborted).toBe(true);
+  });
+  it('surfaces an HTTP error before exposing a stream', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: 'denied', code: 'DENIED' }), { status: 403, headers: { 'content-type': 'application/json' } })));
+    await expect(requestStream('/ai/agent/chat/stream', { method: 'POST', body: '{}' })).rejects.toMatchObject({ status: 403, code: 'DENIED' });
   });
 });
