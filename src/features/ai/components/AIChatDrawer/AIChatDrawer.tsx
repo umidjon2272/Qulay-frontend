@@ -11,7 +11,7 @@ import "./AIChatDrawer.scss";
 
 const AIChatDrawer = () => {
   const { t } = useI18n();
-  const { isOpen, close, messages, isTyping, sendMessage, executeAction, clearChat, speakingId, speak, stopSpeaking } =
+  const { isOpen, close, messages, isTyping, historyLoading, historyError, sendMessage, executeAction, clearChat, speakingId, speak, stopSpeaking } =
     useAIChat();
 
   const [input, setInput] = useState("");
@@ -67,7 +67,7 @@ const AIChatDrawer = () => {
           onAction={executeAction}
         />
 
-        <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isTyping} autoFocus={isOpen} />
+        <ChatInput value={input} onChange={setInput} onSend={handleSend} disabled={isTyping || historyLoading || Boolean(historyError)} autoFocus={isOpen} />
       </aside>
     </>
   );

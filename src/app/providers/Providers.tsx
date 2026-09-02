@@ -9,6 +9,7 @@ import { ToastProvider } from "../../components/Toast/ToastContext";
 import { getSettings } from "../../services/settingsService";
 import { initializeStorageSchema } from "../../services/storage";
 import { subscribeToWorkspaceData } from "../../services/workspaceEvents";
+import { NotificationSound } from '../../components/NotificationSound/NotificationSound';
 
 type ProvidersProps = {
   children: ReactNode;
@@ -49,6 +50,7 @@ export const Providers = ({ children }: ProvidersProps) => (
   <PlatformProvider>
     <ToastProvider>
       <AuthProvider>
+      <NotificationSound />
       <ThemeSync>
         <ProfileProvider>
           <IntegrationProvider>

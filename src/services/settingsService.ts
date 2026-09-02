@@ -18,6 +18,7 @@ export type AppSettings = {
     weekly: boolean;
     webPush: boolean;
     sound: boolean;
+    soundVolume: number;
     quietHoursEnabled: boolean;
     quietHoursStart: string;
     quietHoursEnd: string;
@@ -49,6 +50,7 @@ export const defaultSettings: AppSettings = {
     weekly: true,
     webPush: false,
     sound: true,
+    soundVolume: 0.65,
     quietHoursEnabled: false,
     quietHoursStart: "22:00",
     quietHoursEnd: "08:00",
@@ -89,6 +91,7 @@ const normalizeSettings = (value: unknown): AppSettings => {
       weekly: typeof storedNotifications.weekly === "boolean" ? storedNotifications.weekly : defaultSettings.notifications.weekly,
       webPush: typeof storedNotifications.webPush === "boolean" ? storedNotifications.webPush : defaultSettings.notifications.webPush,
       sound: typeof storedNotifications.sound === "boolean" ? storedNotifications.sound : defaultSettings.notifications.sound,
+      soundVolume: typeof storedNotifications.soundVolume === 'number' && Number.isFinite(storedNotifications.soundVolume) ? Math.min(1, Math.max(0, storedNotifications.soundVolume)) : defaultSettings.notifications.soundVolume,
       quietHoursEnabled: typeof storedNotifications.quietHoursEnabled === "boolean" ? storedNotifications.quietHoursEnabled : defaultSettings.notifications.quietHoursEnabled,
       quietHoursStart: typeof storedNotifications.quietHoursStart === "string" ? storedNotifications.quietHoursStart : defaultSettings.notifications.quietHoursStart,
       quietHoursEnd: typeof storedNotifications.quietHoursEnd === "string" ? storedNotifications.quietHoursEnd : defaultSettings.notifications.quietHoursEnd,

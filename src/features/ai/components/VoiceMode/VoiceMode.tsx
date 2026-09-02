@@ -19,6 +19,8 @@ import type { ChatMessage } from "../../context/AIChatContextValue";
 import { useAIChat } from "../../hooks/useAIChat";
 import { useSpeechRecognition } from "../../hooks/useSpeechRecognition";
 import { subscriptionApi } from "../../../../services/api/subscriptionApi";
+import { prepareAudioPlayback, setVoiceAudioActive } from "../../../../services/audioPlayback";
+import { voiceReplyKey } from "./voiceReply";
 
 import VoiceOrb, { type VoiceOrbState } from "../VoiceOrb/VoiceOrb";
 
@@ -50,9 +52,8 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   const [muted, setMuted] = useState(false);
   const [voiceError, setVoiceError] = useState("");
   const [actionStatus, setActionStatus] = useState<ActionStatus>("pending");
-  const [voiceReply, setVoiceReply] = useState(true);
-  const lastSpokenIdRef = useRef<number | null>(null);
-  const sessionStartedAtRef = useRef<number | null>(null);
+  const [voiceReply, setVoiceReply] = useState(() => getSettings().ai.voiceReply);
+  const lastSpokenKeyRef = useRef('');
 
   const latestAI = useMemo(() => getLatest(messages, "ai"), [messages]);
   const latestAIRef = useRef<ChatMessage | undefined>(latestAI);
@@ -78,7 +79,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
     sendMessage(transcript);
   }, [sendMessage]);
 
-  const { isSupported, isListening, isProcessing, interimTranscript, start, stop, requestPermission } = useSpeechRecognition({
+  const { isSupported, isListening, isProcessing, interimTranscript, start, stop, finish, requestPermission } = useSpeechRecognition({
     onResult: handleResult,
     onError: (message) => setVoiceError(message),
   });
@@ -86,13 +87,19 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   useEffect(() => {
     if (!open) return;
 
-    lastSpokenIdRef.current = latestAIRef.current?.id ?? null;
+    lastSpokenKeyRef.current = voiceReplyKey(latestAIRef.current);
     setMuted(false);
     setVoiceError("");
     setActionStatus("pending");
-    sessionStartedAtRef.current = Date.now();
     void subscriptionApi.mine().then((info) => { if (info.usage.voiceMinutes.used >= info.usage.voiceMinutes.limit) setVoiceError(t("billing.voiceLimitReached", "Ovozli daqiqalar limiti tugadi.")); }).catch(() => undefined);
   }, [open, t]);
+
+  useEffect(() => {
+    setVoiceAudioActive(open);
+    return () => setVoiceAudioActive(false);
+  }, [open]);
+
+  useEffect(() => { if (voiceError) stop(); }, [voiceError, stop]);
 
   useEffect(() => {
     setActionStatus(latestAI?.actionStatus ?? "pending");
@@ -105,7 +112,7 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
       return;
     }
 
-    if (muted || voiceError || isTyping || isListening || isProcessing || speakingId) return;
+    if (muted || voiceError || isTyping || isListening || isProcessing || speakingId !== null) return;
 
     const timer = window.setTimeout(() => start(), 180);
     return () => window.clearTimeout(timer);
@@ -117,11 +124,11 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   }, [stop, stopSpeaking]);
 
   useEffect(() => {
-    if (!open || !voiceReply || isTyping || !latestAI || latestAI.id === lastSpokenIdRef.current) return;
-
-    lastSpokenIdRef.current = latestAI.id;
+    const key = voiceReplyKey(latestAI);
+    if (!open || !voiceReply || isTyping || !latestAI || !key || key === lastSpokenKeyRef.current) return;
+    lastSpokenKeyRef.current = key;
     stop();
-    speak(latestAI.id, latestAI.text);
+    speak(latestAI.id, latestAI.actionResult ?? latestAI.text);
   }, [isTyping, latestAI, open, speak, stop, voiceReply]);
 
   useEffect(() => {
@@ -167,12 +174,13 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
   };
 
   const handleRetry = async () => {
+    await prepareAudioPlayback().catch(() => undefined);
     if (!isSupported) { showToast(t("voiceMode.notSupported", "Bu brauzer ovozli kiritishni qo'llab-quvvatlamaydi."), "error"); return; }
     const permissionGranted = await requestPermission();
     if (!permissionGranted) return;
     setVoiceError("");
     setMuted(false);
-    window.setTimeout(() => start(), 120);
+    start();
   };
 
   const handleActionConfirm = async () => {
@@ -213,6 +221,11 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
 
           <VoiceOrb state={state} />
 
+          {speakingId !== null && <button type="button" className="voice-mode__control" onClick={() => {
+            stopSpeaking(); setMuted(false); setVoiceError(''); start();
+          }}><Mic size={18} /> Gapirish — javobni to‘xtatish</button>}
+          {isListening && <button type="button" className="voice-mode__control" onClick={finish}>Gapirib bo‘ldim</button>}
+
           <div className="voice-mode__transcript" aria-live="polite">
             {transcriptMessages.length > 0 ? transcriptMessages.map((message) => (
               <div className={`voice-mode__line voice-mode__line--${message.role}`} key={message.id}>
@@ -234,6 +247,9 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
             <div className="voice-mode__error">
               <span>{voiceError}</span>
               <button type="button" onClick={() => void handleRetry()}><RotateCcw size={14} /> {t("voiceMode.checkMic", "Mikrofonni tekshirish")}</button>
+              {latestAI && voiceReplyKey(latestAI) && <button type="button" onClick={() => {
+                setVoiceError(''); stop(); speak(latestAI.id, latestAI.actionResult ?? latestAI.text);
+              }}><Volume2 size={14} /> Javobni qayta eshitish</button>}
             </div>
           )}
         </main>
@@ -271,9 +287,10 @@ const VoiceMode = ({ open, onClose, onKeyboard }: VoiceModeProps) => {
             type="button"
             className="voice-mode__sound"
             onClick={() => { setVoiceReply(v => !v); stopSpeaking(); }}
-            aria-label={speakingId ? t("voiceMode.stopSpeakingAria", "Ovozli javobni to'xtatish") : t("voiceMode.soundOnAria", "Ovoz yoqilgan")}
+            aria-pressed={voiceReply}
+            aria-label={voiceReply ? "Ovozli javobni o‘chirish" : "Ovozli javobni yoqish"}
           >
-            {speakingId ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            {voiceReply ? <Volume2 size={16} /> : <VolumeX size={16} />}
             <span>{voiceReply ? t("voiceMode.soundOn", "Ovoz yoqilgan") : t("voiceMode.textOnly", "Faqat matn")}</span>
           </button>
         </footer>

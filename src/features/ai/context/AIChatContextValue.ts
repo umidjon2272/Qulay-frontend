@@ -9,6 +9,8 @@ export type { TelegramCandidate, TelegramSelection } from "../router/routerTypes
 
 export type ChatMessage = {
   id: number;
+  serverId?: string;
+  isError?: boolean;
   role: "user" | "ai";
   text: string;
   time: string;
@@ -33,6 +35,11 @@ export type AIChatContextValue = {
   conversations: Conversation[];
   activeConversationId: string | null;
   historyLoading: boolean;
+  historyError: string | null;
+  historyLoadingMore: boolean;
+  hasOlderMessages: boolean;
+  loadOlderMessages: () => Promise<void>;
+  retryHistory: () => Promise<void>;
   newChat: () => void;
   loadConversation: (id: string) => Promise<void>;
   deleteConversation: (id: string) => Promise<void>;

@@ -29,8 +29,6 @@ const TopBar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
-  const lastUnreadRef = useRef<number | null>(null);
-  const lastSoundAtRef = useRef(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
@@ -38,37 +36,7 @@ const TopBar = () => {
   const [searchFiles, setSearchFiles] = useState<ApiFile[]>([]);
   const { locale, t } = useI18n();
 
-  const isQuietHours = () => {
-    const settings = getSettings().notifications;
-    if (!settings.quietHoursEnabled) return false;
-    const now = new Date();
-    const current = now.getHours() * 60 + now.getMinutes();
-    const toMinutes = (value: string) => { const [hours, minutes] = value.split(":").map(Number); return hours * 60 + minutes; };
-    const start = toMinutes(settings.quietHoursStart);
-    const end = toMinutes(settings.quietHoursEnd);
-    return start <= end ? current >= start && current < end : current >= start || current < end;
-  };
-
-  const playNotificationSound = () => {
-    const settings = getSettings().notifications;
-    if (!settings.sound || isQuietHours() || Date.now() - lastSoundAtRef.current < 3500) return;
-    try {
-      const AudioContextCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextCtor) return;
-      const context = new AudioContextCtor();
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      oscillator.type = "sine"; oscillator.frequency.setValueAtTime(740, context.currentTime); oscillator.frequency.exponentialRampToValueAtTime(560, context.currentTime + .16);
-      gain.gain.setValueAtTime(.0001, context.currentTime); gain.gain.exponentialRampToValueAtTime(.055, context.currentTime + .018); gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + .22);
-      oscillator.connect(gain); gain.connect(context.destination); oscillator.start(); oscillator.stop(context.currentTime + .23);
-      oscillator.addEventListener("ended", () => void context.close());
-      lastSoundAtRef.current = Date.now();
-    } catch { /* Browser autoplay policy may block sound before user interaction. */ }
-  };
-
   const refreshUnread = () => void notificationApi.unreadCount().then((result) => {
-    if (lastUnreadRef.current !== null && result.count > lastUnreadRef.current) playNotificationSound();
-    lastUnreadRef.current = result.count;
     setUnreadCount(result.count);
   }).catch(() => undefined);
 

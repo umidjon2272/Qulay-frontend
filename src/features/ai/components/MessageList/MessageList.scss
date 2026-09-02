@@ -134,3 +134,14 @@ html[data-theme="dark"] body #root .message-list__typing {
   body #root .message-list { gap: 10px; padding: 12px 10px; }
   body #root .message-list__inner { gap: 10px; }
 }
+.message-list__history {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  color: var(--text-secondary, #9caec4);
+  font-size: 14px;
+  button { color: inherit; font: inherit; border: 1px solid var(--border-color, #334155); background: transparent; padding: 8px 16px; border-radius: 20px; cursor: pointer; }
+}

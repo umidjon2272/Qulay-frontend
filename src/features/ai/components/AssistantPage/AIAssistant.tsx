@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { useAIChat } from "../../hooks/useAIChat";
+import { prepareAudioPlayback } from "../../../../services/audioPlayback";
 import { useI18n } from "../../../../i18n/useI18n";
 import { usePlatform } from "../../../../context/PlatformContext";
 import { readStorageString, writeStorageString } from "../../../../services/storage";
@@ -45,6 +46,7 @@ const AIAssistant = () => {
     conversations,
     activeConversationId,
     historyLoading,
+    historyError,
     newChat,
     loadConversation,
     deleteConversation,
@@ -65,7 +67,7 @@ const AIAssistant = () => {
   const suggestedPrompts = [t("ai.todayPlan", "Bugungi rejamni ayt"), t("ai.newTask", "Yangi vazifa yarat"), t("ai.newReminder", "Eslatma qo'sh")];
   const navigate = useNavigate();
   const [searchParams,setSearchParams]=useSearchParams();
-  const hasConversation = messages.length > 1;
+  const hasConversation = Boolean(activeConversationId || historyLoading || historyError || messages.some(m => m.id !== 0));
   const filteredConversations = useMemo(() => {
     const query = historySearch.trim().toLocaleLowerCase();
     return query ? conversations.filter((item) => item.title.toLocaleLowerCase().includes(query)) : conversations;
@@ -90,6 +92,7 @@ const AIAssistant = () => {
   };
 
   const openVoiceMode = () => {
+    void prepareAudioPlayback().catch(() => undefined);
     stopSpeaking();
     setIsVoiceModeOpen(true);
   };
@@ -156,7 +159,7 @@ const AIAssistant = () => {
 
             <div className="ai-side-card__conversations">
               {historyLoading && <span className="ai-history__empty">{t("ai.historyLoading", "Tarix yuklanmoqda…")}</span>}
-              {!historyLoading && filteredConversations.slice(0, 20).map((item) => (
+              {!historyLoading && filteredConversations.map((item) => (
                 <div className={`ai-history__row ${activeConversationId === item.id ? "is-active" : ""}`} key={item.id}>
                   {editingConversationId === item.id ? (
                     <input
@@ -231,7 +234,7 @@ const AIAssistant = () => {
             />
           )}
 
-          <ChatInput value={input} onChange={setInput} onSend={handleSend} onVoice={openVoiceMode} disabled={isTyping} />
+          <ChatInput value={input} onChange={setInput} onSend={handleSend} onVoice={openVoiceMode} disabled={isTyping || historyLoading || Boolean(historyError)} />
         </section>
       </section>
 

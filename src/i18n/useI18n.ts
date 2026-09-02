@@ -6,6 +6,7 @@ export type AppLocale = "uz" | "ru";
 
 /** Exported so the static i18n coverage test (see i18nCoverage.test.ts) can check every t() call site against this dictionary. */
 export const RU: Record<string, string> = {
+  "ai.action.executing": "Выполняется", "ai.action.awaiting": "Ожидает подтверждения", "ai.olderMessages": "Показать предыдущие сообщения",
   "nav.expand": "Открыть основное меню", "nav.collapse": "Свернуть основное меню",
   "ai.action.failed": "Не выполнено — проверьте состояние", "ai.togglePanel": "Быстрые действия и история",
   "voiceMode.aiVoice": "Голос, созданный AI",

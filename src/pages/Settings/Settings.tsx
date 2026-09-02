@@ -27,6 +27,7 @@ import { useIntegrations } from "../../hooks/useIntegrations";
 import ChangePasswordModal from "../../components/ChangePasswordModal/ChangePasswordModal";
 import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
 import { getSettings, updateSettings } from "../../services/settingsService";
+import { playNotificationChime } from '../../services/notificationSound';
 import { getGoogleStatus } from "../../services/integrationService";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
@@ -398,6 +399,14 @@ const Settings = () => {
                     <div className="settings-toggle-row__icon"><Bell size={16} /></div>
                     <div><strong>{t("settings.soundLabel", "Bildirishnoma ovozi")}</strong><span>{t("settings.soundHint", "Yangi muhim xabar kelganda yumshoq signal chalinsin.")}</span></div>
                     <button type="button" className={`settings-switch ${notifications.sound ? "is-on" : ""}`} onClick={() => updateLocalNotificationSetting("sound", !notifications.sound)} role="switch" aria-checked={notifications.sound} aria-label={t("settings.soundLabel", "Bildirishnoma ovozi")}><i /></button>
+                  </div>
+                  <div className="settings-sound-preview">
+                    <div><strong>Qulay Glass</strong><span>Yumshoq, ikki notali original signal</span></div>
+                    <button type="button" onClick={() => void playNotificationChime(true).catch(() => showToast('Ovozni yoqib bo‘lmadi. Brauzer va qurilma ovozini tekshiring.', 'error'))}>Ovozni eshitish</button>
+                    <label>Ovoz balandligi <output>{Math.round(notifications.soundVolume * 100)}%</output>
+                      <input type="range" min="0" max="100" step="5" value={Math.round(notifications.soundVolume * 100)} onChange={event => updateLocalNotificationSetting('soundVolume', Number(event.target.value) / 100)} />
+                    </label>
+                    <small>Sayt ochiq bo‘lganda ishlaydi. Brauzer ovozga ruxsat berishi uchun sahifaga bir marta bosing. Tinch vaqt qurilma soati bo‘yicha.</small>
                   </div>
                   <div className="settings-toggle-row">
                     <div className="settings-toggle-row__icon"><Moon size={16} /></div>

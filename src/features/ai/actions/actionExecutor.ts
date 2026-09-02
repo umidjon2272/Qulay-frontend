@@ -118,7 +118,7 @@ export const executeAIAction = async (
 
       case "confirmAgentAction": {
         const result = await agentApi.confirm(action.payload.actionId, true);
-        (["tasks", "reminders", "calendarEvents", "notes", "finance", "contacts", "memories"] satisfies WorkspaceResource[]).forEach((scope) => notifyWorkspaceDataChanged(scope));
+        (["tasks", "reminders", "calendarEvents", "notes", "finance", "contacts", "memories", "files", "integrations"] satisfies WorkspaceResource[]).forEach((scope) => notifyWorkspaceDataChanged(scope));
         return { success: result.status === "success", message: result.message || action.success, data: result.data };
       }
 

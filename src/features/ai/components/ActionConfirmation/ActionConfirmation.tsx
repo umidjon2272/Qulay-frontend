@@ -79,16 +79,20 @@ const getActionDetails = (action: AIAction, t: (key:string,fallback:string)=>str
         if (Array.isArray(value)) return value.map((item, index) => `${index + 1}. ${format(item && typeof item === 'object' && 'preview' in item ? item.preview : item)}`).join('\n\n');
         if (!value || typeof value !== 'object') return String(value ?? '');
         const item = value as Record<string, unknown>;
-        return Object.entries(item).filter(([key, val]) => val != null && fieldLabels[key]).map(([key, val]) => {
+        const labels = { ...fieldLabels, dueDate: ru ? 'Срок' : 'Muddat', startsAt: ru ? 'Начало' : 'Boshlanish', endsAt: ru ? 'Окончание' : 'Tugash', status: ru ? 'Статус' : 'Holat', operation: ru ? 'Действие' : 'Amal', warning: ru ? 'Внимание' : 'Diqqat' };
+        const fields = Object.entries(item).filter(([key, val]) => val != null && labels[key as keyof typeof labels]).map(([key, val]) => {
           let display = String(val);
           if (key === 'amount') display = Number(val).toLocaleString(ru ? 'ru-RU' : 'uz-UZ', { maximumFractionDigits: 2 });
           if (key === 'type') display = val === 'INCOME' ? (ru ? 'Доход' : 'Daromad') : val === 'EXPENSE' ? (ru ? 'Расход' : 'Xarajat') : String(val);
-          if (/^(transactionDate|dueAt|remindAt|startAt|endAt|start|end)$/.test(key) && !Number.isNaN(Date.parse(String(val)))) {
+          if (key === 'operation' && val === 'delete') display = ru ? 'Удаление' : 'O‘chirish';
+          if (/^(transactionDate|dueAt|dueDate|remindAt|startAt|endAt|startsAt|endsAt|start|end)$/.test(key) && !Number.isNaN(Date.parse(String(val)))) {
             const hasMeaningfulTime = !/T00:00:00(?:\.000)?(?:Z|[+-]\d\d:\d\d)?$/.test(String(val));
             display = new Intl.DateTimeFormat(ru ? 'ru-RU' : 'uz-UZ', { timeZone: typeof item.timezone === 'string' ? item.timezone : undefined, year: 'numeric', month: 'long', day: 'numeric', ...(hasMeaningfulTime ? { hour: '2-digit', minute: '2-digit' } : {}) }).format(new Date(String(val)));
           }
-          return `${fieldLabels[key]}: ${display}`;
-        }).join('\n') || (item.changes ? format(item.changes) : t('ai.action.prepared', 'AI tayyorlagan amal'));
+          return `${labels[key as keyof typeof labels]}: ${display}`;
+        });
+        if (item.changes) fields.push(`${ru ? 'Изменения' : 'O‘zgarishlar'}:\n${format(item.changes)}`);
+        return fields.join('\n') || t('ai.action.prepared', 'AI tayyorlagan amal');
       };
       return { title: action.payload.tool === '__batch__' ? (ru ? 'Несколько действий' : 'Bir nechta amal') : '', target: '', summary: format(preview) };
     }

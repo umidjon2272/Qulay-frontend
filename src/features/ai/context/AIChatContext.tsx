@@ -1,4 +1,5 @@
 import { voiceApi, spokenText } from '../../../services/api/voiceApi';
+import { playVoiceAudio, prepareAudioPlayback } from '../../../services/audioPlayback';
 import { cancelAIAction } from '../actions/actionExecutor';
 import { getApiErrorMessage } from '../../../services/api/apiClient';
 import {
@@ -107,10 +108,7 @@ const loadStoredMessages = (welcomeMessage = createWelcomeMessage()): ChatMessag
   loadStoredSession()?.messages ?? [welcomeMessage];
 
 const appendMessage = (messages: ChatMessage[], message: ChatMessage): ChatMessage[] => {
-  const next = [...messages, message];
-  if (next.length <= MAX_CHAT_MESSAGES) return next;
-
-  return [next[0], ...next.slice(-(MAX_CHAT_MESSAGES - 1))];
+  return [...messages, message];
 };
 
 export const AIChatProvider = ({ children }: { children: ReactNode }) => {
@@ -125,6 +123,12 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(() => loadStoredSession()?.conversationId ?? null);
   const sessionUserIdRef = useRef(getAuthSession()?.id ?? null);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const historyCursorRef = useRef<string | null>(null);
+  const historyMoreRef = useRef(false);
+  const requestedHistoryRef = useRef<string | null>(null);
   const historyLoadingRef = useRef(false);
   const previousSaveHistoryRef = useRef(saveHistory);
   const activeConversationIdRef = useRef<string | null>(activeConversationId);
@@ -174,7 +178,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const userId = getAuthSession()?.id;
-    if (saveHistory && userId === sessionUserIdRef.current && userId) writeStorage(STORAGE_KEYS.aiChatHistory, { userId, conversationId: activeConversationId, messages });
+    if (saveHistory && userId === sessionUserIdRef.current && userId) writeStorage(STORAGE_KEYS.aiChatHistory, { userId, conversationId: activeConversationId, messages: messages.slice(-MAX_CHAT_MESSAGES) });
     else removeStorage(STORAGE_KEYS.aiChatHistory);
   }, [messages, saveHistory, activeConversationId]);
 
@@ -224,6 +228,8 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       }
       sessionUserIdRef.current = userId;
       generationRef.current += 1;
+      historyLoadingRef.current = false; historyMoreRef.current = false; historyCursorRef.current = null; requestedHistoryRef.current = null;
+      setHistoryLoading(false); setHistoryLoadingMore(false); setHasOlderMessages(false); setHistoryError(null);
       speechRequestRef.current?.abort();
       audioRef.current?.pause();
       speechGenerationRef.current += 1;
@@ -280,6 +286,11 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
   const newChat = useCallback(() => {
     generationRef.current += 1;
+    historyLoadingRef.current = false;
+    historyMoreRef.current = false;
+    historyCursorRef.current = null;
+    requestedHistoryRef.current = null;
+    setHistoryLoading(false); setHistoryLoadingMore(false); setHasOlderMessages(false); setHistoryError(null);
     speechRequestRef.current?.abort();
     audioRef.current?.pause();
     speechGenerationRef.current += 1;
@@ -297,8 +308,12 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   }, [platformName, locale]);
 
   const loadConversation = useCallback(async (id: string) => {
-    if (!id || historyLoadingRef.current) return;
+    if (!id) return;
+    requestedHistoryRef.current = id;
     historyLoadingRef.current = true;
+    historyMoreRef.current = false;
+    setHistoryLoadingMore(false);
+    setHistoryError(null);
     setHistoryLoading(true);
     const generation = ++generationRef.current;
     speechRequestRef.current?.abort();
@@ -307,12 +322,13 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     for (const controller of pendingRequestsRef.current.values()) controller.abort();
     pendingRequestsRef.current.clear();
     try {
-      const [result, pendingResult] = await Promise.all([listMessages(id, 1, 200), agentApi.listActions('PENDING',1,100).catch(()=>null)]);
+      const [result, pendingResult] = await Promise.all([listMessages(id, 1, 50), agentApi.listActions('PENDING',1,100).catch(()=>null)]);
       if (!mountedRef.current || generation !== generationRef.current) return;
       const loaded: ChatMessage[] = result.items
         .filter((message) => message.role === "USER" || message.role === "ASSISTANT")
-        .map((message, index) => ({
-          id: index + 1,
+        .map((message) => ({
+          id: ++messageIdRef.current,
+          serverId: message.id,
           role: message.role === "USER" ? "user" as const : "ai" as const,
           text: message.content,
           time: new Date(message.createdAt).toLocaleTimeString(locale === "ru" ? "ru-RU" : "uz-UZ", { hour: "2-digit", minute: "2-digit" }),
@@ -321,25 +337,60 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       if (pending) {
         const action: AIAction = { type:'confirmAgentAction', payload:{actionId:pending.id,tool:pending.toolName,preview:pending.preview}, label: locale==='ru'?'Действие AI':'AI amali', confirmationMessage: locale==='ru'?'Подтвердить действие?':'Amalni tasdiqlaysizmi?', success:locale==='ru'?'✅ Действие выполнено.':'✅ Amal bajarildi.', error:locale==='ru'?'Не удалось выполнить действие.':'Amalni bajarishda xatolik yuz berdi.' };
         const lastAiIndex=[...loaded].map((m,i)=>({m,i})).reverse().find(({m})=>m.role==='ai')?.i;
-        if(lastAiIndex===undefined) loaded.push({id:loaded.length+1,role:'ai',text:action.confirmationMessage,time:formatTime(),action}); else loaded[lastAiIndex]={...loaded[lastAiIndex],action};
+        if(lastAiIndex===undefined) loaded.push({id:++messageIdRef.current,role:'ai',text:action.confirmationMessage,time:formatTime(),action}); else loaded[lastAiIndex]={...loaded[lastAiIndex],action};
       }
-      messageIdRef.current = loaded.length;
-      const nextMessages = loaded.length ? [{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }, ...loaded] : [{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }];
+      const nextMessages = loaded;
+      historyCursorRef.current = result.meta.nextCursor ?? null;
+      setHasOlderMessages(Boolean(result.meta.hasMore));
       activeConversationIdRef.current = id;
       setActiveConversationId(id);
       setMessages(nextMessages);
       pendingTelegramSelectionRef.current = null;
       setIsTyping(false);
-    } catch (error) {
+    } catch {
       if (mountedRef.current && generation === generationRef.current) {
-        setMessages(current => appendMessage(current, { id: ++messageIdRef.current, role: "ai", time: formatTime(), text: getApiErrorMessage(error, locale === "ru" ? "Не удалось открыть историю. Попробуйте ещё раз." : "Suhbat tarixini ochib bo‘lmadi. Qayta urinib ko‘ring.") }));
+        setHistoryError(locale === "ru" ? "Не удалось загрузить историю. Повторите попытку." : "Suhbat tarixi yuklanmadi. Qayta urinib ko‘ring.");
       }
     } finally {
-      historyLoadingRef.current = false;
-      if (mountedRef.current) setHistoryLoading(false);
-      if (mountedRef.current && generation === generationRef.current) { setIsTyping(false); setSpeakingId(null); }
+      if (mountedRef.current && generation === generationRef.current) { historyLoadingRef.current = false; setHistoryLoading(false); setIsTyping(false); setSpeakingId(null); }
     }
-  }, [platformName, locale]);
+  }, [locale]);
+
+  const loadOlderMessages = useCallback(async () => {
+    const id = activeConversationIdRef.current;
+    const before = historyCursorRef.current;
+    if (!id || !before || historyMoreRef.current || historyLoadingRef.current) return;
+    const generation = generationRef.current;
+    historyMoreRef.current = true; setHistoryLoadingMore(true); setHistoryError(null);
+    try {
+      const result = await listMessages(id, 1, 50, before);
+      if (!mountedRef.current || generation !== generationRef.current) return;
+      const older: ChatMessage[] = result.items.filter(m => m.role === 'USER' || m.role === 'ASSISTANT').map(m => ({
+        id: ++messageIdRef.current, serverId: m.id, role: m.role === 'USER' ? 'user' : 'ai', text: m.content,
+        time: new Date(m.createdAt).toLocaleTimeString(locale === 'ru' ? 'ru-RU' : 'uz-UZ', { hour: '2-digit', minute: '2-digit' }),
+      }));
+      setMessages(current => { const ids = new Set(current.map(m => m.serverId)); return [...older.filter(m => !ids.has(m.serverId)), ...current]; });
+      historyCursorRef.current = result.meta.nextCursor ?? null;
+      setHasOlderMessages(Boolean(result.meta.hasMore));
+    } catch {
+      if (mountedRef.current && generation === generationRef.current) setHistoryError(locale === 'ru' ? 'Не удалось загрузить предыдущие сообщения.' : 'Oldingi xabarlar yuklanmadi.');
+    } finally {
+      if (mountedRef.current && generation === generationRef.current) { historyMoreRef.current = false; setHistoryLoadingMore(false); }
+    }
+  }, [locale]);
+
+  const retryHistory = useCallback(async () => {
+    if (requestedHistoryRef.current && requestedHistoryRef.current !== activeConversationIdRef.current) await loadConversation(requestedHistoryRef.current);
+    else if (historyCursorRef.current) await loadOlderMessages();
+    else if (requestedHistoryRef.current) await loadConversation(requestedHistoryRef.current);
+  }, [loadConversation, loadOlderMessages]);
+
+  useEffect(() => {
+    const storedId = loadStoredSession()?.conversationId;
+    if (storedId) void loadConversation(storedId);
+    // Restore the selected server conversation once; cache is only a warm preview.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const renameConversation = useCallback(async (id: string, title: string) => {
     const cleanTitle = title.trim().slice(0, 200);
@@ -456,7 +507,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         }
 
         if (reply.resolvedActionStatus === "success") {
-          (["tasks", "reminders", "calendarEvents", "notes", "finance", "contacts", "memories"] satisfies WorkspaceResource[]).forEach(notifyWorkspaceDataChanged);
+          (["tasks", "reminders", "calendarEvents", "notes", "finance", "contacts", "memories", "files", "integrations"] satisfies WorkspaceResource[]).forEach(notifyWorkspaceDataChanged);
         }
         if (reply.conversationId) {
           activeConversationIdRef.current = reply.conversationId;
@@ -494,6 +545,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
         setMessages((current) => appendMessage(current, {
             id: nextMessageId(),
             role: "ai",
+            isError: true,
             text: getApiErrorMessage(error, "Javobni olishning imkoni bo‘lmadi. Suhbatni qayta ochib holatini tekshiring."),
             time: formatTime(),
           }));
@@ -573,6 +625,8 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
   const speak = useCallback((id: number, text: string) => {
     stopSpeaking();
+    // Start resume synchronously while a manual button click still has activation.
+    const ready = prepareAudioPlayback();
     const generation = speechGenerationRef.current;
     const controller = new AbortController();
     speechRequestRef.current = controller;
@@ -581,19 +635,12 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     const clean = spokenText(text);
     const chunks = clean.match(/.{1,1800}(?:[.!?]\s|$)|.{1,1800}/gs) ?? [clean];
     void (async () => {
+      await ready;
       for (const chunk of chunks) {
         if (!chunk.trim() || controller.signal.aborted) return;
         const result = await voiceApi.speak(chunk, controller.signal);
         if (!mountedRef.current || generation !== speechGenerationRef.current) return;
-        const audio = new Audio(`data:${result.mimeType};base64,${result.audio}`);
-        audioRef.current = audio;
-        await new Promise<void>((resolve, reject) => {
-          const abort = () => { audio.pause(); resolve(); };
-          controller.signal.addEventListener("abort", abort, { once: true });
-          audio.onended = () => { controller.signal.removeEventListener("abort", abort); resolve(); };
-          audio.onerror = () => { controller.signal.removeEventListener("abort", abort); reject(new Error("Audio playback failed")); };
-          void audio.play().catch(reject);
-        });
+        await playVoiceAudio(result.audio, controller.signal);
       }
     })().catch(() => {
       if (controller.signal.aborted || generation !== speechGenerationRef.current) return;
@@ -620,6 +667,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       conversations,
       activeConversationId,
       historyLoading,
+      historyError, historyLoadingMore, hasOlderMessages, loadOlderMessages, retryHistory,
       newChat,
       loadConversation,
       deleteConversation,
@@ -643,6 +691,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       conversations,
       activeConversationId,
       historyLoading,
+      historyError, historyLoadingMore, hasOlderMessages, loadOlderMessages, retryHistory,
       newChat,
       loadConversation,
       deleteConversation,

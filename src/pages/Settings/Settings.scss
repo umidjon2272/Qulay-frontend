@@ -1235,3 +1235,20 @@ html[data-theme="dark"] body #root .settings-field-grid select { color:#f7f9ff;b
 .settings-time-range span { padding-bottom:12px; color:#8e96a5; }
 .settings-field-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:18px 0; }
 @media (max-width: 640px) { .settings-field-grid { grid-template-columns:1fr; } .settings-time-range { grid-template-columns:1fr; } .settings-time-range span { display:none; } }
+// A compact, accessible preview of the original notification sound.
+.settings-sound-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-color, #ffffff20);
+  border-radius: 16px;
+  margin-block: 12px;
+  div { display: grid; gap: 4px; }
+  span, small { opacity: .75; font-size: 12px; }
+  button { border: 1px solid currentColor; border-radius: 20px; color: inherit; background: transparent; padding: 10px 14px; min-height: 44px; cursor: pointer; }
+  label { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; grid-column: 1 / -1; font-size: 13px; }
+  input { flex: 1; min-width: 100px; accent-color: #9c7cff; min-height: 32px; }
+  small { grid-column: 1 / -1; }
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
