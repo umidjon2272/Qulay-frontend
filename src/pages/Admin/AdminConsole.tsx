@@ -301,6 +301,8 @@ export const SettingsView = ({ data }: { data: NormalizedAdminSettings | null })
   const [registrationEnabled, setRegistrationEnabled] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [telegramDiagnosticBusy, setTelegramDiagnosticBusy] = useState(false);
+  const [telegramDiagnosticMessage, setTelegramDiagnosticMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -324,6 +326,16 @@ export const SettingsView = ({ data }: { data: NormalizedAdminSettings | null })
     } catch (error) {
       setSaveMessage(getApiErrorMessage(error));
     } finally { setSaving(false); }
+  };
+  const runTelegramDiagnostic = async () => {
+    if (telegramDiagnosticBusy) return;
+    setTelegramDiagnosticBusy(true); setTelegramDiagnosticMessage(null);
+    try {
+      const result = await adminApi.runTelegramLoginDiagnostic();
+      setTelegramDiagnosticMessage(`So‘rov yuborildi · deployment ${result.deploymentVersion} · ID ${result.diagnosticId}`);
+    } catch (error) {
+      setTelegramDiagnosticMessage(getApiErrorMessage(error));
+    } finally { setTelegramDiagnosticBusy(false); }
   };
 
   return <div className="admin-grid admin-grid--settings">
@@ -354,6 +366,7 @@ export const SettingsView = ({ data }: { data: NormalizedAdminSettings | null })
     </SettingsSection>
     <SettingsSection title={t("admin.nav.integrations", "Integratsiyalar")} detail={t("admin.settings.integrationsDetail", "Sozlangan/sozlanmagan holat, sirlarsiz")} missing={isMissing("integrations")}>
       <SettingsRow label="Telegram" value={settings.integrations.telegram.configured ? t("admin.configured", "Sozlangan") : t("admin.notConfigured", "Sozlanmagan")} healthy={settings.integrations.telegram.configured} />
+      {settings.integrations.telegram.loginDiagnosticEnabled && <div className="admin-settings-save-row"><button type="button" className="admin-button" disabled={telegramDiagnosticBusy} onClick={() => void runTelegramDiagnostic()}>{telegramDiagnosticBusy ? "Tekshirilmoqda..." : "Telegram login diagnostikasini ishga tushirish"}</button>{telegramDiagnosticMessage && <span role="status">{telegramDiagnosticMessage}</span>}</div>}
       <SettingsRow label="Google" value={settings.integrations.google.configured ? t("admin.configured", "Sozlangan") : t("admin.notConfigured", "Sozlanmagan")} healthy={settings.integrations.google.configured} />
       <SettingsRow label="OpenAI" value={settings.integrations.openai.configured ? t("admin.configured", "Sozlangan") : t("admin.notConfigured", "Sozlanmagan")} healthy={settings.integrations.openai.configured} />
     </SettingsSection>

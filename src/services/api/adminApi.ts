@@ -34,7 +34,7 @@ export type AdminSettings = {
     rateLimits: { loginPerIp: RateLimitInfo; loginPerEmail: RateLimitInfo; registerPerIp: RateLimitInfo; registerPerEmail: RateLimitInfo; passwordReset: RateLimitInfo; globalPerIp: { max: number; windowSeconds: number } };
   };
   notifications: { workerStatus: "running" | "stopped"; intervalSeconds: number; batchSize: number; retryLimit: number };
-  integrations: { telegram: { configured: boolean }; google: { configured: boolean }; openai: { configured: boolean } };
+  integrations: { telegram: { configured: boolean; loginDiagnosticEnabled?: boolean }; google: { configured: boolean }; openai: { configured: boolean } };
   storage: { provider: string; maxFileSizeBytes: number; localWarning: string | null };
   system: { environment: string; version: string | null; api: { status: string }; database: { status: string; latencyMs: number } };
 };
@@ -49,7 +49,7 @@ const emptyAdminSettings = (): AdminSettings => ({
     rateLimits: { loginPerIp: { max: 0, windowMinutes: 0 }, loginPerEmail: { max: 0, windowMinutes: 0 }, registerPerIp: { max: 0, windowMinutes: 0 }, registerPerEmail: { max: 0, windowMinutes: 0 }, passwordReset: { max: 0, windowMinutes: 0 }, globalPerIp: { max: 0, windowSeconds: 0 } },
   },
   notifications: { workerStatus: "stopped", intervalSeconds: 0, batchSize: 0, retryLimit: 0 },
-  integrations: { telegram: { configured: false }, google: { configured: false }, openai: { configured: false } },
+  integrations: { telegram: { configured: false, loginDiagnosticEnabled: false }, google: { configured: false }, openai: { configured: false } },
   storage: { provider: "", maxFileSizeBytes: 0, localWarning: null },
   system: { environment: "", version: null, api: { status: "unreachable" }, database: { status: "unreachable", latencyMs: 0 } },
 });
@@ -127,6 +127,7 @@ export const adminApi = {
   system: () => request<AdminSystem>("/admin/system"),
   settings: () => request<unknown>("/admin/settings").then(normalizeAdminSettings),
   updatePlatformSettings: (input: { name?: string; registrationEnabled?: boolean }) => request<{ name: string; registrationEnabled: boolean; updatedAt: string }>("/admin/settings/platform", { method: "PATCH", body: JSON.stringify(input) }),
+  runTelegramLoginDiagnostic: () => request<{ accepted: true; diagnosticId: string; deploymentVersion: string }>("/admin/diagnostics/telegram-login", { method: "POST" }),
   plans: () => request<AdminPlan[]>("/admin/plans"),
   updatePlan: (tier: AdminPlan['tier'], input: Partial<Omit<AdminPlan,'tier'|'limits'>&AdminPlan['limits']>) => request<AdminPlan>(`/admin/plans/${tier}`, { method: 'PATCH', body: JSON.stringify(input) }),
   assignSubscription: (userId: string, tier: AdminPlan['tier'], status = 'ACTIVE') => request(`/admin/users/${userId}/subscription`, { method: 'PATCH', body: JSON.stringify({ tier, status }) }),
