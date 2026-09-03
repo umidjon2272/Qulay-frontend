@@ -148,14 +148,58 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
     const cursor = streamedSpeechRef.current;
     const remaining = latestAI.text.slice(cursor.offset);
     const matches = [...remaining.matchAll(/[^.!?]+[.!?](?:\s|$)/g)];
-    const chunks = matches.map(match => match[0].trim()).filter(Boolean);
-    if (!latestAI.streaming) {
-      const consumed = matches.reduce((total, match) => total + match[0].length, 0);
-      const tail = remaining.slice(consumed).trim(); if (tail) chunks.push(tail);
-    }
-    if (!chunks.length) return;
-    cursor.offset = latestAI.streaming ? cursor.offset + matches.reduce((total, match) => total + match[0].length, 0) : latestAI.text.length;
-    chunks.forEach(chunk => queueSpeech(latestAI.id, chunk, selectedVoice));
+const chunks = matches.map(match => match[0].trim()).filter(Boolean);
+
+let consumed = matches.reduce(
+  (total, match) => total + match[0].length,
+  0,
+);
+
+// AI nuqta qo‘yishini uzoq kutmaymiz.
+// Yetarli matn kelishi bilan birinchi qismini ovozga yuboramiz.
+if (latestAI.streaming && chunks.length === 0 && remaining.length >= 55) {
+  const preview = remaining.slice(0, 110);
+
+  const punctuationCut = Math.max(
+    preview.lastIndexOf(','),
+    preview.lastIndexOf(';'),
+    preview.lastIndexOf(':'),
+  );
+
+  const spaceCut = preview.lastIndexOf(' ');
+
+  const cut =
+    punctuationCut >= 40
+      ? punctuationCut + 1
+      : spaceCut >= 45
+        ? spaceCut + 1
+        : 0;
+
+  if (cut > 0) {
+    chunks.push(remaining.slice(0, cut).trim());
+    consumed = cut;
+  }
+}
+
+if (!latestAI.streaming) {
+  const tail = remaining.slice(consumed).trim();
+
+  if (tail) {
+    chunks.push(tail);
+  }
+
+  consumed = remaining.length;
+}
+
+if (!chunks.length) return;
+
+cursor.offset = latestAI.streaming
+  ? cursor.offset + consumed
+  : latestAI.text.length;
+
+chunks.forEach(chunk =>
+  queueSpeech(latestAI.id, chunk, selectedVoice),
+);
     if (!latestAI.streaming) { lastSpokenKeyRef.current = voiceReplyKey(latestAI); streamedSpeechRef.current = null; }
   }, [latestAI, open, queueSpeech, selectedVoice, voiceReply]);
 

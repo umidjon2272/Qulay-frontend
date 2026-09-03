@@ -659,110 +659,213 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     queuedSpeechCountRef.current = 0;
     if (mountedRef.current) setSpeakingId(null);
   }, []);
-
-  const queueSpeech = useCallback((id: number, text: string, voice?: 'marin' | 'cedar') => {
+const queueSpeech = useCallback(
+  (id: number, text: string, voice?: 'marin' | 'cedar') => {
     const clean = spokenText(text).trim();
     if (!clean) return;
-    if (!speechRequestRef.current || speechRequestRef.current.signal.aborted) speechRequestRef.current = new AbortController();
+
+    if (
+      !speechRequestRef.current ||
+      speechRequestRef.current.signal.aborted
+    ) {
+      speechRequestRef.current = new AbortController();
+    }
+
     const controller = speechRequestRef.current;
     const generation = speechGenerationRef.current;
+
     queuedSpeechCountRef.current += 1;
     setSpeakingId(id);
-    speechQueueRef.current = speechQueueRef.current.then(async () => {
-      if (controller.signal.aborted || generation !== speechGenerationRef.current) return;
-      const result = await voiceApi.speak(clean, controller.signal, voice);
-      if (controller.signal.aborted || generation !== speechGenerationRef.current) return;
-      await playVoiceAudio(result.audio, controller.signal);
-    }).catch(() => {
-      if (!controller.signal.aborted) window.dispatchEvent(new CustomEvent('qulay:voice-error', { detail: 'Ovozli javobni ijro qilib bo‘lmadi.' }));
-    }).finally(() => {
-      queuedSpeechCountRef.current = Math.max(0, queuedSpeechCountRef.current - 1);
-      if (mountedRef.current && generation === speechGenerationRef.current && queuedSpeechCountRef.current === 0) setSpeakingId(null);
-    });
-  }, []);
 
-  const speak = useCallback((id: number, text: string, voice?: 'marin' | 'cedar') => {
+    // Keyingi audio navbatni kutmasdan oldindan tayyorlanadi.
+    const audioPromise = voiceApi.speak(
+      clean,
+      controller.signal,
+      voice,
+    );
+
+    speechQueueRef.current = speechQueueRef.current
+      .then(async () => {
+        if (
+          controller.signal.aborted ||
+          generation !== speechGenerationRef.current
+        ) {
+          return;
+        }
+
+        const result = await audioPromise;
+
+        if (
+          controller.signal.aborted ||
+          generation !== speechGenerationRef.current
+        ) {
+          return;
+        }
+
+        await playVoiceAudio(result.audio, controller.signal);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) {
+          window.dispatchEvent(
+            new CustomEvent('qulay:voice-error', {
+              detail: 'Ovozli javobni ijro qilib bo‘lmadi.',
+            }),
+          );
+        }
+      })
+      .finally(() => {
+        queuedSpeechCountRef.current = Math.max(
+          0,
+          queuedSpeechCountRef.current - 1,
+        );
+
+        if (
+          mountedRef.current &&
+          generation === speechGenerationRef.current &&
+          queuedSpeechCountRef.current === 0
+        ) {
+          setSpeakingId(null);
+        }
+      });
+  },
+  [],
+);
+
+const speak = useCallback(
+  (id: number, text: string, voice?: 'marin' | 'cedar') => {
     stopSpeaking();
+
     // Start resume synchronously while a manual button click still has activation.
     const ready = prepareAudioPlayback();
     const generation = speechGenerationRef.current;
     const controller = new AbortController();
+
     speechRequestRef.current = controller;
     setSpeakingId(id);
+
     // Chunk long answers at sentence boundaries; do not silently cut off the reply.
     const clean = spokenText(text);
-    const chunks = clean.match(/.{1,1800}(?:[.!?]\s|$)|.{1,1800}/gs) ?? [clean];
+    const chunks =
+      clean.match(/.{1,1800}(?:[.!?]\s|$)|.{1,1800}/gs) ?? [clean];
+
     void (async () => {
       await ready;
+
       for (const chunk of chunks) {
         if (!chunk.trim() || controller.signal.aborted) return;
-        const result = await voiceApi.speak(chunk, controller.signal, voice);
-        if (!mountedRef.current || generation !== speechGenerationRef.current) return;
+
+        const result = await voiceApi.speak(
+          chunk,
+          controller.signal,
+          voice,
+        );
+
+        if (
+          !mountedRef.current ||
+          generation !== speechGenerationRef.current
+        ) {
+          return;
+        }
+
         await playVoiceAudio(result.audio, controller.signal);
       }
-    })().catch(() => {
-      if (controller.signal.aborted || generation !== speechGenerationRef.current) return;
-      // Surface playback/autoplay failures without silently pretending the answer was spoken.
-      window.dispatchEvent(new CustomEvent("qulay:voice-error", { detail: locale === "ru" ? "Не удалось воспроизвести ответ. Нажмите значок звука, чтобы повторить." : "Ovozli javobni ijro qilib bo‘lmadi. Ovoz tugmasini bosib qayta urinib ko‘ring." }));
-    }).finally(() => {
-      if (mountedRef.current && generation === speechGenerationRef.current) { audioRef.current = null; setSpeakingId(null); }
-    });
-  }, [locale, stopSpeaking]);
+    })()
+      .catch(() => {
+        if (
+          controller.signal.aborted ||
+          generation !== speechGenerationRef.current
+        ) {
+          return;
+        }
 
-  const value = useMemo(
-    () => ({
-      isOpen,
-      open,
-      close,
-      toggle,
-      messages,
-      isTyping,
-      sendMessage,
-      stopResponse,
-      executeAction,
-      cancelAction,
-      resolveTelegramSelection,
-      clearChat,
-      conversations,
-      activeConversationId,
-      historyLoading,
-      historyError, historyLoadingMore, hasOlderMessages, loadOlderMessages, retryHistory,
-      newChat,
-      loadConversation,
-      deleteConversation,
-      renameConversation,
-      speakingId,
-      speak,
-      queueSpeech,
-      stopSpeaking,
-    }),
-    [
-      isOpen,
-      open,
-      close,
-      toggle,
-      messages,
-      isTyping,
-      sendMessage,
-      stopResponse,
-      executeAction,
-      cancelAction,
-      resolveTelegramSelection,
-      clearChat,
-      conversations,
-      activeConversationId,
-      historyLoading,
-      historyError, historyLoadingMore, hasOlderMessages, loadOlderMessages, retryHistory,
-      newChat,
-      loadConversation,
-      deleteConversation,
-      renameConversation,
-      speakingId,
-      speak,
-      queueSpeech,
-      stopSpeaking,
-    ],
-  );
+        window.dispatchEvent(
+          new CustomEvent('qulay:voice-error', {
+            detail:
+              locale === 'ru'
+                ? 'Не удалось воспроизвести ответ. Нажмите значок звука, чтобы повторить.'
+                : 'Ovozli javobni ijro qilib bo‘lmadi. Ovoz tugmasini bosib qayta urinib ko‘ring.',
+          }),
+        );
+      })
+      .finally(() => {
+        if (
+          mountedRef.current &&
+          generation === speechGenerationRef.current
+        ) {
+          audioRef.current = null;
+          setSpeakingId(null);
+        }
+      });
+  },
+  [locale, stopSpeaking],
+);
 
-  return <AIChatContext.Provider value={value}>{children}</AIChatContext.Provider>;
+const value = useMemo(
+  () => ({
+    isOpen,
+    open,
+    close,
+    toggle,
+    messages,
+    isTyping,
+    sendMessage,
+    stopResponse,
+    executeAction,
+    cancelAction,
+    resolveTelegramSelection,
+    clearChat,
+    conversations,
+    activeConversationId,
+    historyLoading,
+    historyError,
+    historyLoadingMore,
+    hasOlderMessages,
+    loadOlderMessages,
+    retryHistory,
+    newChat,
+    loadConversation,
+    deleteConversation,
+    renameConversation,
+    speakingId,
+    speak,
+    queueSpeech,
+    stopSpeaking,
+  }),
+  [
+    isOpen,
+    open,
+    close,
+    toggle,
+    messages,
+    isTyping,
+    sendMessage,
+    stopResponse,
+    executeAction,
+    cancelAction,
+    resolveTelegramSelection,
+    clearChat,
+    conversations,
+    activeConversationId,
+    historyLoading,
+    historyError,
+    historyLoadingMore,
+    hasOlderMessages,
+    loadOlderMessages,
+    retryHistory,
+    newChat,
+    loadConversation,
+    deleteConversation,
+    renameConversation,
+    speakingId,
+    speak,
+    queueSpeech,
+    stopSpeaking,
+  ],
+);
+
+return (
+  <AIChatContext.Provider value={value}>
+    {children}
+  </AIChatContext.Provider>
+);
 };
