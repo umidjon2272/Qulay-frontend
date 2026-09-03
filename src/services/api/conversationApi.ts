@@ -4,10 +4,10 @@ import type { PaginatedResponse } from "./types";
 export type Conversation = { id: string; title: string; createdAt: string; updatedAt: string; messageCount?: number };
 export type Message = { id: string; conversationId: string; role: "USER" | "ASSISTANT" | "SYSTEM" | "TOOL"; content: string; isComplete?: boolean; createdAt: string };
 
-export const listConversations = (search?: string) => {
-  const query = new URLSearchParams({ limit: "100" });
+export const listConversations = (search?: string, page = 1, signal?: AbortSignal) => {
+  const query = new URLSearchParams({ limit: "50", page: String(Number.isFinite(page) ? Math.max(1, Math.trunc(page)) : 1) });
   if (search) query.set("search", search);
-  return request<PaginatedResponse<Conversation>>(`/conversations?${query}`);
+  return request<PaginatedResponse<Conversation>>(`/conversations?${query}`, { signal });
 };
 export const createConversation = (title?: string) => request<Conversation>("/conversations", { method: "POST", body: JSON.stringify({ title }) });
 export const updateConversation = (id: string, title: string) => request<Conversation>(`/conversations/${id}`, { method: "PATCH", body: JSON.stringify({ title }) });

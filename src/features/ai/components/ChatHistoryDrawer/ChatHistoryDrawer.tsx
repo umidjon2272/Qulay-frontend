@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Home, MessageSquareText, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 
 import { useAIChat } from "../../hooks/useAIChat";
-import { listConversations, type Conversation } from "../../../../services/api/conversationApi";
+import { type Conversation } from "../../../../services/api/conversationApi";
+import { useConversationList } from '../../hooks/useConversationList';
 import ConfirmDialog from "../../../../components/ConfirmDialog/ConfirmDialog";
 import { useI18n } from "../../../../i18n/useI18n";
 
@@ -38,8 +39,8 @@ const ChatHistoryDrawer = ({ open, onClose, onHome }: ChatHistoryDrawerProps) =>
     deleteConversation,
     renameConversation,
   } = useAIChat();
-  const [search, setSearch] = useState("");
-  const [searchResults, setSearchResults] = useState<Conversation[] | null>(null);
+  const conversationList = useConversationList(conversations, open);
+  const { query: search, setQuery: setSearch, items: list } = conversationList;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const [pendingDelete, setPendingDelete] = useState<Conversation | null>(null);
@@ -66,25 +67,15 @@ const ChatHistoryDrawer = ({ open, onClose, onHome }: ChatHistoryDrawerProps) =>
   }, [open]);
 
   useEffect(() => {
-    if (!open) { setSearch(""); setSearchResults(null); }
-  }, [open]);
+    if (!open) setSearch('');
+  }, [open, setSearch]);
 
-  useEffect(() => {
-    const query = search.trim();
-    if (!query) { setSearchResults(null); return undefined; }
-    let active = true;
-    const timer = window.setTimeout(() => {
-      void listConversations(query).then((result) => { if (active) setSearchResults(result.items); }).catch(() => { if (active) setSearchResults([]); });
-    }, 250);
-    return () => { active = false; window.clearTimeout(timer); };
-  }, [search]);
 
   const closeDrawer = () => {
     if (window.history.state?.chatHistory) { window.history.back(); return; }
     onClose();
   };
 
-  const list = searchResults ?? conversations;
   const grouped = useMemo(() => {
     const groups: Record<Bucket, Conversation[]> = { today: [], yesterday: [], week: [], older: [] };
     for (const conversation of list) groups[bucketFor(conversation.updatedAt)].push(conversation);
@@ -128,7 +119,8 @@ const ChatHistoryDrawer = ({ open, onClose, onHome }: ChatHistoryDrawerProps) =>
         </label>
 
         <div className="chat-history-drawer__list">
-          {list.length === 0 && (
+          {conversationList.loading && <span role="status">{t('ai.historyLoading', 'Tarix yuklanmoqda…')}</span>}
+          {list.length === 0 && !conversationList.loading && !conversationList.failed && (
             <span className="chat-history-drawer__empty">
               {search.trim() ? t("ai.historyNotFound", "Mos chat topilmadi.") : t("ai.noHistory", "Hali saqlangan suhbat yo'q.")}
             </span>
@@ -165,6 +157,7 @@ const ChatHistoryDrawer = ({ open, onClose, onHome }: ChatHistoryDrawerProps) =>
               ))}
             </div>
           ))}
+          {(conversationList.hasMore || conversationList.failed) && <button type="button" disabled={conversationList.loading} onClick={conversationList.loadMore}>{conversationList.failed ? t('common.retry', 'Qayta urinish') : t('ai.moreConversations', 'Yana suhbatlar')}</button>}
         </div>
       </section>
 

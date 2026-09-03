@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ComponentType } from "react";
+import { agentSettingsApi, type UpdateAgentSettingsInput } from '../../services/api/agentSettingsApi';
+import { applyAiPreferences } from '../../services/aiPreferences';
+import { subscribeToWorkspaceData } from '../../services/workspaceEvents';
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -33,6 +36,7 @@ import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
 import { notificationApi } from "../../services/api";
+import { disableWebPush, enableWebPush, webPushStatus } from '../../services/webPush';
 import type { ApiNotificationPreference } from "../../services/api/types";
 import { useI18n } from "../../i18n/useI18n";
 import Memory from "../Memory/Memory";
@@ -77,8 +81,8 @@ const getNotificationItems = (t: TFn): Array<{
   { key: "reminders", label: t("admin.item.reminders", "Eslatmalar"), hint: t("settings.notif.remindersHint", "Eslatma vaqti yaqinlashganda xabar berish"), icon: Bell },
   { key: "meetingReminders", label: t("admin.item.meetings", "Uchrashuvlar"), hint: t("settings.notif.meetingsHint", "Uchrashuvdan oldin eslatish"), icon: CalendarDays },
   { key: "aiReplies", label: t("settings.notif.aiRepliesLabel", "AI tavsiyalari"), hint: t("settings.notif.aiRepliesHint", "Qulay AI tavsiyalari haqida xabar berish"), icon: Sparkles },
-  { key: "telegram", label: t("settings.notif.telegramLabel", "Telegram notifications"), hint: t("settings.notif.telegramHint", "Ulangan Telegram akkauntingizga yuborish"), icon: Bell },
-  { key: "webPush", label: t("settings.notif.webPushLabel", "Web push"), hint: t("settings.notif.webPushHint", "Tez orada mavjud bo'ladi"), icon: Bell },
+  { key: "telegram", label: t("settings.notif.telegramLabel", "Telegram bildirishnomalari"), hint: t("settings.notif.telegramHint", "Ulangan Telegram akkauntingizga yuborish"), icon: Bell },
+  { key: "webPush", label: t("settings.notif.webPushLabel", "Web push"), hint: t("settings.notif.webPushDeviceHint", "Sayt yopiq bo‘lganda ham shu qurilmaga bildirishnoma"), icon: Bell },
 ];
 
 const languageOptions = [
@@ -141,7 +145,12 @@ const Settings = () => {
   const [theme, setTheme] = useState<"light" | "dark">(() => getSettings().theme === "dark" ? "dark" : "light");
   const [language, setLanguage] = useState(() => getSettings().language === "O'zbekcha" ? "O'zbekcha" : "Русский");
   const [notifications, setNotifications] = useState(() => getSettings().notifications);
+  const [notificationSaving, setNotificationSaving] = useState(false);
+  const notificationSavingRef = useRef(false);
+  const notificationRevision = useRef(0);
   const [aiSettings, setAiSettings] = useState(() => getSettings().ai);
+  const [aiSaving, setAiSaving] = useState(false);
+  const aiSavingRef = useRef(false);
   const [replyStyle, setReplyStyle] = useState(() => getSettings().replyStyle);
   const [replyLength, setReplyLength] = useState(() => getSettings().replyLength);
   const [firstName, setFirstName] = useState(() => splitName(name).firstName);
@@ -187,12 +196,27 @@ const Settings = () => {
   }, [name]);
 
   useEffect(() => {
-    updateSettings({ theme, notifications, ai: aiSettings, replyStyle, replyLength });
-  }, [theme, notifications, aiSettings, replyStyle, replyLength]);
+    updateSettings({ theme, notifications });
+  }, [theme, notifications]);
+
+  useEffect(() => subscribeToWorkspaceData('settings', () => {
+    const settings = getSettings(); setAiSettings(settings.ai); setReplyStyle(settings.replyStyle); setReplyLength(settings.replyLength);
+  }), []);
+
+  const saveAi = async (patch: UpdateAgentSettingsInput) => {
+    if (aiSavingRef.current) return;
+    aiSavingRef.current = true; setAiSaving(true);
+    try { applyAiPreferences(await agentSettingsApi.update(patch)); }
+    catch { showToast(t('settings.aiSaveError', 'AI sozlamasi saqlanmadi. Qayta urinib ko‘ring.'), 'error'); }
+    finally { aiSavingRef.current = false; setAiSaving(false); }
+  };
 
   useEffect(() => {
     if (active !== "notifications") return;
-    void notificationApi.getPreferences().then((preferences) => {
+    let live = true;
+    const revision = notificationRevision.current;
+    void Promise.all([notificationApi.getPreferences(), webPushStatus().catch(() => ({ available: false, subscribed: false }))]).then(([preferences, push]) => {
+      if (!live || revision !== notificationRevision.current) return;
       setNotifications((current) => ({
         ...current,
         newTasks: preferences.taskEnabled,
@@ -200,9 +224,10 @@ const Settings = () => {
         meetingReminders: preferences.meetingEnabled,
         aiReplies: preferences.aiEnabled,
         telegram: preferences.telegramEnabled,
-        webPush: preferences.webPushEnabled,
+        webPush: push.subscribed,
       }));
-    }).catch(() => showToast(t("settings.notifPrefsLoadError", "Bildirishnoma sozlamalarini yuklab bo'lmadi"), "error"));
+    }).catch(() => { if (live) showToast(t("settings.notifPrefsLoadError", "Bildirishnoma sozlamalarini yuklab bo'lmadi"), "error"); });
+    return () => { live = false; };
   }, [active, showToast, t]);
 
 
@@ -211,7 +236,7 @@ const Settings = () => {
   };
 
   const updateLocalAiSetting = <K extends keyof typeof aiSettings>(key: K, value: (typeof aiSettings)[K]) => {
-    setAiSettings((current) => ({ ...current, [key]: value }));
+    if (key !== 'autoSpeak') void saveAi({ [key]: value });
   };
 
   const preferencePatchFor = (key: NotificationKey, value: boolean): Partial<ApiNotificationPreference> => ({
@@ -224,22 +249,31 @@ const Settings = () => {
   }[key]);
 
   const toggleNotification = async (key: NotificationKey) => {
-    if (key === "webPush") return;
+    if (notificationSavingRef.current) return;
+    notificationSavingRef.current = true;
+    notificationRevision.current++;
+    setNotificationSaving(true);
     const nextValue = !notifications[key];
-    setNotifications((current) => ({ ...current, [key]: nextValue }));
     try {
-      await notificationApi.updatePreferences(preferencePatchFor(key, nextValue));
-    } catch {
-      setNotifications((current) => ({ ...current, [key]: !nextValue }));
-      showToast(t("settings.notifPrefSaveError", "Bildirishnoma sozlamasini saqlab bo'lmadi"), "error");
-    }
+      if (key === 'webPush') { if (nextValue) await enableWebPush(); else await disableWebPush(); }
+      else await notificationApi.updatePreferences(preferencePatchFor(key, nextValue));
+      setNotifications((current) => ({ ...current, [key]: nextValue }));
+    } catch (cause) {
+      showToast(cause instanceof Error ? cause.message : t("settings.notifPrefSaveError", "Bildirishnoma sozlamasini saqlab bo'lmadi"), "error");
+    } finally { notificationSavingRef.current = false; setNotificationSaving(false); }
   };
 
-  useEffect(() => {
-    const backendLanguage = language === "O'zbekcha" ? "uz" : "ru";
-    updateSettings({ language });
-    void updateProfile({ language: backendLanguage }).catch(() => undefined);
-  }, [language]);
+  const languageSaving = useRef(false);
+  const saveLanguage = async (nextLanguage: string) => {
+    if (languageSaving.current || language === nextLanguage) return;
+    languageSaving.current = true;
+    try {
+      await updateProfile({ language: nextLanguage === "O'zbekcha" ? 'uz' : 'ru' });
+      updateSettings({ language: nextLanguage });
+      setLanguage(nextLanguage);
+    } catch { showToast(t('settings.languageSaveError', 'Til sozlamasi saqlanmadi.'), 'error'); }
+    finally { languageSaving.current = false; }
+  };
 
   const handleProfileSave = async () => {
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
@@ -372,7 +406,7 @@ const Settings = () => {
                 <p>{t("settings.subtitle", "Qulay AI interfeysi uchun tilni tanlang.")}</p>
                 <div className="settings-language-list" role="radiogroup" aria-label={t("settings.language", "Til")}>
                   {languageOptions.map((option) => (
-                    <button type="button" key={option.value} className={language === option.value ? "is-active" : ""} onClick={() => setLanguage(option.value)} role="radio" aria-checked={language === option.value}>
+                    <button type="button" key={option.value} className={language === option.value ? "is-active" : ""} onClick={() => void saveLanguage(option.value)} role="radio" aria-checked={language === option.value}>
                       <span className="settings-row-icon"><Languages size={17} /></span><span>{option.label}</span>{language === option.value && <Check size={15} />}
                     </button>
                   ))}
@@ -391,7 +425,7 @@ const Settings = () => {
                       <div className="settings-toggle-row" key={item.key}>
                         <div className="settings-toggle-row__icon"><Icon size={16} /></div>
                         <div><strong>{item.label}</strong><span>{item.hint}</span></div>
-                        <button type="button" disabled={item.key === "webPush"} className={`settings-switch ${notifications[item.key] ? "is-on" : ""}`} onClick={() => void toggleNotification(item.key)} role="switch" aria-checked={notifications[item.key]} aria-label={item.label}><i /></button>
+                        <button type="button" disabled={notificationSaving} className={`settings-switch ${notifications[item.key] ? "is-on" : ""}`} onClick={() => void toggleNotification(item.key)} role="switch" aria-checked={notifications[item.key]} aria-label={item.label}><i /></button>
                       </div>
                     );
                   })}
@@ -401,12 +435,12 @@ const Settings = () => {
                     <button type="button" className={`settings-switch ${notifications.sound ? "is-on" : ""}`} onClick={() => updateLocalNotificationSetting("sound", !notifications.sound)} role="switch" aria-checked={notifications.sound} aria-label={t("settings.soundLabel", "Bildirishnoma ovozi")}><i /></button>
                   </div>
                   <div className="settings-sound-preview">
-                    <div><strong>Qulay Glass</strong><span>Yumshoq, ikki notali original signal</span></div>
-                    <button type="button" onClick={() => void playNotificationChime(true).catch(() => showToast('Ovozni yoqib bo‘lmadi. Brauzer va qurilma ovozini tekshiring.', 'error'))}>Ovozni eshitish</button>
-                    <label>Ovoz balandligi <output>{Math.round(notifications.soundVolume * 100)}%</output>
+                    <div><strong>Qulay Glass</strong><span>{t('settings.chimeDescription', 'Yumshoq, ikki notali original signal')}</span></div>
+                    <button type="button" onClick={() => void playNotificationChime(true).catch(() => showToast(t('settings.chimeError', 'Ovozni yoqib bo‘lmadi. Brauzer va qurilma ovozini tekshiring.'), 'error'))}>{t('settings.chimePreview', 'Ovozni eshitish')}</button>
+                    <label>{t('settings.volume', 'Ovoz balandligi')} <output>{Math.round(notifications.soundVolume * 100)}%</output>
                       <input type="range" min="0" max="100" step="5" value={Math.round(notifications.soundVolume * 100)} onChange={event => updateLocalNotificationSetting('soundVolume', Number(event.target.value) / 100)} />
                     </label>
-                    <small>Sayt ochiq bo‘lganda ishlaydi. Brauzer ovozga ruxsat berishi uchun sahifaga bir marta bosing. Tinch vaqt qurilma soati bo‘yicha.</small>
+                    <small>{t('settings.chimeHelp', 'Sayt ochiq bo‘lganda ishlaydi. Brauzer ovozga ruxsat berishi uchun sahifaga bir marta bosing. Tinch vaqt qurilma soati bo‘yicha.')}</small>
                   </div>
                   <div className="settings-toggle-row">
                     <div className="settings-toggle-row__icon"><Moon size={16} /></div>
@@ -423,13 +457,13 @@ const Settings = () => {
                 <h2>{t("settings.ai", "AI yordamchi")}</h2>
                 <p>{t("settings.ai.subtitle", "Qulay AI qanday javob berishi va amallarni qanday tasdiqlashini sozlang.")}</p>
                 <div className="settings-field-grid">
-                  <label>{t("settings.replyStyleLabel", "Javob uslubi")}<select value={replyStyle} onChange={(event) => setReplyStyle(event.target.value)}><option value="Professional">{t("settings.replyStyle.professional", "Professional")}</option><option value="Sodda">{t("settings.replyStyle.simple", "Sodda")}</option><option value="Qisqa">{t("settings.replyStyle.short", "Qisqa")}</option></select></label>
-                  <label>{t("settings.replyLengthLabel", "Javob uzunligi")}<select value={replyLength} onChange={(event) => setReplyLength(event.target.value)}><option value="Qisqa">{t("settings.replyLength.short", "Qisqa")}</option><option value="O'rta">{t("settings.replyLength.medium", "O'rta")}</option><option value="Batafsil">{t("settings.replyLength.detailed", "Batafsil")}</option></select></label>
+                  <label>{t("settings.replyStyleLabel", "Javob uslubi")}<select disabled={aiSaving} value={replyStyle} onChange={(event) => void saveAi({ replyStyle: event.target.value })}><option value="Professional">{t("settings.replyStyle.professional", "Professional")}</option><option value="Sodda">{t("settings.replyStyle.simple", "Sodda")}</option><option value="Qisqa">{t("settings.replyStyle.short", "Qisqa")}</option></select></label>
+                  <label>{t("settings.replyLengthLabel", "Javob uzunligi")}<select disabled={aiSaving} value={replyLength} onChange={(event) => void saveAi({ replyLength: event.target.value })}><option value="Qisqa">{t("settings.replyLength.short", "Qisqa")}</option><option value="O'rta">{t("settings.replyLength.medium", "O'rta")}</option><option value="Batafsil">{t("settings.replyLength.detailed", "Batafsil")}</option></select></label>
                 </div>
                 <div className="settings-toggle-list">
-                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>{t("settings.saveHistoryLabel", "Chat tarixini saqlash")}</strong><span>{t("settings.saveHistoryHint", "Oldingi suhbatlar brauzerda saqlanib, keyin davom ettiriladi.")}</span></div><button type="button" className={`settings-switch ${aiSettings.saveHistory ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("saveHistory", !aiSettings.saveHistory)} role="switch" aria-checked={aiSettings.saveHistory}><i /></button></div>
-                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Bell size={16} /></div><div><strong>{t("settings.confirmExternalLabel", "Tashqi amallarni tasdiqlash")}</strong><span>{t("settings.confirmExternalHint", "Telegram xabari va boshqa tashqi amallar yuborilishidan oldin tasdiqlash so'ralsin.")}</span></div><button type="button" className={`settings-switch ${aiSettings.confirmExternalActions ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("confirmExternalActions", !aiSettings.confirmExternalActions)} role="switch" aria-checked={aiSettings.confirmExternalActions}><i /></button></div>
-                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>{t("settings.voiceReplyLabel", "Ovozli javob")}</strong><span>{t("settings.voiceReplyHint", "Voice Mode'da AI javobini ovoz bilan o'qishi mumkin.")}</span></div><button type="button" className={`settings-switch ${aiSettings.voiceReply ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("voiceReply", !aiSettings.voiceReply)} role="switch" aria-checked={aiSettings.voiceReply}><i /></button></div>
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>{t("settings.saveHistoryLabel", "Chat tarixini saqlash")}</strong><span>{t("settings.saveHistoryHint", "Yoqilsa suhbatlar akkauntda saqlanadi. O‘chirilsa yangi chat matni faqat vaqtinchalik xotirada turadi; amal auditi saqlanadi.")}</span></div><button type="button" disabled={aiSaving} className={`settings-switch ${aiSettings.saveHistory ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("saveHistory", !aiSettings.saveHistory)} role="switch" aria-checked={aiSettings.saveHistory}><i /></button></div>
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Bell size={16} /></div><div><strong>{t("settings.confirmExternalLabel", "Tashqi amallarni tasdiqlash")}</strong><span>{t("settings.confirmExternalHint", "Telegram xabari va boshqa tashqi amallar yuborilishidan oldin tasdiqlash so'ralsin.")}</span></div><button type="button" disabled={aiSaving} className={`settings-switch ${aiSettings.confirmExternalActions ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("confirmExternalActions", !aiSettings.confirmExternalActions)} role="switch" aria-checked={aiSettings.confirmExternalActions}><i /></button></div>
+                  <div className="settings-toggle-row"><div className="settings-toggle-row__icon"><Sparkles size={16} /></div><div><strong>{t("settings.voiceReplyLabel", "Ovozli javob")}</strong><span>{t("settings.voiceReplyHint", "Voice Mode'da AI javobini ovoz bilan o'qishi mumkin.")}</span></div><button type="button" disabled={aiSaving} className={`settings-switch ${aiSettings.voiceReply ? "is-on" : ""}`} onClick={() => updateLocalAiSetting("voiceReply", !aiSettings.voiceReply)} role="switch" aria-checked={aiSettings.voiceReply}><i /></button></div>
                 </div>
               </div>
             )}

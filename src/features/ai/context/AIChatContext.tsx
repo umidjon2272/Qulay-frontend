@@ -458,7 +458,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const sendMessage = useCallback((text: string) => {
+  const sendMessage = useCallback((text: string, options?: { voice?: boolean }) => {
     const trimmed = text.trim().slice(0, MAX_MESSAGE_LENGTH);
     if (!trimmed || !mountedRef.current) return;
     if (pendingRequestsRef.current.size > 0 || executingActionsRef.current.size > 0 || historyLoadingRef.current) return;
@@ -486,7 +486,9 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     const controller = new AbortController();
     pendingRequestsRef.current.set(requestId, controller);
 
-    const conversationPromise = ensureConversation(trimmed);
+    // Agent chat creates its own conversation atomically with the first turn;
+    // no extra POST is needed before the model can start answering.
+    const conversationPromise = Promise.resolve(activeConversationIdRef.current);
     const userMessage: ChatMessage = {
       id: nextMessageId(),
       role: "user",
@@ -504,6 +506,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     setIsTyping(true);
 
     void preparedConversation.then((conversationId) => getAIReply(trimmed, {
+      voice: options?.voice,
       signal: controller.signal,
       conversationId,
       onDelta: (delta) => {
@@ -570,13 +573,10 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
           return;
         }
 
-        setMessages((current) => appendMessage(current, {
-            id: nextMessageId(),
-            role: "ai",
-            isError: true,
-            text: getApiErrorMessage(error, "Javobni olishning imkoni bo‘lmadi. Suhbatni qayta ochib holatini tekshiring."),
-            time: formatTime(),
-          }));
+        setMessages(current => current.map(message => message.id !== streamMessageId ? message
+          : message.text ? { ...message, streaming: false, incomplete: true, progress: undefined }
+          : { ...message, streaming: false, progress: undefined, isError: true,
+            text: getApiErrorMessage(error, getSettings().language === 'Русский' ? 'Не удалось получить ответ. Повторите попытку.' : 'Javobni olishning imkoni bo‘lmadi. Qayta urinib ko‘ring.') }));
       })
       .finally(() => {
         pendingRequestsRef.current.delete(requestId);

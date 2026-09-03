@@ -40,6 +40,7 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
     messages,
     isTyping,
     sendMessage,
+    stopResponse,
     executeAction,
     cancelAction,
     speakingId,
@@ -83,14 +84,16 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
 
   const handleResult = useCallback((transcript: string) => {
     // Approval and corrections are resolved centrally from the stored action.
-    sendMessage(transcript);
-  }, [sendMessage]);
+    stopResponse();
+    sendMessage(transcript, { voice: true });
+  }, [sendMessage, stopResponse]);
 
   const { isSupported, isListening, isProcessing, interimTranscript, audioLevel, start, stop, finish, requestPermission } = useSpeechRecognition({
     onResult: handleResult,
     onError: (message) => setVoiceError(message),
   });
-  const realtime = useRealtimeVoice({ active: open, onTranscript: handleResult, onSpeechStart: stopSpeaking });
+  const interruptResponse = useCallback(() => { stopSpeaking(); stopResponse(); }, [stopSpeaking, stopResponse]);
+  const realtime = useRealtimeVoice({ active: open, onTranscript: handleResult, onSpeechStart: interruptResponse });
 
   useEffect(() => {
     if (!open) return;
@@ -236,8 +239,8 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
           </div>
 
           <div className="voice-mode__header-actions">
-            <label className="voice-mode__voice-select"><span>Ovoz</span><select value={selectedVoice} onChange={event => setSelectedVoice(event.target.value as 'marin' | 'cedar')}><option value="marin">Marin</option><option value="cedar">Cedar</option></select></label>
-            <button type="button" className="voice-mode__close" onClick={() => setTranscriptOpen(value => !value)} aria-label="Transkriptni ochish"><MessageSquareText size={19} /></button>
+            <label className="voice-mode__voice-select"><span>{t('voiceMode.voiceLabel', 'Ovoz')}</span><select value={selectedVoice} onChange={event => setSelectedVoice(event.target.value as 'marin' | 'cedar')}><option value="marin">Marin</option><option value="cedar">Cedar</option></select></label>
+            <button type="button" className="voice-mode__close" onClick={() => setTranscriptOpen(value => !value)} aria-label={t('voiceMode.transcript', 'Transkriptni ochish')}><MessageSquareText size={19} /></button>
           </div>
         </header>
 
@@ -246,14 +249,14 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
             <span className="voice-mode__state-dot" />
             {stateText}
           </div>
-          {realtime.status === 'unavailable' && <span className="voice-mode__fallback">Standart ovoz rejimi</span>}
+          {realtime.status === 'unavailable' && <span className="voice-mode__fallback">{t('voiceMode.fallback', 'Standart ovoz rejimi')}</span>}
 
           <VoiceOrb state={state} level={state === "listening" ? (realtime.status === 'active' ? realtime.level : audioLevel) : state === "speaking" ? playbackLevel : 0} />
 
           {speakingId !== null && <button type="button" className="voice-mode__control" onClick={() => {
-            stopSpeaking(); setMuted(false); setVoiceError(''); start();
-          }}><Mic size={18} /> Gapirish — javobni to‘xtatish</button>}
-          {isListening && <button type="button" className="voice-mode__control" onClick={finish}>Gapirib bo‘ldim</button>}
+            interruptResponse(); setMuted(false); realtime.setMuted(false); setVoiceError(''); if (realtime.status === 'unavailable') start();
+          }}><Mic size={18} /> {t('voiceMode.interrupt', 'Gapirish — javobni to‘xtatish')}</button>}
+          {isListening && <button type="button" className="voice-mode__control" onClick={finish}>{t('voiceMode.finished', 'Gapirib bo‘ldim')}</button>}
 
           {!transcriptOpen && <p className="voice-mode__caption">{interimTranscript || transcriptMessages.at(-1)?.text || t("voiceMode.readyForVoiceChat", "Ovozli suhbatga tayyorman.")}</p>}
           {transcriptOpen && <div className="voice-mode__transcript" aria-live="polite">
@@ -279,14 +282,14 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
               <button type="button" onClick={() => void handleRetry()}><RotateCcw size={14} /> {t("voiceMode.checkMic", "Mikrofonni tekshirish")}</button>
               {latestAI && voiceReplyKey(latestAI) && <button type="button" onClick={() => {
                 setVoiceError(''); stop(); speak(latestAI.id, latestAI.actionResult ?? latestAI.text);
-              }}><Volume2 size={14} /> Javobni qayta eshitish</button>}
+              }}><Volume2 size={14} /> {t('voiceMode.replay', 'Javobni qayta eshitish')}</button>}
             </div>
           )}
         </main>
 
         <footer className="voice-mode__controls">
           <form className="voice-mode__composer" onSubmit={event => { event.preventDefault(); const value = textInput.trim(); if (value) { sendMessage(value); setTextInput(''); } }}>
-            <input value={textInput} onChange={event => setTextInput(event.target.value)} placeholder="Xabar yozing…" aria-label="Xabar yozing" />
+            <input value={textInput} onChange={event => setTextInput(event.target.value)} placeholder={t('voiceMode.write', 'Xabar yozing…')} aria-label={t('voiceMode.write', 'Xabar yozing…')} />
           </form>
           <button
             type="button"
@@ -305,10 +308,10 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
             aria-label={muted ? t("voiceMode.turnMicOn", "Mikrofonni yoqish") : t("voiceMode.turnMicOff", "Mikrofonni o'chirish")}
           >
             {muted ? <MicOff size={20} /> : <Mic size={20} />}
-            <span>{muted ? t("voiceMode.turnOn", "Yoqish") : t("voiceMode.mute", "Mute")}</span>
+            <span>{muted ? t("voiceMode.turnOn", "Yoqish") : t("voiceMode.mute", "O‘chirish")}</span>
           </button>
 
-          <button type="button" className="voice-mode__end" onClick={handleEnd} aria-label={t("voiceMode.endSessionAria", "Voice session'ni tugatish")}>
+          <button type="button" className="voice-mode__end" onClick={handleEnd} aria-label={t("voiceMode.endSessionAria", "Ovozli suhbatni tugatish")}>
             <PhoneOff size={22} />
             <span>{t("voiceMode.end", "Tugatish")}</span>
           </button>
@@ -318,7 +321,7 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
             className="voice-mode__sound"
             onClick={() => { setVoiceReply(v => !v); stopSpeaking(); }}
             aria-pressed={voiceReply}
-            aria-label={voiceReply ? "Ovozli javobni o‘chirish" : "Ovozli javobni yoqish"}
+            aria-label={voiceReply ? t('voiceMode.soundDisable', 'Ovozli javobni o‘chirish') : t('voiceMode.soundEnable', 'Ovozli javobni yoqish')}
           >
             {voiceReply ? <Volume2 size={16} /> : <VolumeX size={16} />}
             <span>{voiceReply ? t("voiceMode.soundOn", "Ovoz yoqilgan") : t("voiceMode.textOnly", "Faqat matn")}</span>

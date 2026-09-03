@@ -8,6 +8,20 @@ const response = (chunks: Array<string | Uint8Array>, type = 'application/x-ndjs
 const complete = JSON.stringify({ type: 'complete', result: { conversationId: 'c1', message: 'Salom', pendingConfirmation: null } });
 
 describe('consumeAgentStream', () => {
+  it('treats complete as terminal even when errors or duplicate events arrive later', async () => {
+    const seen = vi.fn();
+    const result = await consumeAgentStream(response([complete + '\n{"type":"error","message":"late"}\n' + complete + '\n{broken}\n']), seen);
+    expect(result.message).toBe('Salom');
+    expect(seen).not.toHaveBeenCalled();
+  });
+
+  it('does not wait for EOF after the final event', async () => {
+    const cancel = vi.fn();
+    const stream = new ReadableStream<Uint8Array>({ start(controller) { controller.enqueue(encoder.encode(complete + '\n')); }, cancel });
+    const result = await consumeAgentStream(new Response(stream, { headers: { 'content-type': 'application/x-ndjson' } }), () => undefined);
+    expect(result.message).toBe('Salom');
+    expect(cancel).toHaveBeenCalled();
+  });
   it('handles one JSON event split across network chunks', async () => {
     const seen = vi.fn();
     const result = await consumeAgentStream(response(['{"type":"delta","del', 'ta":"Sa"}\n', complete]), seen);

@@ -186,8 +186,8 @@ const ChatInput = ({ value, onChange, onSend, onVoice, onStop, disabled, autoFoc
           className={`chat-input__send ${onStop && disabled ? 'is-stop' : ''}`}
           disabled={disabled && !onStop || sending || isProcessing || (!disabled && !value.trim())}
           onClick={disabled && onStop ? (event) => { event.preventDefault(); onStop(); } : undefined}
-          aria-label={disabled && onStop ? "Javobni to‘xtatish" : t("common.send", "Yuborish")}
-          title={disabled && onStop ? "Javobni to‘xtatish" : t("common.send", "Yuborish")}
+          aria-label={disabled && onStop ? t('ai.stopResponse', 'Javobni to‘xtatish') : t("common.send", "Yuborish")}
+          title={disabled && onStop ? t('ai.stopResponse', 'Javobni to‘xtatish') : t("common.send", "Yuborish")}
         >
           {disabled && onStop ? <Square size={14} fill="currentColor" /> : <ArrowUp size={19} strokeWidth={2.4} />}
         </button>

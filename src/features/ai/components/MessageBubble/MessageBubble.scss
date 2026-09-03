@@ -266,7 +266,7 @@ html[data-theme="dark"] body #root .message-bubble__speak.is-speaking { border-c
   line-height: 1.45;
 }
 
-body #root .message-markdown { color: var(--text-primary); font-size: 15px; line-height: 1.75; overflow-wrap: anywhere; }
+body #root .message-markdown { color: var(--text-primary); font-size: 16px; line-height: 1.55; overflow-wrap: anywhere; }
 body #root .message-markdown p { margin: 0 0 14px; color: inherit; font-size: inherit; line-height: inherit; white-space: normal; }
 body #root .message-markdown > :last-child { margin-bottom: 0; }
 body #root .message-markdown h1, body #root .message-markdown h2, body #root .message-markdown h3 { margin: 20px 0 10px; font-size: 1.15em; color: inherit; }

@@ -27,11 +27,12 @@ export const consumeAgentStream = async (response: Response, onEvent: (event: Ag
   let buffer = '';
   let result: AgentChatResponse | undefined;
   const handleLine = (raw: string) => {
+    if (result) return;
     const line = raw.endsWith('\r') ? raw.slice(0, -1) : raw;
     if (!line.trim()) return;
     const event = parseEvent(line);
     if (event.type === 'complete') {
-      if (result) throw new Error('AI oqimida takroriy complete hodisasi');
+      if (typeof event.result.message !== 'string' || !event.result.message.trim() || typeof event.result.conversationId !== 'string') throw new Error('AI yakuniy javobi to‘liq emas');
       result = event.result;
     } else if (event.type === 'error') throw new Error(event.message);
     else onEvent(event);
@@ -44,10 +45,12 @@ export const consumeAgentStream = async (response: Response, onEvent: (event: Ag
       buffer += decoder.decode(chunk.value ?? new Uint8Array(), { stream: !chunk.done });
       const lines = buffer.split('\n'); buffer = lines.pop() ?? '';
       for (const line of lines) handleLine(line);
+      if (result) return result;
       if (chunk.done) break;
     }
     buffer += decoder.decode();
     if (buffer.trim()) handleLine(buffer);
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     if (!result) throw new Error('AI oqimi tugallanmagan');
     return result;
   } finally {

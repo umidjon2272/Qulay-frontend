@@ -61,6 +61,7 @@ const restoreSessionOnce = async (): Promise<User | null> => {
   if (!getTokens()) return null;
   try {
     const user = await authApi.me();
+    if (getAuthSession()?.id !== storedUser?.id) return getAuthSession();
     const current = getTokens();
     if (current) {
       const remember = typeof window !== "undefined" && Boolean(window.localStorage.getItem("yechim_ai_auth_tokens"));
@@ -68,6 +69,7 @@ const restoreSessionOnce = async (): Promise<User | null> => {
     }
     return user;
   } catch (error) {
+    if (getAuthSession()?.id !== storedUser?.id) return getAuthSession();
     // Keep the shell available during a temporary network outage. Only a
     // failed refresh (401) means the refresh token is expired or revoked.
     if (storedUser && (!(error instanceof ApiError) || error.status !== 401)) {

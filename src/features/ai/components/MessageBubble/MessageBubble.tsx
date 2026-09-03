@@ -1,5 +1,5 @@
-import MessageMarkdown from './MessageMarkdown';
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
+const MessageMarkdown = lazy(() => import('./MessageMarkdown'));
 import { Check, Copy, Sparkles, User, Volume2, VolumeX } from "lucide-react";
 
 import type { ChatMessage } from "../../context/AIChatContextValue";
@@ -63,9 +63,9 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
       <div className="message-bubble__body">
         <div className="message-bubble__glass">
           {isUser ? <p>{message.text}</p> : !action && <>
-            {message.text && <MessageMarkdown text={message.text} />}
+            {message.text && <Suspense fallback={<p>{message.text}</p>}><MessageMarkdown text={message.text} /></Suspense>}
             {progressText && !message.text && <div className="message-bubble__progress" role="status"><span />{progressText}</div>}
-            {message.incomplete && <div className="message-bubble__incomplete">Javob to‘xtatildi · tugallanmagan</div>}
+            {message.incomplete && <div className="message-bubble__incomplete">{t('ai.incomplete', 'Javob to‘xtatildi · tugallanmagan')}</div>}
           </>}
 
           {!isUser && action && (

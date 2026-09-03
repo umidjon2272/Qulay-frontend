@@ -5,6 +5,11 @@ import { agentSettingsApi, type AgentSettings } from "../../../services/api/agen
 import { useI18n } from "../../../i18n/useI18n";
 
 const DEFAULTS: AgentSettings = {
+  replyStyle: 'Professional',
+  replyLength: "O'rta",
+  saveHistory: true,
+  confirmExternalActions: true,
+  voiceReply: true,
   morningBriefingEnabled: true,
   morningBriefingTime: "08:00",
   eveningSummaryEnabled: true,

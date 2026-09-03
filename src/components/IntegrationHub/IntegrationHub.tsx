@@ -305,34 +305,34 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
 
           {selected.connected ? <>
             <div className="integration-modal__security"><ShieldCheck size={17} /><div><strong>{t("integrations.connectedAccount", "Ulangan hisob")}</strong><span>{selected.username || t("integrations.activeConnection", "Faol ulanish")}</span></div></div>
-            <button type="button" className="integration-modal__connect integration-modal__connect--danger" onClick={() => void disconnectSelected()} disabled={telegramBusy}><Unlink size={15} /> {telegramBusy ? "Uzilmoqda..." : selected.id === "telegram" ? "Uzish" : "Ulanishni uzish"}</button>
+            <button type="button" className="integration-modal__connect integration-modal__connect--danger" onClick={() => void disconnectSelected()} disabled={telegramBusy}><Unlink size={15} /> {telegramBusy ? t('integrations.disconnecting', 'Uzilmoqda...') : t('integrations.disconnectAction', 'Ulanishni uzish')}</button>
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
           </> : selected.id === "telegram" ? <>
-            <div className="integration-modal__login-tabs" role="tablist" aria-label="Telegram ulash usuli">
-              <button type="button" role="tab" aria-selected={telegramLoginMethod === "phone"} className={telegramLoginMethod === "phone" ? "is-active" : ""} disabled={telegramBusy} onClick={() => { setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramError(null); setTelegramStep("phone"); }}>Telefon orqali</button>
-              <button type="button" role="tab" aria-selected={telegramLoginMethod === "qr"} className={telegramLoginMethod === "qr" ? "is-active" : ""} disabled={telegramBusy} onClick={() => { setTelegramLoginMethod("qr"); setTelegramError(null); void startQr(); }}>QR orqali</button>
+            <div className="integration-modal__login-tabs" role="tablist" aria-label={t('integrations.loginMethod', 'Telegram ulash usuli')}>
+              <button type="button" role="tab" aria-selected={telegramLoginMethod === "phone"} className={telegramLoginMethod === "phone" ? "is-active" : ""} disabled={telegramBusy} onClick={() => { setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramError(null); setTelegramStep("phone"); }}>{t('integrations.byPhone', 'Telefon orqali')}</button>
+              <button type="button" role="tab" aria-selected={telegramLoginMethod === "qr"} className={telegramLoginMethod === "qr" ? "is-active" : ""} disabled={telegramBusy} onClick={() => { setTelegramLoginMethod("qr"); setTelegramError(null); void startQr(); }}>{t('integrations.byQr', 'QR orqali')}</button>
             </div>
             {telegramLoginMethod === "phone" ? <>
-              <label className="integration-modal__label">{telegramStep === "phone" ? "Telefon raqam" : telegramStep === "code" ? "Telegram kodi" : "2FA parol"}</label>
+              <label className="integration-modal__label">{telegramStep === "phone" ? t('integrations.phoneNumber', 'Telefon raqam') : telegramStep === "code" ? t('integrations.loginCode', 'Telegram kodi') : t('integrations.twoFactor', '2FA parol')}</label>
               {telegramStep === "phone" && <input type="tel" className="integration-modal__field" placeholder="+998901234567" value={telegramPhone} onChange={(event) => setTelegramPhone(event.target.value)} autoComplete="tel" />}
-              {telegramStep === "code" && <input type="text" className="integration-modal__field" placeholder={locale === "ru" ? "Код Telegram" : "Telegram kodi"} value={telegramCode} onChange={(event) => setTelegramCode(event.target.value)} autoComplete="one-time-code" />}
+              {telegramStep === "code" && <input type="text" className="integration-modal__field" placeholder={t('integrations.loginCode', 'Telegram kodi')} value={telegramCode} onChange={(event) => setTelegramCode(event.target.value)} autoComplete="one-time-code" />}
               {telegramStep === "password" && <input type="password" className="integration-modal__field" placeholder={t("integrations.telegram.twoFactorPassword", "Telegram 2FA paroli")} value={telegramPassword} onChange={(event) => setTelegramPassword(event.target.value)} autoComplete="current-password" />}
               {telegramStep === "code" && <span className="integration-modal__note integration-modal__note--delivery">{telegramDeliveryMessage(telegramDelivery, locale === "ru")}</span>}
               {telegramError && <span className="integration-modal__error">{telegramError}</span>}
-              <button type="button" className="integration-modal__connect" onClick={() => void submitTelegramStep()} disabled={telegramBusy}>{telegramBusy ? "Tekshirilmoqda..." : telegramStep === "phone" ? "Kodni yuborish" : telegramStep === "code" ? "Kodni tasdiqlash" : "Ulanishni yakunlash"}<ExternalLink size={15} /></button>
+              <button type="button" className="integration-modal__connect" onClick={() => void submitTelegramStep()} disabled={telegramBusy}>{telegramBusy ? t('integrations.checking', 'Tekshirilmoqda...') : telegramStep === "phone" ? t('integrations.sendCode', 'Kodni yuborish') : telegramStep === "code" ? t('integrations.verifyCode', 'Kodni tasdiqlash') : t('integrations.finish', 'Ulanishni yakunlash')}<ExternalLink size={15} /></button>
               {telegramStep === "code" && <button type="button" className="integration-modal__resend" onClick={() => void resendTelegramStep()} disabled={telegramBusy || resendRemainingSeconds > 0 || !telegramNextDelivery}>{resendRemainingSeconds > 0 ? `${locale === "ru" ? "Повторить через" : "Qayta yuborish"} (${resendRemainingSeconds}s)` : !telegramNextDelivery ? (locale === "ru" ? "Повторная отправка недоступна" : "Qayta yuborish hozir mavjud emas") : telegramNextDelivery === "sms" ? (locale === "ru" ? "Отправить по SMS" : "SMS orqali yuborish") : (locale === "ru" ? "Отправить повторно" : "Qayta yuborish")}</button>}
-              {telegramStep === "code" && <span className="integration-modal__note">Kod kelmasa, QR orqali ulashni sinab ko'ring.</span>}
+              {telegramStep === "code" && <span className="integration-modal__note">{t('integrations.tryQr', "Kod kelmasa, QR orqali ulashni sinab ko'ring.")}</span>}
             </> : <div className="integration-modal__qr-panel">
               {telegramStep === "password" ? <>
-                <label className="integration-modal__label">2FA parol</label>
-                <input type="password" className="integration-modal__field" placeholder="Telegram 2FA paroli" value={telegramPassword} onChange={(event) => setTelegramPassword(event.target.value)} autoComplete="current-password" />
-                <button type="button" className="integration-modal__connect" onClick={() => void submitTelegramStep()} disabled={telegramBusy}>Ulanishni yakunlash</button>
+                <label className="integration-modal__label">{t('integrations.twoFactor', '2FA parol')}</label>
+                <input type="password" className="integration-modal__field" placeholder={t('integrations.telegram.twoFactorPassword', 'Telegram 2FA paroli')} value={telegramPassword} onChange={(event) => setTelegramPassword(event.target.value)} autoComplete="current-password" />
+                <button type="button" className="integration-modal__connect" onClick={() => void submitTelegramStep()} disabled={telegramBusy}>{t('integrations.finish', 'Ulanishni yakunlash')}</button>
               </> : <>
-                <p>Telegram ilovasida Settings → Devices → Link Desktop Device orqali QR kodni skaner qiling.</p>
-                <div className="integration-modal__qr-code">{telegramQrImage ? <img src={telegramQrImage} alt="Telegram login QR kodi" /> : <span>{telegramBusy ? "QR tayyorlanmoqda..." : "QR yuklanmoqda..."}</span>}</div>
-                <span className="integration-modal__qr-expiry">{telegramQr ? qrRemainingSeconds > 0 ? `${qrRemainingSeconds} soniyada yangilanadi` : "QR yangilanmoqda..." : "Yuklanmoqda..."}</span>
-                {telegramQr && <a className="integration-modal__connect" href={telegramQr.qrUrl}>Telegramda ochish <ExternalLink size={15} /></a>}
-                <button type="button" className="integration-modal__resend" onClick={() => void startQr()} disabled={telegramBusy}><RefreshCw size={13} /> QR kodni yangilash</button>
+                <p>{t('integrations.qrInstructions', 'Telegram ilovasida Sozlamalar → Qurilmalar → Qurilmani ulash orqali QR kodni skaner qiling.')}</p>
+                <div className="integration-modal__qr-code">{telegramQrImage ? <img src={telegramQrImage} alt={t('integrations.qrAlt', 'Telegram login QR kodi')} /> : <span>{telegramBusy ? t('integrations.qrPreparing', 'QR tayyorlanmoqda...') : t('integrations.qrLoading', 'QR yuklanmoqda...')}</span>}</div>
+                <span className="integration-modal__qr-expiry">{telegramQr ? qrRemainingSeconds > 0 ? t('integrations.qrExpires', '{seconds} soniyada yangilanadi', { seconds: qrRemainingSeconds }) : t('integrations.qrRefreshing', 'QR yangilanmoqda...') : t('common.loading', 'Yuklanmoqda...')}</span>
+                {telegramQr && <a className="integration-modal__connect" href={telegramQr.qrUrl}>{t('integrations.openTelegram', 'Telegramda ochish')} <ExternalLink size={15} /></a>}
+                <button type="button" className="integration-modal__resend" onClick={() => void startQr()} disabled={telegramBusy}><RefreshCw size={13} /> {t('integrations.refreshQr', 'QR kodni yangilash')}</button>
               </>}
               {telegramError && <span className="integration-modal__error">{telegramError}</span>}
             </div>}

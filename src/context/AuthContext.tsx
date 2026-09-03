@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AUTH_SESSION_CHANGED, getAuthSession, getAuthTokens, logout as logoutSession, restoreSession } from "../services/authService";
+import { detachPushOnLogout } from '../services/webPush';
 import type { User } from "../services/api/types";
 import { clearWorkspaceCache } from "../services/workspaceCache";
 import { clearProfileCache } from "../services/profileService";
@@ -69,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  const logout = useCallback(async () => { await logoutSession(); setUser(null); setStatus("unauthenticated"); setAuthError(null); }, []);
+  const logout = useCallback(async () => { await detachPushOnLogout().catch(() => undefined); await logoutSession(); setUser(null); setStatus("unauthenticated"); setAuthError(null); }, []);
   const value = useMemo(() => ({ user, status, authInitialized, authError, refresh, logout }), [user, status, authInitialized, authError, refresh, logout]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

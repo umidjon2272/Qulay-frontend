@@ -30,13 +30,13 @@ export type AgentActionList = { items: AgentAction[]; meta: { page: number; limi
 
 export const agentApi = {
   status: () => request<AgentStatus>('/ai/agent/status'),
-  chat: (message: string, conversationId?: string, signal?: AbortSignal) => request<AgentChatResponse>('/ai/agent/chat', {
+  chat: (message: string, conversationId?: string, signal?: AbortSignal, voice?: boolean) => request<AgentChatResponse>('/ai/agent/chat', {
     method: 'POST',
-    body: JSON.stringify({ message, conversationId }),
+    body: JSON.stringify({ message, conversationId, voice }),
     signal,
   }),
-  stream: async (message: string, conversationId: string | undefined, onEvent: (event: AgentStreamEvent) => void, signal?: AbortSignal) => {
-    const response = await requestStream('/ai/agent/chat/stream', { method: 'POST', body: JSON.stringify({ message, conversationId }), signal });
+  stream: async (message: string, conversationId: string | undefined, onEvent: (event: AgentStreamEvent) => void, signal?: AbortSignal, voice?: boolean) => {
+    const response = await requestStream('/ai/agent/chat/stream', { method: 'POST', body: JSON.stringify({ message, conversationId, voice }), signal });
     return consumeAgentStream(response, onEvent, signal);
   },
   confirm: (actionId: string, confirmed: boolean) => request<{ status: 'success' | 'cancelled' | 'failed'; message: string; data?: unknown }>(`/ai/agent/actions/${actionId}/confirm`, {

@@ -10,6 +10,7 @@ import { getSettings } from "../../services/settingsService";
 import { initializeStorageSchema } from "../../services/storage";
 import { subscribeToWorkspaceData } from "../../services/workspaceEvents";
 import { NotificationSound } from '../../components/NotificationSound/NotificationSound';
+import AiSettingsSync from '../../components/AiSettingsSync';
 
 type ProvidersProps = {
   children: ReactNode;
@@ -50,6 +51,7 @@ export const Providers = ({ children }: ProvidersProps) => (
   <PlatformProvider>
     <ToastProvider>
       <AuthProvider>
+      <AiSettingsSync />
       <NotificationSound />
       <ThemeSync>
         <ProfileProvider>

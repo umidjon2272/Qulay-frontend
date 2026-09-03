@@ -4,13 +4,14 @@ import type { ApiFile, ApiFolder, PaginatedResponse } from "./types";
 
 export type FileListParams = { search?: string; mimeType?: string; folderId?: string; page?: number; limit?: number; sort?: string };
 
-export const listFiles = (params: FileListParams = {}) => {
+export const listFiles = (params: FileListParams = {}, signal?: AbortSignal) => {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== "") query.set(key, String(value)); });
-  return request<PaginatedResponse<ApiFile>>(`/files${query.toString() ? `?${query}` : ""}`);
+  return request<PaginatedResponse<ApiFile>>(`/files${query.toString() ? `?${query}` : ""}`, { signal });
 };
 
-export const listFolders = () => request<ApiFolder[]>("/files/folders");
+export const listFolders = (signal?: AbortSignal) => request<ApiFolder[]>("/files/folders", { signal });
+export const updateFile = (id: string, input: { originalName?: string; folderId?: string | null }) => request<ApiFile>(`/files/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
 export const createFolder = (name: string, parentId?: string | null) => request<ApiFolder>("/files/folders", { method: "POST", body: JSON.stringify({ name, parentId: parentId || undefined }) });
 export const updateFolder = (id: string, name: string) => request<ApiFolder>(`/files/folders/${id}`, { method: "PATCH", body: JSON.stringify({ name }) });
 export const deleteFolder = (id: string) => request<{ message: string }>(`/files/folders/${id}`, { method: "DELETE" });

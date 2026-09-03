@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { useAIChat } from "../../hooks/useAIChat";
+import { useConversationList } from '../../hooks/useConversationList';
 import { prepareAudioPlayback } from "../../../../services/audioPlayback";
 import { useI18n } from "../../../../i18n/useI18n";
 import { usePlatform } from "../../../../context/PlatformContext";
@@ -60,7 +61,8 @@ const AIAssistant = () => {
   const [input, setInput] = useState("");
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
-  const [historySearch, setHistorySearch] = useState("");
+  const conversationList = useConversationList(conversations, panelOpen);
+  const { query: historySearch, setQuery: setHistorySearch, items: filteredConversations } = conversationList;
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
   const { t } = useI18n();
@@ -69,10 +71,6 @@ const AIAssistant = () => {
   const navigate = useNavigate();
   const [searchParams,setSearchParams]=useSearchParams();
   const hasConversation = Boolean(activeConversationId || historyLoading || historyError || messages.some(m => m.id !== 0));
-  const filteredConversations = useMemo(() => {
-    const query = historySearch.trim().toLocaleLowerCase();
-    return query ? conversations.filter((item) => item.title.toLocaleLowerCase().includes(query)) : conversations;
-  }, [conversations, historySearch]);
   const activeConversationTitle = useMemo(
     () => conversations.find((item) => item.id === activeConversationId)?.title,
     [conversations, activeConversationId],
@@ -180,7 +178,9 @@ const AIAssistant = () => {
                   </span>
                 </div>
               ))}
-              {!historyLoading && filteredConversations.length === 0 && <span className="ai-history__empty">{historySearch.trim() ? t("ai.historyNotFound", "Mos chat topilmadi.") : t("ai.noHistory", "Hali saqlangan suhbat yo'q.")}</span>}
+              {conversationList.loading && <span role="status">{t('ai.historyLoading', 'Tarix yuklanmoqda…')}</span>}
+              {(conversationList.hasMore || conversationList.failed) && <button type="button" disabled={conversationList.loading} onClick={conversationList.loadMore}>{conversationList.failed ? t('common.retry', 'Qayta urinish') : t('ai.moreConversations', 'Yana suhbatlar')}</button>}
+              {!historyLoading && !conversationList.loading && !conversationList.failed && filteredConversations.length === 0 && <span className="ai-history__empty">{historySearch.trim() ? t("ai.historyNotFound", "Mos chat topilmadi.") : t("ai.noHistory", "Hali saqlangan suhbat yo'q.")}</span>}
             </div>
           </div>
         </aside>

@@ -30,7 +30,7 @@ export type AIChatContextValue = {
   toggle: () => void;
   messages: ChatMessage[];
   isTyping: boolean;
-  sendMessage: (text: string) => void;
+  sendMessage: (text: string, options?: { voice?: boolean }) => void;
   stopResponse: () => void;
   executeAction: (action: AIAction) => Promise<AIActionExecutionResult>;
   cancelAction: (action: AIAction) => Promise<AIActionExecutionResult>;
