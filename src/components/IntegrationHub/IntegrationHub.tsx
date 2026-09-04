@@ -14,6 +14,7 @@ import {
   getGoogleConnectUrl,
   getGoogleStatus,
   resendTelegramCode,
+  restartTelegramCode,
   startTelegramQrLogin,
   getTelegramQrStatus,
   verifyTelegramCode,
@@ -210,7 +211,8 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
         const result = await connectTelegram(telegramPhone.trim().replace(/[\s()-]/g, "").replace(/^00/, "+"));
         setTelegramDelivery(result.delivery);
         setTelegramNextDelivery(result.nextDelivery);
-        setTelegramResendAvailableAt(result.timeoutSeconds ? Date.now() + result.timeoutSeconds * 1000 : null);
+        const waitSeconds = result.timeoutSeconds ?? (result.nextDelivery ? 0 : 45);
+        setTelegramResendAvailableAt(waitSeconds > 0 ? Date.now() + waitSeconds * 1000 : null);
         setTelegramStep("code");
       } else if (telegramStep === "code") {
         const result = await verifyTelegramCode(telegramCode.trim());
@@ -230,17 +232,23 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   };
 
   const resendTelegramStep = async () => {
-    if (telegramBusy || resendRemainingSeconds > 0 || !telegramNextDelivery) return;
-    setTelegramBusy(true); setTelegramError(null);
+    if (telegramBusy || resendRemainingSeconds > 0) return;
+    setTelegramBusy(true);
+    setTelegramError(null);
     try {
-      const result = await resendTelegramCode();
+      const result = telegramNextDelivery
+        ? await resendTelegramCode()
+        : await restartTelegramCode();
       setTelegramDelivery(result.delivery);
-        setTelegramNextDelivery(result.nextDelivery);
-      setTelegramResendAvailableAt(result.timeoutSeconds ? Date.now() + result.timeoutSeconds * 1000 : null);
+      setTelegramNextDelivery(result.nextDelivery);
+      const waitSeconds = result.timeoutSeconds ?? (result.nextDelivery ? 0 : 45);
+      setTelegramResendAvailableAt(waitSeconds > 0 ? Date.now() + waitSeconds * 1000 : null);
     } catch (error) {
       setTelegramError(errorMessage(error));
       const retry = (error as { details?: { retryAfterSeconds?: number } })?.details?.retryAfterSeconds;
-      if (typeof retry === 'number' && retry > 0) setTelegramResendAvailableAt(Date.now() + retry * 1000);
+      if (typeof retry === 'number' && retry > 0) {
+        setTelegramResendAvailableAt(Date.now() + retry * 1000);
+      }
     } finally {
       setTelegramBusy(false);
     }
@@ -320,7 +328,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
               {telegramStep === "code" && <span className="integration-modal__note integration-modal__note--delivery">{telegramDeliveryMessage(telegramDelivery, locale === "ru")}</span>}
               {telegramError && <span className="integration-modal__error">{telegramError}</span>}
               <button type="button" className="integration-modal__connect" onClick={() => void submitTelegramStep()} disabled={telegramBusy}>{telegramBusy ? t('integrations.checking', 'Tekshirilmoqda...') : telegramStep === "phone" ? t('integrations.sendCode', 'Kodni yuborish') : telegramStep === "code" ? t('integrations.verifyCode', 'Kodni tasdiqlash') : t('integrations.finish', 'Ulanishni yakunlash')}<ExternalLink size={15} /></button>
-              {telegramStep === "code" && <button type="button" className="integration-modal__resend" onClick={() => void resendTelegramStep()} disabled={telegramBusy || resendRemainingSeconds > 0 || !telegramNextDelivery}>{resendRemainingSeconds > 0 ? `${locale === "ru" ? "Повторить через" : "Qayta yuborish"} (${resendRemainingSeconds}s)` : !telegramNextDelivery ? (locale === "ru" ? "Повторная отправка недоступна" : "Qayta yuborish hozir mavjud emas") : telegramNextDelivery === "sms" ? (locale === "ru" ? "Отправить по SMS" : "SMS orqali yuborish") : (locale === "ru" ? "Отправить повторно" : "Qayta yuborish")}</button>}
+              {telegramStep === "code" && <button type="button" className="integration-modal__resend" onClick={() => void resendTelegramStep()} disabled={telegramBusy || resendRemainingSeconds > 0}>{resendRemainingSeconds > 0 ? `${locale === "ru" ? "Повторить через" : "Qayta yuborish"} (${resendRemainingSeconds}s)` : telegramNextDelivery === "sms" ? (locale === "ru" ? "Отправить по SMS" : "SMS orqali yuborish") : telegramNextDelivery ? (locale === "ru" ? "Отправить повторно" : "Qayta yuborish") : (locale === "ru" ? "Запросить новый код" : "Yangi kod so‘rash")}</button>}
               {telegramStep === "code" && <span className="integration-modal__note">{t('integrations.tryQr', "Kod kelmasa, QR orqali ulashni sinab ko'ring.")}</span>}
             </> : <div className="integration-modal__qr-panel">
               {telegramStep === "password" ? <>

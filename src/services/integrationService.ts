@@ -81,6 +81,9 @@ export const connectTelegram = (phoneNumber: string) =>
 export const resendTelegramCode = () =>
   request<TelegramCodeRequiredResult>("/integrations/telegram/resend-code", { method: "POST" });
 
+export const restartTelegramCode = () =>
+  request<TelegramCodeRequiredResult>("/integrations/telegram/restart-code", { method: "POST" });
+
 export const verifyTelegramCode = (code: string) =>
   request<{ status: "connected" | "password_required" }>("/integrations/telegram/verify-code", { method: "POST", body: JSON.stringify({ code }) });
 
