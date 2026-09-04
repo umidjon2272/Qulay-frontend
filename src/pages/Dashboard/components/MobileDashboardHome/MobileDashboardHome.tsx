@@ -125,11 +125,23 @@ const MobileDashboardHome = () => {
         </div>
       </header>
 
-      <section className="dashboard-mobile-home__greeting">
-        <span>{t("mobile.welcome", "Xush kelibsiz,")}</span>
-        <h1>{firstName} <span aria-hidden="true">👋</span></h1>
-        <p>{t("mobile.productiveDay", "Bugungi kuningiz unumli bo'lsin ✨")}</p>
-      </section>
+   <section className="dashboard-mobile-home__greeting">
+  <span className="dashboard-mobile-home__greeting-label">
+    {t("mobile.welcome", "Xush kelibsiz,")}
+  </span>
+
+  <div className="dashboard-mobile-home__greeting-name">
+    <h1>{firstName}</h1>
+    <i aria-hidden="true" />
+  </div>
+
+  <p>
+    {t(
+      "mobile.productiveDay",
+      "Bugungi kuningiz unumli bo'lsin",
+    )}
+  </p>
+</section>
 
       <section className="dashboard-mobile-home__hero">
         <div className="dashboard-mobile-home__hero-row">
