@@ -37,14 +37,6 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
   const selection = message.telegramSelection;
   const canSpeak = typeof window !== "undefined" && typeof Audio !== "undefined";
   const canCopy = typeof navigator !== "undefined" && Boolean(navigator.clipboard);
-  const progressText = message.progress && ({
-    preparing: "Javob tayyorlayapman…",
-    checking_income: "Daromadlarni tekshiryapman…",
-    searching_tasks: "Vazifalarni qidiryapman…",
-    waiting_confirmation: "Tasdiq kutilmoqda",
-    executing: "Bajarilmoqda…",
-  } as const)[message.progress];
-
   const copyText = async () => {
     if (!canCopy) return;
     try {
@@ -64,7 +56,6 @@ const MessageBubble = ({ message, isSpeaking, onSpeak, onStopSpeak, onAction }: 
         <div className="message-bubble__glass">
           {isUser ? <p>{message.text}</p> : !action && <>
             {message.text && <Suspense fallback={<p>{message.text}</p>}><MessageMarkdown text={message.text} /></Suspense>}
-            {progressText && !message.text && <div className="message-bubble__progress" role="status"><span />{progressText}</div>}
             {message.incomplete && <div className="message-bubble__incomplete">{t('ai.incomplete', 'Javob to‘xtatildi · tugallanmagan')}</div>}
           </>}
 
