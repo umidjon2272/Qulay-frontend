@@ -83,7 +83,8 @@ export const useSpeechRecognition = (options: Options = {}) => {
           if (!blob.size) return;
           const controller = new AbortController(); pending.current = controller;
           setIsProcessing(true);
-          setInterimTranscript(errorText('Ovoz matnga aylantirilmoqda…', 'Распознавание речи…'));
+          // Keep the voice UI clean: transcription happens silently in the background.
+          setInterimTranscript('');
           void voiceApi.transcribe(blob, duration, controller.signal).then(result => {
             if (!controller.signal.aborted && mounted.current && currentGeneration === generation.current && result.text.trim()) callbacks.current.onResult?.(result.text.trim());
           }).catch(() => {
@@ -104,7 +105,7 @@ export const useSpeechRecognition = (options: Options = {}) => {
             setAudioLevel(Math.min(1, Math.max(0, (energy - 0.01) * 9)));
             if (energy > 0.018) { state.speechAt ||= Date.now(); state.lastSoundAt = Date.now(); state.voicedFrames += 1; }
           }
-          if (elapsed >= 45_000 || (state.speechAt && Date.now() - state.lastSoundAt > 1300)) finish();
+          if (elapsed >= 45_000 || (state.speechAt && Date.now() - state.lastSoundAt > 650)) finish();
           else if (!state.speechAt && analyser && elapsed >= 12_000) {
             stop(); callbacks.current.onError?.(errorText('Ovoz eshitilmadi. Davom etish uchun mikrofonni bosing.', 'Речь не обнаружена. Нажмите микрофон, чтобы продолжить.'));
           }

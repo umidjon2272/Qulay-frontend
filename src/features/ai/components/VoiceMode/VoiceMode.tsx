@@ -88,12 +88,17 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
     sendMessage(transcript, { voice: true });
   }, [sendMessage, stopResponse]);
 
-  const { isSupported, isListening, isProcessing, interimTranscript, audioLevel, start, stop, finish, requestPermission } = useSpeechRecognition({
+  const { isSupported, isListening, isProcessing, interimTranscript, audioLevel, start, stop } = useSpeechRecognition({
     onResult: handleResult,
     onError: (message) => setVoiceError(message),
   });
   const interruptResponse = useCallback(() => { stopSpeaking(); stopResponse(); }, [stopSpeaking, stopResponse]);
   const realtime = useRealtimeVoice({ active: open, onTranscript: handleResult, onSpeechStart: interruptResponse });
+
+  useEffect(() => {
+    if (!open || realtime.status !== 'denied') return;
+    setVoiceError(t('voiceMode.micPermission', 'Mikrofonga ruxsat bering.'));
+  }, [open, realtime.status, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -226,19 +231,15 @@ chunks.forEach(chunk =>
           ? "listening"
           : "idle";
 
-  const stateText = voiceError
+  const accessibleStateText = voiceError
     ? t("voiceMode.state.error", "Ovozli suhbatda xatolik yuz berdi")
-    : speakingId
-      ? t("voiceMode.state.speaking", "Javob beryapman...")
-      : isTyping || isProcessing
-        ? t("voiceMode.state.thinking", "O'ylayapman...")
-        : isListening || (realtime.status === 'active' && !muted)
-          ? t("voiceMode.state.listening", "Tinglayapman...")
-          : muted
-            ? t("voiceMode.state.muted", "Mikrofon o'chiq")
-            : realtime.status === 'connecting'
-              ? "Realtime ulanmoqda…"
-              : t("voiceMode.state.idle", "Gapirishni boshlashingiz mumkin");
+    : muted
+      ? t("voiceMode.state.muted", "Mikrofon o'chiq")
+      : speakingId
+        ? t("voiceMode.state.speaking", "Javob beryapman")
+        : isTyping || isProcessing
+          ? t("voiceMode.state.thinking", "Javob tayyorlanmoqda")
+          : t("voiceMode.state.listening", "Tinglayapman");
 
 
   const handleEnd = () => {
@@ -250,10 +251,11 @@ chunks.forEach(chunk =>
   const handleRetry = async () => {
     await prepareAudioPlayback().catch(() => undefined);
     if (!isSupported) { showToast(t("voiceMode.notSupported", "Bu brauzer ovozli kiritishni qo'llab-quvvatlamaydi."), "error"); return; }
-    const permissionGranted = await requestPermission();
-    if (!permissionGranted) return;
     setVoiceError("");
     setMuted(false);
+    realtime.setMuted(false);
+    // Retry only after an explicit click. Do not run a separate permission probe;
+    // start() itself requests the microphone once if the browser needs it.
     start();
   };
 
@@ -289,18 +291,15 @@ chunks.forEach(chunk =>
         </header>
 
         <main className="voice-mode__body">
-          <div className={`voice-mode__state voice-mode__state--${state}`}>
+          <div className={`voice-mode__state voice-mode__state--${state}`} aria-label={accessibleStateText} title={voiceError || muted ? accessibleStateText : undefined}>
             <span className="voice-mode__state-dot" />
-            {stateText}
           </div>
-          {realtime.status === 'unavailable' && <span className="voice-mode__fallback">{t('voiceMode.fallback', 'Standart ovoz rejimi')}</span>}
 
           <VoiceOrb state={state} level={state === "listening" ? (realtime.status === 'active' ? realtime.level : audioLevel) : state === "speaking" ? playbackLevel : 0} />
 
           {speakingId !== null && <button type="button" className="voice-mode__control" onClick={() => {
-            interruptResponse(); setMuted(false); realtime.setMuted(false); setVoiceError(''); if (realtime.status === 'unavailable') start();
+            interruptResponse(); setMuted(false); realtime.setMuted(false); setVoiceError(''); if (realtime.status === 'unavailable' || realtime.status === 'denied') start();
           }}><Mic size={18} /> {t('voiceMode.interrupt', 'Gapirish — javobni to‘xtatish')}</button>}
-          {isListening && <button type="button" className="voice-mode__control" onClick={finish}>{t('voiceMode.finished', 'Gapirib bo‘ldim')}</button>}
 
           {!transcriptOpen && <p className="voice-mode__caption">{interimTranscript || transcriptMessages.at(-1)?.text || t("voiceMode.readyForVoiceChat", "Ovozli suhbatga tayyorman.")}</p>}
           {transcriptOpen && <div className="voice-mode__transcript" aria-live="polite">
