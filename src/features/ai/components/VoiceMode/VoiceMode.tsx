@@ -162,13 +162,8 @@ let consumed = matches.reduce(
 
 // AI nuqta qo‘yishini uzoq kutmaymiz.
 // Yetarli matn kelishi bilan birinchi qismini ovozga yuboramiz.
-<<<<<<< HEAD
-if (latestAI.streaming && chunks.length === 0 && remaining.length >= 40) {
-  const preview = remaining.slice(0, 90);
-=======
 if (latestAI.streaming && chunks.length === 0 && remaining.length >= 32) {
   const preview = remaining.slice(0, 76);
->>>>>>> e87b4b9 (perf: improve realtime voice speed)
 
   const punctuationCut = Math.max(
     preview.lastIndexOf(','),
@@ -179,15 +174,9 @@ if (latestAI.streaming && chunks.length === 0 && remaining.length >= 32) {
   const spaceCut = preview.lastIndexOf(' ');
 
   const cut =
-<<<<<<< HEAD
-    punctuationCut >= 28
-      ? punctuationCut + 1
-      : spaceCut >= 32
-=======
     punctuationCut >= 22
       ? punctuationCut + 1
       : spaceCut >= 26
->>>>>>> e87b4b9 (perf: improve realtime voice speed)
         ? spaceCut + 1
         : 0;
 

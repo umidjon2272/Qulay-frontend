@@ -106,11 +106,7 @@ export const useSpeechRecognition = (options: Options = {}) => {
             setAudioLevel(Math.min(1, Math.max(0, (energy - 0.01) * 9)));
             if (energy > 0.018) { state.speechAt ||= Date.now(); state.lastSoundAt = Date.now(); state.voicedFrames += 1; }
           }
-<<<<<<< HEAD
-          if (elapsed >= 45_000 || (state.speechAt && Date.now() - state.lastSoundAt > 500)) finish();
-=======
           if (elapsed >= 45_000 || (state.speechAt && Date.now() - state.lastSoundAt > 350)) finish();
->>>>>>> e87b4b9 (perf: improve realtime voice speed)
           else if (!state.speechAt && analyser && elapsed >= 12_000) {
             stop(); callbacks.current.onError?.(errorText('Ovoz eshitilmadi. Davom etish uchun mikrofonni bosing.', 'Речь не обнаружена. Нажмите микрофон, чтобы продолжить.'));
           }

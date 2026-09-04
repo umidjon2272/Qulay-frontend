@@ -9,6 +9,7 @@ export const RU: Record<string, string> = {
   'ai.moreConversations': 'Ещё беседы',
   'settings.notif.webPushDeviceHint': 'Уведомления на этом устройстве, даже когда сайт закрыт',
   'voiceMode.voiceLabel': 'Голос', 'voiceMode.transcript': 'Открыть расшифровку',
+  'voiceMode.micPermission': 'Разрешите доступ к микрофону.',
   'voiceMode.fallback': 'Стандартный голосовой режим', 'voiceMode.interrupt': 'Говорить — прервать ответ',
   'voiceMode.finished': 'Я закончил говорить', 'voiceMode.replay': 'Прослушать ответ снова',
   'voiceMode.write': 'Напишите сообщение…', 'voiceMode.soundDisable': 'Выключить голосовые ответы', 'voiceMode.soundEnable': 'Включить голосовые ответы',
