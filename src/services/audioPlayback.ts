@@ -32,6 +32,9 @@ export const playVoiceAudio = async (base64: string, signal: AbortSignal): Promi
     const analyser = typeof audio.createAnalyser === 'function' ? audio.createAnalyser() : null;
     if (analyser) analyser.fftSize = 256;
     source.buffer = buffer;
+    // Keep voice replies brisk even when a generated clip contains a slow cadence.
+    // The boost is intentionally small so speech stays natural and intelligible.
+    if (source.playbackRate) source.playbackRate.value = 1.12;
     if (analyser) { source.connect(analyser); analyser.connect(audio.destination); } else source.connect(audio.destination);
     const samples = new Uint8Array(analyser?.frequencyBinCount ?? 0);
     const meter = analyser ? window.setInterval(() => {

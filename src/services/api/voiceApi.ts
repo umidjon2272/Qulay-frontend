@@ -1,6 +1,6 @@
 import { request } from './apiClient';
 
-export const spokenText = (text: string) => text.replace(/```[\s\S]*?```/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_#`|>]/g, '').trim();
+export const spokenText = (text: string) => text.replace(/```[\s\S]*?```/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_#`|>]/g, '').replace(/[–—]+/g, ', ').replace(/\.{2,}/g, '.').replace(/([!?;,])\1+/g, '$1').replace(/\s+/g, ' ').trim();
 export const voiceApi = {
   realtimeSession: (signal?: AbortSignal) => request<{ enabled: false } | { enabled: true; clientSecret: string; expiresAt?: number; model: string; voice: string }>('/ai/voice/realtime/session', { method: 'POST', signal }),
   transcribe: (blob: Blob, durationSeconds: number, signal?: AbortSignal) => {
