@@ -162,8 +162,8 @@ let consumed = matches.reduce(
 
 // AI nuqta qo‘yishini uzoq kutmaymiz.
 // Yetarli matn kelishi bilan birinchi qismini ovozga yuboramiz.
-if (latestAI.streaming && chunks.length === 0 && remaining.length >= 55) {
-  const preview = remaining.slice(0, 110);
+if (latestAI.streaming && chunks.length === 0 && remaining.length >= 40) {
+  const preview = remaining.slice(0, 90);
 
   const punctuationCut = Math.max(
     preview.lastIndexOf(','),
@@ -174,9 +174,9 @@ if (latestAI.streaming && chunks.length === 0 && remaining.length >= 55) {
   const spaceCut = preview.lastIndexOf(' ');
 
   const cut =
-    punctuationCut >= 40
+    punctuationCut >= 28
       ? punctuationCut + 1
-      : spaceCut >= 45
+      : spaceCut >= 32
         ? spaceCut + 1
         : 0;
 
@@ -301,7 +301,7 @@ chunks.forEach(chunk =>
             interruptResponse(); setMuted(false); realtime.setMuted(false); setVoiceError(''); if (realtime.status === 'unavailable' || realtime.status === 'denied') start();
           }}><Mic size={18} /> {t('voiceMode.interrupt', 'Gapirish — javobni to‘xtatish')}</button>}
 
-          {!transcriptOpen && <p className="voice-mode__caption">{interimTranscript || transcriptMessages.at(-1)?.text || t("voiceMode.readyForVoiceChat", "Ovozli suhbatga tayyorman.")}</p>}
+          {!transcriptOpen && !isProcessing && !isTyping && <p className="voice-mode__caption">{interimTranscript || transcriptMessages.at(-1)?.text || t("voiceMode.readyForVoiceChat", "Ovozli suhbatga tayyorman.")}</p>}
           {transcriptOpen && <div className="voice-mode__transcript" aria-live="polite">
             {transcriptMessages.length > 0 ? transcriptMessages.map((message) => (
               <div className={`voice-mode__line voice-mode__line--${message.role}`} key={message.id}>

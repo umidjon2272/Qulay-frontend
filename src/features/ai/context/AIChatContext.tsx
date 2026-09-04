@@ -92,6 +92,21 @@ const isChatMessage = (value: unknown): value is ChatMessage => {
 const isChatHistory = (value: unknown): value is ChatMessage[] =>
   Array.isArray(value) && value.length > 0 && value.every(isChatMessage);
 
+const isConversation = (value: unknown): value is Conversation =>
+  isRecord(value) &&
+  typeof value.id === "string" &&
+  typeof value.title === "string" &&
+  typeof value.createdAt === "string" &&
+  typeof value.updatedAt === "string";
+
+const loadStoredConversations = (): Conversation[] => {
+  const userId = getAuthSession()?.id;
+  if (!userId) return [];
+  const stored = readStorage<unknown>(STORAGE_KEYS.aiConversationList, null);
+  if (!isRecord(stored) || stored.userId !== userId || !Array.isArray(stored.items)) return [];
+  return stored.items.filter(isConversation).slice(0, 50);
+};
+
 // Scope cached history to its owner and keep the server conversation ID across reloads.
 const loadStoredSession = (): { conversationId: string | null; messages: ChatMessage[] } | null => {
   const userId = getAuthSession()?.id;
@@ -119,7 +134,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
   const [isTyping, setIsTyping] = useState(false);
   const [saveHistory, setSaveHistory] = useState(() => getSettings().ai.saveHistory);
   const [speakingId, setSpeakingId] = useState<number | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>(() => loadStoredConversations());
   const [activeConversationId, setActiveConversationId] = useState<string | null>(() => loadStoredSession()?.conversationId ?? null);
   const sessionUserIdRef = useRef(getAuthSession()?.id ?? null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -153,6 +168,8 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
     if (!nextSaveHistory) {
       removeStorage(STORAGE_KEYS.aiChatHistory);
+      removeStorage(STORAGE_KEYS.aiConversationList);
+      setConversations([]);
       setMessages([{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }]);
     } else if (!previousSaveHistoryRef.current) {
       setMessages(loadStoredMessages(createWelcomeMessage(platformName, locale)));
@@ -183,6 +200,13 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
     if (saveHistory && userId === sessionUserIdRef.current && userId) writeStorage(STORAGE_KEYS.aiChatHistory, { userId, conversationId: activeConversationId, messages: messages.slice(-MAX_CHAT_MESSAGES) });
     else removeStorage(STORAGE_KEYS.aiChatHistory);
   }, [messages, saveHistory, activeConversationId]);
+
+  useEffect(() => {
+    const userId = getAuthSession()?.id;
+    if (userId && userId === sessionUserIdRef.current) {
+      writeStorage(STORAGE_KEYS.aiConversationList, { userId, items: conversations.slice(0, 50) });
+    }
+  }, [conversations]);
 
   const refreshConversations = useCallback(async () => {
     const userId = getAuthSession()?.id;
@@ -241,7 +265,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       executedActionsRef.current.clear();
       executingActionsRef.current.clear();
       setMessages([{ ...createWelcomeMessage(platformName, locale), id: 0, time: formatTime() }]);
-      setConversations([]);
+      setConversations(loadStoredConversations());
       setActiveConversationId(null);
       activeConversationIdRef.current = null;
       setIsTyping(false);
@@ -311,6 +335,7 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
 
   const loadConversation = useCallback(async (id: string) => {
     if (!id) return;
+    const preserveCurrentIfEmpty = activeConversationIdRef.current === id;
     requestedHistoryRef.current = id;
     historyLoadingRef.current = true;
     historyMoreRef.current = false;
@@ -347,7 +372,11 @@ export const AIChatProvider = ({ children }: { children: ReactNode }) => {
       setHasOlderMessages(Boolean(result.meta.hasMore));
       activeConversationIdRef.current = id;
       setActiveConversationId(id);
-      setMessages(nextMessages);
+      setMessages((current) => {
+        const hasCachedMessages = current.some((message) => message.id !== 0);
+        if (nextMessages.length === 0 && preserveCurrentIfEmpty && hasCachedMessages) return current;
+        return nextMessages;
+      });
       pendingTelegramSelectionRef.current = null;
       setIsTyping(false);
     } catch {

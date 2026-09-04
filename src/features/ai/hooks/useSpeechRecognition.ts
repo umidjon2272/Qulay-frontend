@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { voiceApi } from '../../../services/api/voiceApi';
 import { getLocale } from '../../../i18n/useI18n';
+import { acquireSharedMicrophone, parkSharedMicrophone } from './sharedMicrophone';
 
 type Options = { lang?: string; onResult?: (transcript: string) => void; onError?: (message: string) => void };
 type Recording = { recorder: MediaRecorder; stream: MediaStream; context: AudioContext | null; timer: number; startedAt: number; speechAt: number; lastSoundAt: number; voicedFrames: number; cancelled: boolean };
@@ -22,7 +23,7 @@ export const useSpeechRecognition = (options: Options = {}) => {
 
   const release = useCallback((state: Recording) => {
     window.clearInterval(state.timer);
-    state.stream.getTracks().forEach(track => track.stop());
+    parkSharedMicrophone();
     void state.context?.close().catch(() => undefined);
   }, []);
 
@@ -45,7 +46,7 @@ export const useSpeechRecognition = (options: Options = {}) => {
   }, []);
 
   const requestPermission = useCallback(async () => {
-    try { const stream = await navigator.mediaDevices.getUserMedia({ audio: true }); stream.getTracks().forEach(track => track.stop()); return true; }
+    try { await acquireSharedMicrophone(); parkSharedMicrophone(); return true; }
     catch { callbacks.current.onError?.(errorText('Mikrofonga ruxsat bering.', 'Разрешите доступ к микрофону.')); return false; }
   }, []);
 
@@ -58,8 +59,8 @@ export const useSpeechRecognition = (options: Options = {}) => {
       let stream: MediaStream | undefined;
       let context: AudioContext | null = null;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-        if (!mounted.current || currentGeneration !== generation.current) { stream.getTracks().forEach(t => t.stop()); return; }
+        stream = await acquireSharedMicrophone();
+        if (!mounted.current || currentGeneration !== generation.current) { parkSharedMicrophone(); return; }
         const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find(type => MediaRecorder.isTypeSupported(type));
         const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
         const chunks: BlobPart[] = [];
@@ -67,7 +68,7 @@ export const useSpeechRecognition = (options: Options = {}) => {
         context = typeof AudioContext !== 'undefined' ? new AudioContext() : null;
         const analyser = context?.createAnalyser();
         if (analyser && context) { analyser.fftSize = 2048; context.createMediaStreamSource(stream).connect(analyser); await context.resume(); }
-        if (!mounted.current || currentGeneration !== generation.current) { stream.getTracks().forEach(t => t.stop()); void context?.close().catch(() => undefined); return; }
+        if (!mounted.current || currentGeneration !== generation.current) { parkSharedMicrophone(); void context?.close().catch(() => undefined); return; }
         const state: Recording = { recorder, stream, context, timer: 0, startedAt: now, speechAt: 0, lastSoundAt: now, voicedFrames: 0, cancelled: false };
         active.current = state;
         recorder.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
@@ -105,14 +106,14 @@ export const useSpeechRecognition = (options: Options = {}) => {
             setAudioLevel(Math.min(1, Math.max(0, (energy - 0.01) * 9)));
             if (energy > 0.018) { state.speechAt ||= Date.now(); state.lastSoundAt = Date.now(); state.voicedFrames += 1; }
           }
-          if (elapsed >= 45_000 || (state.speechAt && Date.now() - state.lastSoundAt > 650)) finish();
+          if (elapsed >= 45_000 || (state.speechAt && Date.now() - state.lastSoundAt > 500)) finish();
           else if (!state.speechAt && analyser && elapsed >= 12_000) {
             stop(); callbacks.current.onError?.(errorText('Ovoz eshitilmadi. Davom etish uchun mikrofonni bosing.', 'Речь не обнаружена. Нажмите микрофон, чтобы продолжить.'));
           }
         }, 100);
       } catch {
         void context?.close().catch(() => undefined);
-        stream?.getTracks().forEach(t => t.stop());
+        if (stream) parkSharedMicrophone();
         if (mounted.current && currentGeneration === generation.current) callbacks.current.onError?.(errorText('Mikrofonni yoqib bo‘lmadi. Brauzer ruxsatini tekshiring.', 'Не удалось включить микрофон. Проверьте разрешения браузера.'));
       } finally { starting.current = false; }
     })();

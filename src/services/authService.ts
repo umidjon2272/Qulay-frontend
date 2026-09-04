@@ -104,6 +104,7 @@ export const logout = async (): Promise<void> => {
   clearProfileCache();
   removeStorage(STORAGE_KEYS.authSession);
   removeStorage(STORAGE_KEYS.aiChatHistory);
+  removeStorage(STORAGE_KEYS.aiConversationList);
   notifyAuthChanged();
 
   // Revoke best-effort in the background. Local state is already cleared, so

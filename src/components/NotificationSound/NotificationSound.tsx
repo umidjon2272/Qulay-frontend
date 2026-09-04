@@ -26,7 +26,7 @@ export const NotificationSound = () => {
     window.addEventListener('pointerdown', unlock);
     window.addEventListener('keydown', unlock);
     window.addEventListener('focus', poll);
-    const timer = window.setInterval(poll, 30_000);
+    const timer = window.setInterval(poll, 8_000);
     void poll();
     return () => {
       active = false; window.clearInterval(timer);

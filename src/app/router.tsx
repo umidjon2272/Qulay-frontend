@@ -28,6 +28,32 @@ const AdminConsole = lazy(() => import("../pages/Admin/AdminConsole"));
 const AdminLogin = lazy(() => import("../pages/Admin/AdminLogin"));
 const Legal = lazy(() => import("../pages/Legal/Legal"));
 
+
+
+if (typeof window !== "undefined") {
+  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  const canPrefetch = !connection?.saveData && !["slow-2g", "2g"].includes(connection?.effectiveType ?? "");
+  const preloadCoreRoutes = () => {
+    if (!canPrefetch) return;
+    void Promise.allSettled([
+      import("../pages/Dashboard/Dashboard"),
+      import("../pages/Tasks/Tasks"),
+      import("../pages/Reminders/Reminders"),
+      import("../pages/Calendar/Calendar"),
+      import("../pages/Files/Files"),
+      import("../pages/Finance/Finance"),
+      import("../pages/Settings/Settings"),
+    ]);
+  };
+  const schedulePrefetch = () => {
+    const idleWindow = window as Window & { requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number };
+    if (typeof idleWindow.requestIdleCallback === "function") idleWindow.requestIdleCallback(preloadCoreRoutes, { timeout: 4500 });
+    else window.setTimeout(preloadCoreRoutes, 2500);
+  };
+  if (document.readyState === "complete") schedulePrefetch();
+  else window.addEventListener("load", schedulePrefetch, { once: true });
+}
+
 const PageFallback = () => {
   const { t } = useI18n();
   return (

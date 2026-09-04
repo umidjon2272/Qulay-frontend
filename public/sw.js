@@ -73,6 +73,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Keep only the offline navigation fallback. Build assets are served directly
+  // by Vercel/CDN so a previous service worker can never pin stale JS chunks.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request, { cache: "no-store" }).catch(() =>
@@ -86,26 +88,5 @@ self.addEventListener("fetch", (event) => {
         ),
       ),
     );
-    return;
   }
-
-  const cacheableDestinations = new Set(["script", "style", "font", "image"]);
-
-  // Only immutable build assets belong in the shared static cache. Never cache
-  // account images, downloads, or unhashed resources across deployments/users.
-  if (!cacheableDestinations.has(request.destination) || !/^\/assets\/[^/]+-[A-Za-z0-9_-]{8,}\.[a-z0-9]+$/.test(requestUrl.pathname)) return;
-
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) return cached;
-
-      return fetch(request).then((response) => {
-        if (!response.ok) return response;
-
-        const responseCopy = response.clone();
-        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(request, responseCopy)).catch(() => undefined));
-        return response;
-      });
-    }),
-  );
 });

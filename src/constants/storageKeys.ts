@@ -1,10 +1,12 @@
 export const STORAGE_KEYS = {
   schemaVersion: "yechim_ai_storage_schema_version",
   aiChatHistory: "yechim_ai_chat_history",
+  aiConversationList: "yechim_ai_conversation_list",
   tasks: "yechim_ai_tasks",
   reminders: "yechim_ai_reminders",
   calendarEvents: "yechim_ai_calendar_events",
   notes: "yechim_ai_notes",
+  todayPlan: "yechim_ai_today_plan",
   files: "yechim_ai_files",
   integrations: "yechim_integrations",
   settings: "yechim_ai_settings",

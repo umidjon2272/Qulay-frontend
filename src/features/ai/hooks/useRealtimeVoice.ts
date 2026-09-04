@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { voiceApi } from '../../../services/api/voiceApi';
 import { subscriptionApi } from '../../../services/api/subscriptionApi';
+import { acquireSharedMicrophone, parkSharedMicrophone } from './sharedMicrophone';
 
 type Options = { active: boolean; onTranscript: (text: string) => void; onSpeechStart: () => void };
 type RealtimeStatus = 'connecting' | 'active' | 'unavailable' | 'denied';
@@ -14,6 +15,8 @@ const isMicrophoneDenied = (error: unknown) => {
 export const useRealtimeVoice = ({ active, onTranscript, onSpeechStart }: Options) => {
   const [status, setStatus] = useState<RealtimeStatus>('connecting');
   const [level, setLevel] = useState(0);
+  const [attempt, setAttempt] = useState(0);
+  const retryCountRef = useRef(0);
   const disposeRef = useRef<(() => void) | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mutedRef = useRef(false);
@@ -22,7 +25,7 @@ export const useRealtimeVoice = ({ active, onTranscript, onSpeechStart }: Option
   const close = useCallback(() => { disposeRef.current?.(); }, []);
 
   useEffect(() => {
-    if (!active) { close(); return; }
+    if (!active) { retryCountRef.current = 0; close(); return; }
     const abort = new AbortController();
     let disposed = false;
     let pc: RTCPeerConnection | undefined;
@@ -51,6 +54,7 @@ export const useRealtimeVoice = ({ active, onTranscript, onSpeechStart }: Option
           void subscriptionApi.logVoiceUsage(seconds).catch(() => undefined);
         }
       }, 30_000);
+      retryCountRef.current = 0;
       setStatus('active');
     };
 
@@ -62,7 +66,7 @@ export const useRealtimeVoice = ({ active, onTranscript, onSpeechStart }: Option
       window.clearInterval(meterTimer);
       window.clearInterval(usageTimer);
       pc?.close();
-      media?.getTracks().forEach(track => track.stop());
+      if (media) parkSharedMicrophone();
       if (context) void context.close().catch(() => undefined);
       if (streamRef.current === media) streamRef.current = null;
       if (disposeRef.current === dispose) { disposeRef.current = null; setLevel(0); }
@@ -73,6 +77,13 @@ export const useRealtimeVoice = ({ active, onTranscript, onSpeechStart }: Option
 
     const fail = (reason: Extract<RealtimeStatus, 'unavailable' | 'denied'> = 'unavailable') => {
       if (disposed) return;
+      if (reason === 'unavailable' && retryCountRef.current < 1) {
+        retryCountRef.current += 1;
+        dispose();
+        setStatus('connecting');
+        window.setTimeout(() => setAttempt((value) => value + 1), 220);
+        return;
+      }
       setStatus(reason);
       dispose();
     };
@@ -137,8 +148,8 @@ export const useRealtimeVoice = ({ active, onTranscript, onSpeechStart }: Option
         await pc.setRemoteDescription({ type: 'answer', sdp: remoteSdp });
 
         // Ask for the microphone only after the Realtime transport is known to work.
-        media = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-        if (disposed) { media.getTracks().forEach(track => track.stop()); return; }
+        media = await acquireSharedMicrophone();
+        if (disposed) { parkSharedMicrophone(); return; }
         const audioTrack = media.getAudioTracks()[0];
         if (!audioTrack) throw new Error('Microphone track is unavailable');
         audioTrack.enabled = !mutedRef.current;
@@ -164,7 +175,7 @@ export const useRealtimeVoice = ({ active, onTranscript, onSpeechStart }: Option
     })();
 
     return dispose;
-  }, [active, close]);
+  }, [active, close, attempt]);
 
   const setMuted = useCallback((muted: boolean) => {
     mutedRef.current = muted;

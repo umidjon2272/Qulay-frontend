@@ -150,8 +150,8 @@ const AIAssistant = () => {
             </label>
 
             <div className="ai-side-card__conversations">
-              {historyLoading && <span className="ai-history__empty">{t("ai.historyLoading", "Tarix yuklanmoqda…")}</span>}
-              {!historyLoading && filteredConversations.map((item) => (
+              {historyLoading && filteredConversations.length === 0 && <span className="ai-history__empty">{t("ai.historyLoading", "Tarix yuklanmoqda…")}</span>}
+              {filteredConversations.map((item) => (
                 <div className={`ai-history__row ${activeConversationId === item.id ? "is-active" : ""}`} key={item.id}>
                   {editingConversationId === item.id ? (
                     <input
@@ -169,7 +169,7 @@ const AIAssistant = () => {
                     />
                   ) : (
                     <button type="button" className="ai-history__open" onClick={() => void loadConversation(item.id)} title={item.title}>
-                      <span>{item.title}</span><small>{item.messageCount ?? 0} {t("ai.messages", "xabar")}</small>
+                      <span>{item.title}</span>{typeof item.messageCount === "number" && <small>{item.messageCount} {t("ai.messages", "xabar")}</small>}
                     </button>
                   )}
                   <span className="ai-history__actions">
