@@ -32,6 +32,25 @@ type VoiceModeProps = {
 };
 
 type ActionStatus = "pending" | "loading" | "success" | "cancelled" | "failed";
+
+const VOICE_STORAGE_KEY = "qulay:voice:selected";
+
+const readStoredVoice = (): "marin" | "cedar" => {
+  if (typeof window === "undefined") return "marin";
+  try {
+    return window.localStorage.getItem(VOICE_STORAGE_KEY) === "cedar" ? "cedar" : "marin";
+  } catch {
+    return "marin";
+  }
+};
+
+const storeVoice = (voice: "marin" | "cedar") => {
+  try {
+    window.localStorage.setItem(VOICE_STORAGE_KEY, voice);
+  } catch {
+    // Storage is optional; the selected voice still stays active for this session.
+  }
+};
 const getLatest = (messages: ChatMessage[], role: ChatMessage["role"]) =>
   [...messages].reverse().find((message) => message.id !== 0 && message.role === role);
 
@@ -45,7 +64,6 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
     cancelAction,
     speakingId,
     speak,
-    queueSpeech,
     stopSpeaking,
   } = useAIChat();
   const { showToast } = useToast();
@@ -57,9 +75,8 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
   const [playbackLevel, setPlaybackLevel] = useState(0);
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const [textInput, setTextInput] = useState('');
-  const [selectedVoice, setSelectedVoice] = useState<'marin' | 'cedar'>('marin');
+  const [selectedVoice, setSelectedVoice] = useState<'marin' | 'cedar'>(readStoredVoice);
   const lastSpokenKeyRef = useRef('');
-  const streamedSpeechRef = useRef<{ id: number; offset: number } | null>(null);
 
   const latestAI = useMemo(() => getLatest(messages, "ai"), [messages]);
   const latestAIRef = useRef<ChatMessage | undefined>(latestAI);
@@ -141,72 +158,13 @@ const VoiceMode = ({ open, onClose }: VoiceModeProps) => {
 
   useEffect(() => {
     const key = voiceReplyKey(latestAI);
-    if (!open || !voiceReply || isTyping || latestAI?.streaming || (latestAI && streamedSpeechRef.current?.id === latestAI.id) || !latestAI || !key || key === lastSpokenKeyRef.current) return;
+    if (!open || !voiceReply || isTyping || latestAI?.streaming || !latestAI || !key || key === lastSpokenKeyRef.current) return;
     lastSpokenKeyRef.current = key;
     stop();
+    // One completed AI answer is synthesized in one TTS request. This keeps the
+    // selected voice/character consistent from the first word to the last.
     speak(latestAI.id, latestAI.actionResult ?? latestAI.text, selectedVoice);
   }, [isTyping, latestAI, open, selectedVoice, speak, stop, voiceReply]);
-
-  useEffect(() => {
-    if (!open || !voiceReply || !latestAI || (!latestAI.streaming && !streamedSpeechRef.current)) return;
-    if (!streamedSpeechRef.current || streamedSpeechRef.current.id !== latestAI.id) streamedSpeechRef.current = { id: latestAI.id, offset: 0 };
-    const cursor = streamedSpeechRef.current;
-    const remaining = latestAI.text.slice(cursor.offset);
-    const matches = [...remaining.matchAll(/[^.!?]+[.!?](?:\s|$)/g)];
-const chunks = matches.map(match => match[0].trim()).filter(Boolean);
-
-let consumed = matches.reduce(
-  (total, match) => total + match[0].length,
-  0,
-);
-
-// AI nuqta qo‘yishini uzoq kutmaymiz.
-// Yetarli matn kelishi bilan birinchi qismini ovozga yuboramiz.
-if (latestAI.streaming && chunks.length === 0 && remaining.length >= 32) {
-  const preview = remaining.slice(0, 76);
-
-  const punctuationCut = Math.max(
-    preview.lastIndexOf(','),
-    preview.lastIndexOf(';'),
-    preview.lastIndexOf(':'),
-  );
-
-  const spaceCut = preview.lastIndexOf(' ');
-
-  const cut =
-    punctuationCut >= 22
-      ? punctuationCut + 1
-      : spaceCut >= 26
-        ? spaceCut + 1
-        : 0;
-
-  if (cut > 0) {
-    chunks.push(remaining.slice(0, cut).trim());
-    consumed = cut;
-  }
-}
-
-if (!latestAI.streaming) {
-  const tail = remaining.slice(consumed).trim();
-
-  if (tail) {
-    chunks.push(tail);
-  }
-
-  consumed = remaining.length;
-}
-
-if (!chunks.length) return;
-
-cursor.offset = latestAI.streaming
-  ? cursor.offset + consumed
-  : latestAI.text.length;
-
-chunks.forEach(chunk =>
-  queueSpeech(latestAI.id, chunk, selectedVoice),
-);
-    if (!latestAI.streaming) { lastSpokenKeyRef.current = voiceReplyKey(latestAI); streamedSpeechRef.current = null; }
-  }, [latestAI, open, queueSpeech, selectedVoice, voiceReply]);
 
   useEffect(() => {
     if (!open) return;
@@ -270,6 +228,18 @@ chunks.forEach(chunk =>
     setActionStatus("loading"); const result = await cancelAction(pendingAction); setActionStatus(result.success ? "cancelled" : "pending"); showToast(result.message, result.success ? "success" : "error");
   };
 
+  const handleVoiceChange = (voice: "marin" | "cedar") => {
+    setSelectedVoice(voice);
+    storeVoice(voice);
+
+    // If the user changes the voice while an answer is playing, restart that
+    // answer immediately in the newly selected voice and keep it selected.
+    if (speakingId !== null && latestAI) {
+      stopSpeaking();
+      speak(latestAI.id, latestAI.actionResult ?? latestAI.text, voice);
+    }
+  };
+
   return (
     <div className="voice-mode" role="dialog" aria-modal="true" aria-label={t("voiceMode.dialogAria", "Qulay AI Voice Mode")}>
       <div className="voice-mode__backdrop" />
@@ -285,7 +255,7 @@ chunks.forEach(chunk =>
           </div>
 
           <div className="voice-mode__header-actions">
-            <label className="voice-mode__voice-select"><span>{t('voiceMode.voiceLabel', 'Ovoz')}</span><select value={selectedVoice} onChange={event => setSelectedVoice(event.target.value as 'marin' | 'cedar')}><option value="marin">Marin</option><option value="cedar">Cedar</option></select></label>
+            <label className="voice-mode__voice-select"><span>{t('voiceMode.voiceLabel', 'Ovoz')}</span><select value={selectedVoice} onChange={event => handleVoiceChange(event.target.value as 'marin' | 'cedar')}><option value="marin">Marin</option><option value="cedar">Cedar</option></select></label>
             <button type="button" className="voice-mode__close" onClick={() => setTranscriptOpen(value => !value)} aria-label={t('voiceMode.transcript', 'Transkriptni ochish')}><MessageSquareText size={19} /></button>
           </div>
         </header>

@@ -772,32 +772,29 @@ const speak = useCallback(
     speechRequestRef.current = controller;
     setSpeakingId(id);
 
-    // Chunk long answers at sentence boundaries; do not silently cut off the reply.
+    // Keep one answer in one synthesis request so the voice timbre does not
+    // drift between separately generated chunks. Punctuation is normalized by
+    // spokenText() to keep pauses extremely short and even.
     const clean = spokenText(text);
-    const chunks =
-      clean.match(/.{1,1800}(?:[.!?]\s|$)|.{1,1800}/gs) ?? [clean];
 
     void (async () => {
       await ready;
+      if (!clean || controller.signal.aborted) return;
 
-      for (const chunk of chunks) {
-        if (!chunk.trim() || controller.signal.aborted) return;
+      const result = await voiceApi.speak(
+        clean,
+        controller.signal,
+        voice,
+      );
 
-        const result = await voiceApi.speak(
-          chunk,
-          controller.signal,
-          voice,
-        );
-
-        if (
-          !mountedRef.current ||
-          generation !== speechGenerationRef.current
-        ) {
-          return;
-        }
-
-        await playVoiceAudio(result.audio, controller.signal);
+      if (
+        !mountedRef.current ||
+        generation !== speechGenerationRef.current
+      ) {
+        return;
       }
+
+      await playVoiceAudio(result.audio, controller.signal);
     })()
       .catch(() => {
         if (
