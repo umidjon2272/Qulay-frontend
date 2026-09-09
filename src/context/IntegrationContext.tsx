@@ -20,6 +20,7 @@ import {
   getIntegrationState,
   getGoogleStatus,
   getTelegramStatus,
+  getBitoStatus,
 } from "../services/integrationService";
 import { subscribeToWorkspaceData } from "../services/workspaceEvents";
 import { useToast } from "../hooks/useToast";
@@ -39,7 +40,7 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const { t } = useI18n();
 
   const refreshServerConnections = useCallback(async () => {
-    const [telegram, google] = await Promise.allSettled([getTelegramStatus(), getGoogleStatus()]);
+    const [telegram, google, bito] = await Promise.allSettled([getTelegramStatus(), getGoogleStatus(), getBitoStatus()]);
     setState((current) => {
       const next = { ...current };
       if (telegram.status === "fulfilled") {
@@ -49,6 +50,9 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
         const account = google.value.email ?? google.value.displayName ?? undefined;
         next["google-calendar"] = { connected: Boolean(google.value.connected && google.value.calendarEnabled), username: account };
         next["google-drive"] = { connected: Boolean(google.value.connected && google.value.driveEnabled), username: account };
+      }
+      if (bito.status === "fulfilled") {
+        next.bito = { connected: bito.value.connected, username: bito.value.serverName ?? bito.value.serverHost ?? "Bito ERP" };
       }
       return next;
     });

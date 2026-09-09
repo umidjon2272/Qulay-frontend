@@ -3,6 +3,7 @@ import {
   CalendarDays,
   HardDrive,
   MessageCircle,
+  Database,
   type LucideIcon,
 } from "lucide-react";
 
@@ -12,6 +13,7 @@ export type IntegrationId =
   | "gmail"
   | "google-drive"
   | "whatsapp"
+  | "bito"
   | "notion"
   | "slack"
   | "discord"
@@ -48,6 +50,13 @@ export const integrationCatalog: IntegrationDefinition[] = [
     description: "Hujjat va fayllaringiz",
     icon: HardDrive,
     color: "green",
+  },
+  {
+    id: "bito",
+    name: "Bito ERP",
+    description: "Mahsulot, qoldiq, savdo va biznes ma’lumotlari",
+    icon: Database,
+    color: "purple",
   },
   {
     id: "whatsapp",

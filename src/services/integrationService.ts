@@ -134,3 +134,31 @@ export type GoogleStatus = {
 export const getGoogleConnectUrl = () => request<{ url: string }>("/integrations/google/auth-url");
 export const getGoogleStatus = () => request<GoogleStatus>("/integrations/google/status");
 export const disconnectGoogle = () => request<{ status: "disconnected" }>("/integrations/google/disconnect", { method: "DELETE" });
+
+export type BitoAuthMode = "NONE" | "BEARER" | "X_API_KEY";
+export type BitoStatus = {
+  configured: boolean;
+  connected: boolean;
+  status: "DISCONNECTED" | "CONNECTED" | "ERROR" | "not_configured";
+  serverName: string | null;
+  serverHost: string | null;
+  protocolVersion: string | null;
+  toolCount: number;
+  connectedAt: string | null;
+  lastUsedAt: string | null;
+  lastErrorAt: string | null;
+  lastErrorCode: string | null;
+  authMode: BitoAuthMode;
+};
+
+export type BitoToolSummary = { name: string; title: string | null; description: string | null; readOnly: boolean };
+
+export const getBitoStatus = () => request<BitoStatus>("/integrations/bito/status");
+export const connectBito = (input: { serverUrl: string; authMode: BitoAuthMode; accessToken?: string }) =>
+  request<{ status: "connected"; serverName: string; protocolVersion: string | null; toolCount: number; tools: BitoToolSummary[] }>("/integrations/bito/connect", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+export const testBito = () => request<{ ok: boolean; protocolVersion: string | null; toolCount: number; tools: BitoToolSummary[] }>("/integrations/bito/test", { method: "POST" });
+export const getBitoTools = () => request<BitoToolSummary[]>("/integrations/bito/tools");
+export const disconnectBito = () => request<{ status: "disconnected" }>("/integrations/bito/disconnect", { method: "DELETE" });

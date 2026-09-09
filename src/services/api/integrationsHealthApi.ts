@@ -9,7 +9,7 @@ export type IntegrationHealth = {
   lastErrorCode: string | null;
 };
 
-export type IntegrationsHealth = { google: IntegrationHealth; telegram: IntegrationHealth };
+export type IntegrationsHealth = { google: IntegrationHealth; telegram: IntegrationHealth; bito: IntegrationHealth };
 
 export const integrationsHealthApi = {
   get: () => request<IntegrationsHealth>('/integrations/health'),
