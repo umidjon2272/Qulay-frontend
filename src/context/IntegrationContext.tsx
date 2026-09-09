@@ -31,8 +31,11 @@ export type ConnectionState = {
   username?: string;
 };
 
-const loadState = (): Record<string, ConnectionState> =>
-  getIntegrationState();
+const loadState = (): Record<string, ConnectionState> => ({
+  ...getIntegrationState(),
+  // A local saved flag cannot prove that the current Bito OAuth/MCP works.
+  bito: { connected: false },
+});
 
 export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<Record<string, ConnectionState>>(loadState);
@@ -53,12 +56,14 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
       }
       if (bito.status === "fulfilled") {
         next.bito = { connected: bito.value.connected, username: bito.value.serverName ?? bito.value.serverHost ?? "Bito ERP" };
+      } else {
+        next.bito = { connected: false };
       }
       return next;
     });
   }, []);
 
-  useEffect(() => subscribeToWorkspaceData("integrations", () => setState(loadState())), []);
+  useEffect(() => subscribeToWorkspaceData("integrations", () => { setState(loadState()); void refreshServerConnections(); }), [refreshServerConnections]);
 
   // Server-owned integrations remain connected across refreshes, devices and sessions.
   // A temporary network error preserves the last known status instead of showing "Ulanmagan".

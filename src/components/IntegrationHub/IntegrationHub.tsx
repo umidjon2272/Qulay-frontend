@@ -286,6 +286,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
         const status = await getBitoStatus();
         setBitoStatus(status);
         sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
+        if (!status.connected) throw new Error("Bito bilan ulanishni hozir tekshirib bo‘lmadi.");
         showToast(`Bito ERP ulandi. ${result.toolCount} ta MCP tool topildi.`, "success");
         closeModal();
         return;
@@ -308,9 +309,11 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       setBitoStatus(status);
       if (healthResult) setHealth(healthResult);
       sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
+      if (!status.connected) throw new Error("Bito bilan ulanishni hozir tekshirib bo‘lmadi.");
       showToast(`Bito ishlayapti. ${result.toolCount} ta MCP tool mavjud.`, "success");
     } catch (error) {
       setTelegramError(errorMessage(error, "Bito ulanishini tekshirib bo'lmadi."));
+      sync("bito", false);
     } finally {
       setTelegramBusy(false);
     }
@@ -432,8 +435,10 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             </div>}
             <span className="integration-modal__note">{t("integrations.telegram.sessionEncrypted", "Session Qulay AI serverida shifrlangan holda saqlanadi.")}</span>
           </> : selected.id === "bito" ? <>
-            {bitoStatus?.configured === false && <span className="integration-modal__error">Backendda BITO_CREDENTIAL_ENCRYPTION_KEY sozlanmagan. Avval server environmentiga 64 belgili hex key qo‘shing.</span>}
-            {bitoStatus?.configured !== false && bitoStatus?.oauthReady === false && <span className="integration-modal__error">Bito OAuth callback manzili sozlanmagan. Backendda BITO_OAUTH_REDIRECT_URI ni kiriting yoki GOOGLE_REDIRECT_URI orqali avtomatik aniqlanishini tekshiring.</span>}
+            {bitoStatus?.configured === false && <span className="integration-modal__error">Bito xizmati hozir sozlanmagan. Administratorga murojaat qiling.</span>}
+            {bitoStatus?.configured !== false && bitoStatus?.oauthReady === false && <span className="integration-modal__error">Bito ulanishi hozir tayyor emas. Administratorga murojaat qiling.</span>}
+            {bitoStatus?.status === "DEGRADED" && <><span className="integration-modal__error">Bito ulanishi saqlangan, lekin hozir xizmatdan ma’lumot olib bo‘lmadi.</span><button type="button" className="integration-modal__connect" onClick={() => void testBitoConnection()} disabled={telegramBusy}>Qayta tekshirish</button></>}
+            {bitoStatus?.status === "EXPIRED" && <span className="integration-modal__error">Bito ruxsatini yangilash kerak. Qayta ulang.</span>}
             {bitoStatus?.authorizing && <span className="integration-modal__note">Bito ruxsati kutilmoqda. Ulanishni qayta boshlash uchun tugmani bosishingiz mumkin.</span>}
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
             <button type="button" className="integration-modal__connect" onClick={() => void submitBito()} disabled={telegramBusy || bitoStatusLoading || bitoStatus?.configured === false || bitoStatus?.oauthReady === false}>{bitoStatusLoading ? "Holat tekshirilmoqda..." : telegramBusy ? "Bito oynasi ochilmoqda..." : "Bito bilan ulash"}<ExternalLink size={15} /></button>

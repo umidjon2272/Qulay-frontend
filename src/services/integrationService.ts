@@ -141,7 +141,7 @@ export type BitoStatus = {
   oauthReady: boolean;
   connected: boolean;
   authorizing: boolean;
-  status: "DISCONNECTED" | "AUTHORIZING" | "CONNECTED" | "ERROR" | "not_configured";
+  status: "DISCONNECTED" | "AUTHORIZING" | "CONNECTED" | "DEGRADED" | "EXPIRED" | "ERROR" | "not_configured";
   serverName: string | null;
   serverHost: string | null;
   protocolVersion: string | null;
