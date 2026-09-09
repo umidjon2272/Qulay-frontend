@@ -31,7 +31,7 @@ import ChangePasswordModal from "../../components/ChangePasswordModal/ChangePass
 import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
 import { getSettings, updateSettings } from "../../services/settingsService";
 import { playNotificationChime } from '../../services/notificationSound';
-import { getGoogleStatus } from "../../services/integrationService";
+import { getBitoStatus, getGoogleStatus } from "../../services/integrationService";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
@@ -158,25 +158,43 @@ const Settings = () => {
   const [confirmingLogout, setConfirmingLogout] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
-  const googleOAuthHandledRef = useRef<string | null>(null);
+  const oauthHandledRef = useRef<string | null>(null);
 
   useEffect(() => {
     const oauthIntegration = searchParams.get("integration");
-    if (active !== "integrations" && oauthIntegration !== "google") return;
+    if (active !== "integrations" && oauthIntegration !== "google" && oauthIntegration !== "bito") return;
     const oauthStatus = searchParams.get("status");
     const oauthReason = searchParams.get("reason");
     const oauthErrorCode = searchParams.get("errorCode");
     const oauthMessage = searchParams.get("message");
-    const oauthKey = oauthIntegration === "google" ? `${oauthStatus ?? "status"}:${oauthReason ?? ""}:${oauthErrorCode ?? ""}` : null;
+    const oauthKey = oauthIntegration === "google" || oauthIntegration === "bito"
+      ? `${oauthIntegration}:${oauthStatus ?? "status"}:${oauthReason ?? ""}:${oauthErrorCode ?? ""}`
+      : null;
     let activeRequest = true;
+
+    if (oauthIntegration === "bito") {
+      void getBitoStatus().then((status) => {
+        if (!activeRequest) return;
+        sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
+        if (oauthKey && oauthHandledRef.current !== oauthKey) {
+          oauthHandledRef.current = oauthKey;
+          if (oauthStatus === "connected" && status.connected) showToast(`Bito ERP ulandi. ${status.toolCount} ta MCP tool topildi.`, "success");
+          else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast("Bito ulanishi bekor qilindi", "info");
+          else if (oauthStatus === "error") showToast(oauthMessage || (oauthErrorCode ? `Bito OAuth xatosi: ${oauthErrorCode}` : "Bito ulanishini yakunlab bo'lmadi"), "error");
+        }
+        setSearchParams({ tab: "integrations", focus: "bito" }, { replace: true });
+      }).catch((error) => showToast(error instanceof Error && error.message ? error.message : "Bito ulanish holatini tekshirib bo'lmadi", "error"));
+      return () => { activeRequest = false; };
+    }
+
     void getGoogleStatus().then((status) => {
       if (!activeRequest) return;
       const account = status.email ?? status.displayName ?? "Google";
       sync("google-calendar", Boolean(status.connected && status.calendarEnabled), account);
       sync("google-drive", Boolean(status.connected && status.driveEnabled), account);
 
-      if (oauthIntegration === "google" && oauthKey && googleOAuthHandledRef.current !== oauthKey) {
-        googleOAuthHandledRef.current = oauthKey;
+      if (oauthIntegration === "google" && oauthKey && oauthHandledRef.current !== oauthKey) {
+        oauthHandledRef.current = oauthKey;
         if (oauthStatus === "connected" && status.connected) {
           const connectedServices = [status.calendarEnabled ? "Calendar" : null, status.driveEnabled ? "Drive" : null].filter(Boolean).join(` ${t("common.and", "va")} `);
           showToast(connectedServices ? t("settings.google.connectedWith", "Google {services} ulandi", { services: connectedServices }) : t("settings.google.connectedNoScopes", "Google akkaunti ulandi, lekin kerakli ruxsatlar topilmadi"), connectedServices ? "success" : "error");

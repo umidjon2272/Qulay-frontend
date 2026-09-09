@@ -19,11 +19,10 @@ import {
   getTelegramQrStatus,
   verifyTelegramCode,
   verifyTelegramPassword,
-  connectBito,
   disconnectBito,
+  getBitoConnectUrl,
   getBitoStatus,
   testBito,
-  type BitoAuthMode,
   type BitoStatus,
   type TelegramDeliveryType,
 } from "../../services/integrationService";
@@ -89,9 +88,6 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const [telegramDelivery, setTelegramDelivery] = useState<TelegramDeliveryType | null>(null);
   const [telegramNextDelivery, setTelegramNextDelivery] = useState<TelegramDeliveryType | null>(null);
   const [telegramResendAvailableAt, setTelegramResendAvailableAt] = useState<number | null>(null);
-  const [bitoUrl, setBitoUrl] = useState("");
-  const [bitoToken, setBitoToken] = useState("");
-  const [bitoAuthMode, setBitoAuthMode] = useState<BitoAuthMode>("NONE");
   const [bitoStatus, setBitoStatus] = useState<BitoStatus | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [connectingId, setConnectingId] = useState<string | null>(null);
@@ -145,18 +141,17 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   }, [showToast, sync]);
 
   useEffect(() => {
-    if (selectedId !== "bito") return undefined;
     let active = true;
-    void getBitoStatus().then((status) => {
+    void Promise.all([getBitoStatus(), integrationsHealthApi.get().catch(() => null)]).then(([status, healthResult]) => {
       if (!active) return;
       setBitoStatus(status);
-      setBitoAuthMode(status.authMode);
+      if (healthResult) setHealth(healthResult);
       sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
-    }).catch((error) => {
-      if (active) setTelegramError(errorMessage(error, "Bito ulanish holatini tekshirib bo'lmadi."));
+    }).catch(() => {
+      // Bito is optional; connection errors are shown only when the user opens its modal.
     });
     return () => { active = false; };
-  }, [selectedId, sync]);
+  }, [sync]);
 
   useEffect(() => () => {
     if (connectTimerRef.current !== null) window.clearTimeout(connectTimerRef.current);
@@ -164,6 +159,8 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
 
   const visible = limit ? integrations.slice(0, limit) : integrations;
   const selected = integrations.find((item) => item.id === selectedId);
+  const selectedConnected = selected?.id === "bito" ? bitoStatus?.connected === true : selected?.connected === true;
+  const bitoStatusLoading = selected?.id === "bito" && bitoStatus === null;
   const SelectedIcon = selected?.icon;
   const resendRemainingSeconds = telegramResendAvailableAt ? Math.max(0, Math.ceil((telegramResendAvailableAt - now) / 1000)) : 0;
   const telegramQrExpiresAt = telegramQr?.expiresAt;
@@ -176,7 +173,6 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     }
     setConnectingId(null); setSelectedId(null); setUsername(""); setTelegramPhone(""); setTelegramCode(""); setTelegramPassword(""); setTelegramStep("phone"); setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramQrImage(null); setTelegramBusy(false); setTelegramError(null);
     setTelegramDelivery(null); setTelegramNextDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false);
-    setBitoUrl(""); setBitoToken(""); setBitoAuthMode("NONE"); setBitoStatus(null);
   };
 
   const finishTelegramConnection = async () => {
@@ -281,21 +277,23 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   };
 
   const submitBito = async () => {
-    if (telegramBusy || !bitoUrl.trim()) return;
+    if (telegramBusy) return;
     setTelegramBusy(true);
     setTelegramError(null);
     try {
-      const result = await connectBito({
-        serverUrl: bitoUrl.trim(),
-        authMode: bitoAuthMode,
-        ...(bitoAuthMode !== "NONE" && bitoToken.trim() ? { accessToken: bitoToken.trim() } : {}),
-      });
-      sync("bito", true, result.serverName || "Bito ERP");
-      showToast(`Bito ERP ulandi. ${result.toolCount} ta MCP tool topildi.`, "success");
-      closeModal();
+      const result = await getBitoConnectUrl();
+      if (result.connected) {
+        const status = await getBitoStatus();
+        setBitoStatus(status);
+        sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
+        showToast(`Bito ERP ulandi. ${result.toolCount} ta MCP tool topildi.`, "success");
+        closeModal();
+        return;
+      }
+      if (!result.url) throw new Error("Bito authorization URL topilmadi");
+      window.location.assign(result.url);
     } catch (error) {
-      setTelegramError(errorMessage(error, "Bito MCP serveriga ulanib bo'lmadi."));
-    } finally {
+      setTelegramError(errorMessage(error, "Bito ruxsat oynasini ochib bo'lmadi."));
       setTelegramBusy(false);
     }
   };
@@ -306,8 +304,9 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     setTelegramError(null);
     try {
       const result = await testBito();
-      const status = await getBitoStatus();
+      const [status, healthResult] = await Promise.all([getBitoStatus(), integrationsHealthApi.get().catch(() => null)]);
       setBitoStatus(status);
+      if (healthResult) setHealth(healthResult);
       sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
       showToast(`Bito ishlayapti. ${result.toolCount} ta MCP tool mavjud.`, "success");
     } catch (error) {
@@ -321,7 +320,14 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     if (!selected) return;
     if (selected.id === "bito") {
       setTelegramBusy(true); setTelegramError(null);
-      try { await disconnectBito(); disconnect("bito"); closeModal(); }
+      try {
+        await disconnectBito();
+        const status = await getBitoStatus();
+        setBitoStatus(status);
+        sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
+        disconnect("bito");
+        closeModal();
+      }
       catch (error) { setTelegramError(errorMessage(error)); }
       finally { setTelegramBusy(false); }
       return;
@@ -367,9 +373,12 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
           <button type="button" className="integration-modal__close" onClick={closeModal} aria-label={t("integrations.modal.close", "Integratsiya oynasini yopish")}><X size={17} /></button>
           <div className={`integration-modal__icon integration-modal__icon--${selected.color}`}>{SelectedIcon && <SelectedIcon size={23} />}</div>
           <h2>{selected.name}</h2>
-          <p>{selected.id === "telegram" && selected.connected ? "Telegram ulangan" : selected.connected ? `${selected.name} Qulay AI bilan ulangan.` : `${selected.name}ni Qulay AI bilan ulang.`}</p>
-          {selected.id === "telegram" && selected.connected && telegramTemporaryError && <span className="integration-modal__error">{t("integrations.telegram.temporaryIssue", "Telegram bilan vaqtinchalik aloqa muammosi")}</span>}
+          <p>{selected.id === "telegram" && selectedConnected ? "Telegram ulangan" : selectedConnected ? `${selected.name} Qulay AI bilan ulangan.` : `${selected.name}ni Qulay AI bilan ulang.`}</p>
+          {selected.id === "telegram" && selectedConnected && telegramTemporaryError && <span className="integration-modal__error">{t("integrations.telegram.temporaryIssue", "Telegram bilan vaqtinchalik aloqa muammosi")}</span>}
           {(() => {
+            if (selected.id === "bito" && bitoStatus?.authorizing) {
+              return <div className="integration-modal__health"><span className="integration-modal__health-badge integration-modal__health-badge--temporary_issue">Ruxsat kutilmoqda</span></div>;
+            }
             const itemHealth = healthForItem(health, selected.id);
             if (!itemHealth) return null;
             return (
@@ -381,7 +390,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             );
           })()}
 
-          {selected.connected ? <>
+          {selectedConnected ? <>
             <div className="integration-modal__security"><ShieldCheck size={17} /><div><strong>{t("integrations.connectedAccount", "Ulangan hisob")}</strong><span>{selected.username || t("integrations.activeConnection", "Faol ulanish")}</span></div></div>
             {selected.id === "bito" && <>
               <div className="integration-modal__health">
@@ -424,21 +433,11 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             <span className="integration-modal__note">{t("integrations.telegram.sessionEncrypted", "Session Qulay AI serverida shifrlangan holda saqlanadi.")}</span>
           </> : selected.id === "bito" ? <>
             {bitoStatus?.configured === false && <span className="integration-modal__error">Backendda BITO_CREDENTIAL_ENCRYPTION_KEY sozlanmagan. Avval server environmentiga 64 belgili hex key qo‘shing.</span>}
-            <label className="integration-modal__label">Bito MCP Server URL</label>
-            <input type="url" className="integration-modal__field" placeholder="https://.../mcp" value={bitoUrl} onChange={(event) => setBitoUrl(event.target.value)} autoComplete="off" />
-            <label className="integration-modal__label">Auth usuli</label>
-            <select className="integration-modal__field" value={bitoAuthMode} onChange={(event) => setBitoAuthMode(event.target.value as BitoAuthMode)}>
-              <option value="NONE">URLning o‘zi / token kerak emas</option>
-              <option value="BEARER">Bearer token</option>
-              <option value="X_API_KEY">X-API-Key</option>
-            </select>
-            {bitoAuthMode !== "NONE" && <>
-              <label className="integration-modal__label">Bito token</label>
-              <input type="password" className="integration-modal__field" placeholder="Token" value={bitoToken} onChange={(event) => setBitoToken(event.target.value)} autoComplete="new-password" />
-            </>}
+            {bitoStatus?.configured !== false && bitoStatus?.oauthReady === false && <span className="integration-modal__error">Bito OAuth callback manzili sozlanmagan. Backendda BITO_OAUTH_REDIRECT_URI ni kiriting yoki GOOGLE_REDIRECT_URI orqali avtomatik aniqlanishini tekshiring.</span>}
+            {bitoStatus?.authorizing && <span className="integration-modal__note">Bito ruxsati kutilmoqda. Ulanishni qayta boshlash uchun tugmani bosishingiz mumkin.</span>}
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
-            <button type="button" className="integration-modal__connect" onClick={() => void submitBito()} disabled={telegramBusy || !bitoUrl.trim() || bitoStatus?.configured === false}>{telegramBusy ? "Tekshirilmoqda..." : "Bito MCP ni ulash"}<ExternalLink size={15} /></button>
-            <span className="integration-modal__note">Bito → Integratsiyalar → MCP Server ichidagi URL va, agar berilgan bo‘lsa, tokenni kiriting. URL/token Qulay serverida shifrlangan holda saqlanadi.</span>
+            <button type="button" className="integration-modal__connect" onClick={() => void submitBito()} disabled={telegramBusy || bitoStatusLoading || bitoStatus?.configured === false || bitoStatus?.oauthReady === false}>{bitoStatusLoading ? "Holat tekshirilmoqda..." : telegramBusy ? "Bito oynasi ochilmoqda..." : "Bito bilan ulash"}<ExternalLink size={15} /></button>
+            <span className="integration-modal__note">Qulay AI Bito MCP serverini avtomatik topadi va xavfsiz OAuth ruxsati orqali ulaydi. Tokenni qo‘lda kiritish shart emas.</span>
           </> : (selected.id === "google-calendar" || selected.id === "google-drive") ? <>
             <button type="button" className="integration-modal__connect" onClick={() => { if (connectingId) return; setConnectingId(selected.id); void getGoogleConnectUrl().then(({ url }) => { window.location.assign(url); }).catch((error) => { const message = errorMessage(error, "Google OAuth oynasini ochib bo'lmadi."); setTelegramError(message); showToast(message, "error"); setConnectingId(null); }); }} disabled={connectingId === selected.id}>{connectingId === selected.id ? "Google oynatilmoqda..." : "Google bilan ulash"}<ExternalLink size={15} /></button>
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}

@@ -138,8 +138,10 @@ export const disconnectGoogle = () => request<{ status: "disconnected" }>("/inte
 export type BitoAuthMode = "NONE" | "BEARER" | "X_API_KEY";
 export type BitoStatus = {
   configured: boolean;
+  oauthReady: boolean;
   connected: boolean;
-  status: "DISCONNECTED" | "CONNECTED" | "ERROR" | "not_configured";
+  authorizing: boolean;
+  status: "DISCONNECTED" | "AUTHORIZING" | "CONNECTED" | "ERROR" | "not_configured";
   serverName: string | null;
   serverHost: string | null;
   protocolVersion: string | null;
@@ -154,6 +156,7 @@ export type BitoStatus = {
 export type BitoToolSummary = { name: string; title: string | null; description: string | null; readOnly: boolean };
 
 export const getBitoStatus = () => request<BitoStatus>("/integrations/bito/status");
+export const getBitoConnectUrl = () => request<{ connected: boolean; url: string | null; serverName: string | null; toolCount: number }>("/integrations/bito/auth-url");
 export const connectBito = (input: { serverUrl: string; authMode: BitoAuthMode; accessToken?: string }) =>
   request<{ status: "connected"; serverName: string; protocolVersion: string | null; toolCount: number; tools: BitoToolSummary[] }>("/integrations/bito/connect", {
     method: "POST",
