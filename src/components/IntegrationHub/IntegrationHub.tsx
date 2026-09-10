@@ -313,7 +313,12 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       showToast(`Bito ishlayapti. ${result.toolCount} ta MCP tool mavjud.`, "success");
     } catch (error) {
       setTelegramError(errorMessage(error, "Bito ulanishini tekshirib bo'lmadi."));
-      sync("bito", false);
+      // A transient test failure does not prove that OAuth was disconnected.
+      // Refresh authoritative server status instead of forcing a false badge.
+      void getBitoStatus().then((status) => {
+        setBitoStatus(status);
+        sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
+      }).catch(() => undefined);
     } finally {
       setTelegramBusy(false);
     }
@@ -442,7 +447,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             {bitoStatus?.authorizing && <span className="integration-modal__note">Bito ruxsati kutilmoqda. Ulanishni qayta boshlash uchun tugmani bosishingiz mumkin.</span>}
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
             <button type="button" className="integration-modal__connect" onClick={() => void submitBito()} disabled={telegramBusy || bitoStatusLoading || bitoStatus?.configured === false || bitoStatus?.oauthReady === false}>{bitoStatusLoading ? "Holat tekshirilmoqda..." : telegramBusy ? "Bito oynasi ochilmoqda..." : "Bito bilan ulash"}<ExternalLink size={15} /></button>
-            <span className="integration-modal__note">Qulay AI Bito MCP serverini avtomatik topadi va xavfsiz OAuth ruxsati orqali ulaydi. Tokenni qo‘lda kiritish shart emas.</span>
+            <span className="integration-modal__note">Qulay AI Bito MCP orqali ombor, savdo, moliya, mijozlar, xodimlar va Bito akkauntingiz ruxsat bergan boshqa ERP ma’lumotlarini o‘qiy oladi. O‘zgartiruvchi amallar alohida tasdiqlanadi; tokenni qo‘lda kiritish shart emas.</span>
           </> : (selected.id === "google-calendar" || selected.id === "google-drive") ? <>
             <button type="button" className="integration-modal__connect" onClick={() => { if (connectingId) return; setConnectingId(selected.id); void getGoogleConnectUrl().then(({ url }) => { window.location.assign(url); }).catch((error) => { const message = errorMessage(error, "Google OAuth oynasini ochib bo'lmadi."); setTelegramError(message); showToast(message, "error"); setConnectingId(null); }); }} disabled={connectingId === selected.id}>{connectingId === selected.id ? "Google oynatilmoqda..." : "Google bilan ulash"}<ExternalLink size={15} /></button>
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}

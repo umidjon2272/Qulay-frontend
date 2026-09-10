@@ -54,7 +54,7 @@ export const integrationCatalog: IntegrationDefinition[] = [
   {
     id: "bito",
     name: "Bito ERP",
-    description: "Mahsulot, qoldiq, savdo va biznes ma’lumotlari",
+    description: "Ombor, savdo, moliya, mijozlar, xodimlar va boshqa ERP ma’lumotlari",
     icon: Database,
     color: "purple",
   },
