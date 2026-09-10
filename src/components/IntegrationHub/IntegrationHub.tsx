@@ -10,6 +10,8 @@ import {
   connectTelegram,
   disconnectTelegram,
   getTelegramStatus,
+  getTelegramSalesAgentSettings,
+  updateTelegramSalesAgentSettings,
   disconnectGoogle,
   getGoogleConnectUrl,
   getGoogleStatus,
@@ -25,6 +27,7 @@ import {
   testBito,
   type BitoStatus,
   type TelegramDeliveryType,
+  type TelegramSalesAgentSettings,
 } from "../../services/integrationService";
 
 import { useI18n } from "../../i18n/useI18n";
@@ -85,6 +88,8 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const [telegramBusy, setTelegramBusy] = useState(false);
   const [telegramError, setTelegramError] = useState<string | null>(null);
   const [telegramTemporaryError, setTelegramTemporaryError] = useState(false);
+  const [telegramSalesSettings, setTelegramSalesSettings] = useState<TelegramSalesAgentSettings | null>(null);
+  const [telegramSalesBusy, setTelegramSalesBusy] = useState(false);
   const [telegramDelivery, setTelegramDelivery] = useState<TelegramDeliveryType | null>(null);
   const [telegramNextDelivery, setTelegramNextDelivery] = useState<TelegramDeliveryType | null>(null);
   const [telegramResendAvailableAt, setTelegramResendAvailableAt] = useState<number | null>(null);
@@ -119,9 +124,13 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   useEffect(() => {
     if (selectedId !== "telegram") return undefined;
     let active = true;
-    void getTelegramStatus().then((status) => {
+    void Promise.all([
+      getTelegramStatus(),
+      getTelegramSalesAgentSettings().catch(() => null),
+    ]).then(([status, salesSettings]) => {
       if (!active) return;
       setTelegramTemporaryError(Boolean(status.temporaryError));
+      setTelegramSalesSettings(salesSettings);
       sync("telegram", status.connected, status.username ?? status.displayName ?? "Telegram");
     }).catch(() => { if (active) setTelegramTemporaryError(true); });
     return () => { active = false; };
@@ -172,7 +181,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       connectTimerRef.current = null;
     }
     setConnectingId(null); setSelectedId(null); setUsername(""); setTelegramPhone(""); setTelegramCode(""); setTelegramPassword(""); setTelegramStep("phone"); setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramQrImage(null); setTelegramBusy(false); setTelegramError(null);
-    setTelegramDelivery(null); setTelegramNextDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false);
+    setTelegramDelivery(null); setTelegramNextDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false); setTelegramSalesSettings(null); setTelegramSalesBusy(false);
   };
 
   const finishTelegramConnection = async () => {
@@ -299,6 +308,21 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     }
   };
 
+  const updateTelegramSalesSetting = async (patch: Partial<Pick<TelegramSalesAgentSettings, "enabled" | "privateChats" | "groups" | "voiceEnabled">>) => {
+    if (telegramSalesBusy) return;
+    setTelegramSalesBusy(true);
+    setTelegramError(null);
+    try {
+      const next = await updateTelegramSalesAgentSettings(patch);
+      setTelegramSalesSettings(next);
+      showToast(next.enabled ? "Telegram AI sotuv agenti yangilandi." : "Telegram AI sotuv agenti o‘chirildi.", "success");
+    } catch (error) {
+      setTelegramError(errorMessage(error, "Telegram AI sotuv agenti sozlamasini saqlab bo‘lmadi."));
+    } finally {
+      setTelegramSalesBusy(false);
+    }
+  };
+
   const testBitoConnection = async () => {
     if (telegramBusy) return;
     setTelegramBusy(true);
@@ -400,6 +424,42 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
 
           {selectedConnected ? <>
             <div className="integration-modal__security"><ShieldCheck size={17} /><div><strong>{t("integrations.connectedAccount", "Ulangan hisob")}</strong><span>{selected.username || t("integrations.activeConnection", "Faol ulanish")}</span></div></div>
+            {selected.id === "telegram" && <div className="integration-modal__sales-agent">
+              <div className="integration-modal__sales-agent-head">
+                <div>
+                  <strong>AI sotuv agenti</strong>
+                  <span>Mijozlarga Telegram’da avtomatik javob beradi.</span>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={telegramSalesSettings?.enabled === true}
+                  className={`integration-modal__switch ${telegramSalesSettings?.enabled ? "is-on" : ""}`}
+                  disabled={telegramSalesBusy || !telegramSalesSettings}
+                  onClick={() => void updateTelegramSalesSetting({ enabled: !telegramSalesSettings?.enabled })}
+                ><span /></button>
+              </div>
+              {telegramSalesSettings && <>
+                <div className="integration-modal__sales-options">
+                  <label>
+                    <input type="checkbox" checked={telegramSalesSettings.privateChats} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ privateChats: event.target.checked })} />
+                    <span><strong>Lichka</strong><small>Barcha kiruvchi lichka xabarlariga javob beradi. Biznes Telegram akkaunti uchun tavsiya.</small></span>
+                  </label>
+                  <label>
+                    <input type="checkbox" checked={telegramSalesSettings.groups} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ groups: event.target.checked })} />
+                    <span><strong>Guruhlar</strong><small>Faqat mention/reply yoki aniq sotuv savolida javob beradi.</small></span>
+                  </label>
+                  <label>
+                    <input type="checkbox" checked={telegramSalesSettings.voiceEnabled} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ voiceEnabled: event.target.checked })} />
+                    <span><strong>Golosni tushunish</strong><small>Maksimum {telegramSalesSettings.maxVoiceSeconds} soniya. Javob text bo‘ladi.</small></span>
+                  </label>
+                </div>
+                <div className="integration-modal__sales-status">
+                  <span className={telegramSalesSettings.listenerActive ? "is-active" : ""} />
+                  {telegramSalesSettings.enabled ? telegramSalesSettings.listenerActive ? "Agent faol" : "Agent ishga tushmoqda..." : "Agent o‘chiq"}
+                </div>
+              </>}
+            </div>}
             {selected.id === "bito" && <>
               <div className="integration-modal__health">
                 <small>MCP: {bitoStatus?.protocolVersion || "aniqlanmoqda"}</small>

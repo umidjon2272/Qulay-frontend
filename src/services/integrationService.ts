@@ -102,6 +102,26 @@ export const getTelegramQrStatus = () =>
 
 export const getTelegramStatus = () => request<TelegramStatus>("/integrations/telegram/status");
 
+export type TelegramSalesAgentSettings = {
+  enabled: boolean;
+  privateChats: boolean;
+  groups: boolean;
+  voiceEnabled: boolean;
+  maxVoiceSeconds: 60;
+  replyMode: "TEXT";
+  listenerActive: boolean;
+};
+
+export const getTelegramSalesAgentSettings = () =>
+  request<TelegramSalesAgentSettings>("/integrations/telegram/sales-agent");
+
+export const updateTelegramSalesAgentSettings = (input: Partial<Pick<TelegramSalesAgentSettings, "enabled" | "privateChats" | "groups" | "voiceEnabled">>) =>
+  request<TelegramSalesAgentSettings>("/integrations/telegram/sales-agent", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+
+
 export const disconnectTelegram = () =>
   request<{ status: "disconnected" }>("/integrations/telegram/disconnect", { method: "DELETE" });
 
