@@ -185,3 +185,31 @@ export const connectBito = (input: { serverUrl: string; authMode: BitoAuthMode; 
 export const testBito = () => request<{ ok: boolean; protocolVersion: string | null; toolCount: number; tools: BitoToolSummary[] }>("/integrations/bito/test", { method: "POST" });
 export const getBitoTools = () => request<BitoToolSummary[]>("/integrations/bito/tools");
 export const disconnectBito = () => request<{ status: "disconnected" }>("/integrations/bito/disconnect", { method: "DELETE" });
+
+
+export type WhatsAppStatus = {
+  configured: boolean;
+  connected: boolean;
+  status: "DISCONNECTED" | "CONNECTED" | "DEGRADED" | "ERROR" | "not_configured";
+  displayPhoneNumber: string | null;
+  verifiedName: string | null;
+  phoneNumberId: string | null;
+  wabaId: string | null;
+  webhookSubscribed: boolean;
+  enabled: boolean;
+  salesOnly: boolean;
+  voiceEnabled: boolean;
+  maxVoiceSeconds: 60;
+  replyMode: "TEXT";
+  connectedAt: string | null;
+  lastValidatedAt: string | null;
+  lastErrorCode: string | null;
+};
+
+export const getWhatsAppStatus = () => request<WhatsAppStatus>("/integrations/whatsapp/status");
+export const connectWhatsApp = (input: { phoneNumberId: string; wabaId?: string; accessToken: string }) =>
+  request<WhatsAppStatus>("/integrations/whatsapp/connect", { method: "POST", body: JSON.stringify(input) });
+export const updateWhatsAppSalesAgentSettings = (input: Partial<Pick<WhatsAppStatus, "enabled" | "salesOnly" | "voiceEnabled">>) =>
+  request<WhatsAppStatus>("/integrations/whatsapp/sales-agent", { method: "PATCH", body: JSON.stringify(input) });
+export const testWhatsApp = () => request<WhatsAppStatus>("/integrations/whatsapp/test", { method: "POST" });
+export const disconnectWhatsApp = () => request<{ status: "disconnected" }>("/integrations/whatsapp/disconnect", { method: "DELETE" });
