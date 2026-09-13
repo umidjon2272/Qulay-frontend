@@ -636,6 +636,20 @@
     }
   }
 
+  &__advanced {
+    position: relative;
+    z-index: 2;
+    margin-top: 12px;
+    padding: 14px;
+    border: 1px solid rgba(210, 205, 220, 0.55);
+    border-radius: 14px;
+    background: rgba(244, 241, 250, 0.52);
+
+    .integration-modal__connect {
+      margin-top: 2px;
+    }
+  }
+
   &__note {
     position: relative;
     z-index: 2;

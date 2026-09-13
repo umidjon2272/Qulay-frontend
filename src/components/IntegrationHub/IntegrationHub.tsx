@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { useIntegrations } from "../../hooks/useIntegrations";
 import { ApiError } from "../../services/api/apiClient";
 import { integrationsHealthApi, type IntegrationsHealth, type IntegrationHealth } from "../../services/api/integrationsHealthApi";
+import { subscriptionApi, type PlanFeature } from "../../services/api/subscriptionApi";
 import {
   connectTelegram,
   disconnectTelegram,
@@ -29,7 +30,10 @@ import {
   type TelegramDeliveryType,
   type TelegramSalesAgentSettings,
   type WhatsAppStatus,
+  type WhatsAppEmbeddedConfig,
   getWhatsAppStatus,
+  getWhatsAppEmbeddedConfig,
+  connectWhatsAppEmbedded,
   connectWhatsApp,
   updateWhatsAppSalesAgentSettings,
   testWhatsApp,
@@ -44,6 +48,15 @@ import "./IntegrationHub.scss";
 type IntegrationHubProps = { limit?: number; columns?: number; navigateOnSelect?: boolean };
 type TelegramStep = "phone" | "code" | "password";
 type TelegramLoginMethod = "phone" | "qr";
+type MetaFacebookSdk = {
+  init: (options: Record<string, unknown>) => void;
+  login: (callback: (response: { authResponse?: { code?: string } }) => void, options: Record<string, unknown>) => void;
+};
+type WhatsAppEmbeddedEvent = {
+  type?: string;
+  event?: string;
+  data?: { phone_number_id?: string; waba_id?: string };
+};
 
 const errorMessage = (error: unknown, fallback = "Integratsiya bilan ulanishda xatolik yuz berdi.") => error instanceof ApiError ? error.message : fallback;
 
@@ -60,6 +73,42 @@ const healthForItem = (health: IntegrationsHealth | null, id: string): Integrati
   if (id === "telegram") return health.telegram;
   if (id === "bito") return health.bito;
   if (id === "whatsapp") return health.whatsapp;
+  return null;
+};
+
+const resolvedHealthForItem = (health: IntegrationsHealth | null, id: string, whatsAppStatus: WhatsAppStatus | null): IntegrationHealth | null => {
+  const base = healthForItem(health, id);
+  if (id !== "whatsapp" || !whatsAppStatus) return base;
+  if (whatsAppStatus.connected) {
+    return {
+      ...(base ?? {
+        lastSuccessfulSyncAt: whatsAppStatus.lastValidatedAt ?? whatsAppStatus.connectedAt,
+        lastCheckedAt: new Date().toISOString(),
+        lastErrorCode: null,
+      }),
+      state: "CONNECTED",
+      connected: true,
+      lastSuccessfulSyncAt: whatsAppStatus.lastValidatedAt ?? whatsAppStatus.connectedAt ?? base?.lastSuccessfulSyncAt ?? null,
+      lastErrorCode: null,
+    };
+  }
+  if (!base || base.connected) {
+    return {
+      state: "DISCONNECTED",
+      connected: false,
+      lastSuccessfulSyncAt: base?.lastSuccessfulSyncAt ?? whatsAppStatus.lastValidatedAt ?? whatsAppStatus.connectedAt ?? null,
+      lastCheckedAt: new Date().toISOString(),
+      lastErrorCode: null,
+    };
+  }
+  return base;
+};
+
+const requiredFeatureForIntegration = (id: string): PlanFeature | null => {
+  if (id === "google-calendar" || id === "google-drive") return "GOOGLE";
+  if (id === "telegram") return "TELEGRAM";
+  if (id === "bito") return "BITO";
+  if (id === "whatsapp") return "WHATSAPP_SALES";
   return null;
 };
 
@@ -102,6 +151,8 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const [telegramResendAvailableAt, setTelegramResendAvailableAt] = useState<number | null>(null);
   const [bitoStatus, setBitoStatus] = useState<BitoStatus | null>(null);
   const [whatsAppStatus, setWhatsAppStatus] = useState<WhatsAppStatus | null>(null);
+  const [whatsAppEmbeddedConfig, setWhatsAppEmbeddedConfig] = useState<WhatsAppEmbeddedConfig | null>(null);
+  const [whatsAppManualOpen, setWhatsAppManualOpen] = useState(false);
   const [whatsAppPhoneNumberId, setWhatsAppPhoneNumberId] = useState("");
   const [whatsAppWabaId, setWhatsAppWabaId] = useState("");
   const [whatsAppAccessToken, setWhatsAppAccessToken] = useState("");
@@ -109,12 +160,19 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const [now, setNow] = useState(() => Date.now());
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [health, setHealth] = useState<IntegrationsHealth | null>(null);
+  const [planFeatures, setPlanFeatures] = useState<PlanFeature[] | null>(null);
   const connectTimerRef = useRef<number | null>(null);
   const applyQrResultRef = useRef<(result: Awaited<ReturnType<typeof startTelegramQrLogin>>) => Promise<void>>(async () => undefined);
 
   useEffect(() => {
     let active = true;
     void integrationsHealthApi.get().then((result) => { if (active) setHealth(result); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void subscriptionApi.mine().then((info) => { if (active) setPlanFeatures(info.canUseAi ? info.plan.features : []); }).catch(() => { if (active) setPlanFeatures([]); });
     return () => { active = false; };
   }, []);
 
@@ -176,9 +234,11 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
 
   useEffect(() => {
     let active = true;
-    void getWhatsAppStatus().then((status) => {
+    void Promise.all([getWhatsAppStatus(), integrationsHealthApi.get().catch(() => null), getWhatsAppEmbeddedConfig().catch(() => null)]).then(([status, healthResult, embeddedConfig]) => {
       if (!active) return;
       setWhatsAppStatus(status);
+      if (healthResult) setHealth(healthResult);
+      if (embeddedConfig) setWhatsAppEmbeddedConfig(embeddedConfig);
       sync("whatsapp", status.connected, status.verifiedName ?? status.displayPhoneNumber ?? "WhatsApp");
     }).catch(() => undefined);
     return () => { active = false; };
@@ -191,6 +251,8 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const visible = limit ? integrations.slice(0, limit) : integrations;
   const selected = integrations.find((item) => item.id === selectedId);
   const selectedConnected = selected?.id === "bito" ? bitoStatus?.connected === true : selected?.id === "whatsapp" ? whatsAppStatus?.connected === true : selected?.connected === true;
+  const telegramSalesAllowed = planFeatures?.includes("TELEGRAM_SALES") === true;
+  const whatsAppSalesAllowed = planFeatures?.includes("WHATSAPP_SALES") === true;
   const bitoStatusLoading = selected?.id === "bito" && bitoStatus === null;
   const SelectedIcon = selected?.icon;
   const resendRemainingSeconds = telegramResendAvailableAt ? Math.max(0, Math.ceil((telegramResendAvailableAt - now) / 1000)) : 0;
@@ -204,7 +266,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     }
     setConnectingId(null); setSelectedId(null); setUsername(""); setTelegramPhone(""); setTelegramCode(""); setTelegramPassword(""); setTelegramStep("phone"); setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramQrImage(null); setTelegramBusy(false); setTelegramError(null);
     setTelegramDelivery(null); setTelegramNextDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false); setTelegramSalesSettings(null); setTelegramSalesBusy(false);
-    setWhatsAppPhoneNumberId(""); setWhatsAppWabaId(""); setWhatsAppAccessToken(""); setWhatsAppBusy(false);
+    setWhatsAppPhoneNumberId(""); setWhatsAppWabaId(""); setWhatsAppAccessToken(""); setWhatsAppBusy(false); setWhatsAppManualOpen(false);
   };
 
   const finishTelegramConnection = async () => {
@@ -346,6 +408,77 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     }
   };
 
+  const syncWhatsAppStatus = async (status: WhatsAppStatus) => {
+    setWhatsAppStatus(status);
+    sync("whatsapp", status.connected, status.verifiedName ?? status.displayPhoneNumber ?? "WhatsApp");
+    const healthResult = await integrationsHealthApi.get().catch(() => null);
+    if (healthResult) setHealth(healthResult);
+    return status;
+  };
+
+  const loadMetaSdk = async (config: WhatsAppEmbeddedConfig) => {
+    if (!config.appId) throw new Error("Meta App ID topilmadi");
+    const metaWindow = window as typeof window & { FB?: MetaFacebookSdk; fbAsyncInit?: () => void };
+    if (metaWindow.FB) { metaWindow.FB.init({ appId: config.appId, cookie: true, xfbml: true, version: config.graphApiVersion }); return metaWindow.FB; }
+    await new Promise<void>((resolve, reject) => {
+      const existing = document.getElementById("facebook-jssdk") as HTMLScriptElement | null;
+      const timer = window.setTimeout(() => reject(new Error("Meta SDK yuklanmadi")), 15000);
+      metaWindow.fbAsyncInit = () => { window.clearTimeout(timer); resolve(); };
+      if (existing) return;
+      const script = document.createElement("script");
+      script.id = "facebook-jssdk"; script.async = true; script.defer = true; script.crossOrigin = "anonymous"; script.src = "https://connect.facebook.net/en_US/sdk.js";
+      script.onerror = () => { window.clearTimeout(timer); reject(new Error("Meta SDK yuklanmadi")); };
+      document.head.appendChild(script);
+    });
+    const sdk = (metaWindow as { FB?: MetaFacebookSdk }).FB;
+    if (!sdk) throw new Error("Meta SDK ishga tushmadi");
+    sdk.init({ appId: config.appId, cookie: true, xfbml: true, version: config.graphApiVersion });
+    return sdk;
+  };
+
+  const submitWhatsAppEmbedded = async () => {
+    if (whatsAppBusy) return;
+    const config = whatsAppEmbeddedConfig ?? await getWhatsAppEmbeddedConfig();
+    setWhatsAppEmbeddedConfig(config);
+    if (!config.ready || !config.configId) { setTelegramError("Bir bosishda WhatsApp ulash hali administrator tomonidan sozlanmagan. Qo‘lda ulash bo‘limidan foydalanish mumkin."); return; }
+    setWhatsAppBusy(true); setTelegramError(null);
+    let cleanup = () => undefined;
+    try {
+      const FB = await loadMetaSdk(config);
+      let resolveSession: (value: { phoneNumberId: string; wabaId: string }) => void = () => undefined;
+      let rejectSession: (reason?: unknown) => void = () => undefined;
+      const sessionPromise = new Promise<{ phoneNumberId: string; wabaId: string }>((resolve, reject) => { resolveSession = resolve; rejectSession = reject; });
+      const sessionTimer = window.setTimeout(() => rejectSession(new Error("Meta WhatsApp tanlovi vaqti tugadi")), 120000);
+      const handler = (event: MessageEvent) => {
+        try {
+          const origin = new URL(event.origin);
+          if (origin.protocol !== "https:" || (origin.hostname !== "facebook.com" && !origin.hostname.endsWith(".facebook.com"))) return;
+        } catch { return; }
+        let payload: WhatsAppEmbeddedEvent | null = null;
+        try { payload = typeof event.data === "string" ? JSON.parse(event.data) as WhatsAppEmbeddedEvent : event.data as WhatsAppEmbeddedEvent; } catch { return; }
+        if (payload?.type !== "WA_EMBEDDED_SIGNUP") return;
+        if (payload.event === "FINISH" && payload.data?.phone_number_id && payload.data?.waba_id) resolveSession({ phoneNumberId: payload.data.phone_number_id, wabaId: payload.data.waba_id });
+        if (payload.event === "CANCEL" || payload.event === "ERROR") rejectSession(new Error("WhatsApp ulash bekor qilindi"));
+      };
+      window.addEventListener("message", handler);
+      cleanup = () => { window.clearTimeout(sessionTimer); window.removeEventListener("message", handler); };
+      const codePromise = new Promise<string>((resolve, reject) => {
+        FB.login((response) => { const code = response.authResponse?.code; if (code) resolve(code); else reject(new Error("Meta ruxsati olinmadi")); }, {
+          config_id: config.configId,
+          response_type: "code",
+          override_default_response_type: true,
+          extras: { setup: {}, sessionInfoVersion: "3" },
+        });
+      });
+      const [code, session] = await Promise.all([codePromise, sessionPromise]);
+      const status = await connectWhatsAppEmbedded({ code, phoneNumberId: session.phoneNumberId, wabaId: session.wabaId });
+      await syncWhatsAppStatus(status);
+      showToast("WhatsApp muvaffaqiyatli ulandi.", "success");
+    } catch (error) {
+      setTelegramError(errorMessage(error, "WhatsAppni Meta orqali ulab bo‘lmadi."));
+    } finally { cleanup(); setWhatsAppBusy(false); }
+  };
+
   const submitWhatsApp = async () => {
     if (whatsAppBusy) return;
     setWhatsAppBusy(true);
@@ -356,8 +489,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
         wabaId: whatsAppWabaId.trim() || undefined,
         accessToken: whatsAppAccessToken.trim(),
       });
-      setWhatsAppStatus(status);
-      sync("whatsapp", status.connected, status.verifiedName ?? status.displayPhoneNumber ?? "WhatsApp");
+      await syncWhatsAppStatus(status);
       setWhatsAppAccessToken("");
       showToast("WhatsApp Cloud API ulandi.", "success");
     } catch (error) {
@@ -372,7 +504,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     setWhatsAppBusy(true); setTelegramError(null);
     try {
       const status = await updateWhatsAppSalesAgentSettings(patch);
-      setWhatsAppStatus(status);
+      await syncWhatsAppStatus(status);
       showToast(status.enabled ? "WhatsApp AI sotuv agenti yangilandi." : "WhatsApp AI sotuv agenti o‘chirildi.", "success");
     } catch (error) { setTelegramError(errorMessage(error, "WhatsApp sotuv agenti sozlamasi saqlanmadi.")); }
     finally { setWhatsAppBusy(false); }
@@ -383,8 +515,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     setWhatsAppBusy(true); setTelegramError(null);
     try {
       const status = await testWhatsApp();
-      setWhatsAppStatus(status);
-      sync("whatsapp", status.connected, status.verifiedName ?? status.displayPhoneNumber ?? "WhatsApp");
+      await syncWhatsAppStatus(status);
       showToast("WhatsApp ulanishi ishlayapti.", "success");
     } catch (error) { setTelegramError(errorMessage(error, "WhatsApp ulanishini tekshirib bo‘lmadi.")); }
     finally { setWhatsAppBusy(false); }
@@ -436,7 +567,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       try {
         await disconnectWhatsApp();
         const status = await getWhatsAppStatus();
-        setWhatsAppStatus(status);
+        await syncWhatsAppStatus(status);
         disconnect("whatsapp");
         closeModal();
       } catch (error) { setTelegramError(errorMessage(error)); }
@@ -464,8 +595,10 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       <div className="integration-hub__grid" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
         {visible.map((item) => {
           const Icon = item.icon;
-          const itemHealth = healthForItem(health, item.id);
+          const itemHealth = resolvedHealthForItem(health, item.id, whatsAppStatus);
           const needsReconnect = itemHealth?.state === "RECONNECT_REQUIRED";
+          const requiredFeature = requiredFeatureForIntegration(item.id);
+          const planBlocked = !item.connected && planFeatures !== null && requiredFeature !== null && !planFeatures.includes(requiredFeature);
           return <article key={item.id} className={`integration-card integration-card--${item.color} ${focusedIntegration === item.id ? "integration-card--focused" : ""}`}>
             <div className="integration-card__top">
               <div className="integration-card__icon"><Icon size={20} /></div>
@@ -474,7 +607,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
                 : item.connected && <span className="integration-card__connected"><Check size={10} /> {t("integrations.connected", "Ulangan")}</span>}
             </div>
             <div className="integration-card__info"><h3>{item.name}</h3><p>{item.description}</p></div>
-            <button type="button" className={`integration-card__button ${item.connected ? "integration-card__button--connected" : ""}`} disabled={item.comingSoon} onClick={() => { if (item.comingSoon) return; if (navigateOnSelect) { navigate(`/settings?tab=integrations&focus=${item.id}`); return; } setSelectedId(item.id); }}>{item.comingSoon ? t("integrations.unavailable", "Hozircha mavjud emas") : item.connected ? t("integrations.manage", "Boshqarish") : needsReconnect ? "Qayta ulash" : connectingId === item.id ? "Ulanmoqda..." : t("integrations.connect", "Ulash")}{!item.comingSoon && <ArrowUpRight size={13} />}</button>
+            <button type="button" className={`integration-card__button ${item.connected ? "integration-card__button--connected" : ""}`} disabled={item.comingSoon} onClick={() => { if (item.comingSoon) return; if (planBlocked) { navigate("/billing"); return; } if (navigateOnSelect) { navigate(`/settings?tab=integrations&focus=${item.id}`); return; } setSelectedId(item.id); }}>{item.comingSoon ? t("integrations.unavailable", "Hozircha mavjud emas") : item.connected ? t("integrations.manage", "Boshqarish") : planBlocked ? "Tarifni ko‘rish" : needsReconnect ? "Qayta ulash" : connectingId === item.id ? "Ulanmoqda..." : t("integrations.connect", "Ulash")}{!item.comingSoon && <ArrowUpRight size={13} />}</button>
           </article>;
         })}
       </div>
@@ -490,7 +623,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             if (selected.id === "bito" && bitoStatus?.authorizing) {
               return <div className="integration-modal__health"><span className="integration-modal__health-badge integration-modal__health-badge--temporary_issue">Ruxsat kutilmoqda</span></div>;
             }
-            const itemHealth = healthForItem(health, selected.id);
+            const itemHealth = resolvedHealthForItem(health, selected.id, whatsAppStatus);
             if (!itemHealth) return null;
             return (
               <div className="integration-modal__health">
@@ -503,7 +636,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
 
           {selectedConnected ? <>
             <div className="integration-modal__security"><ShieldCheck size={17} /><div><strong>{t("integrations.connectedAccount", "Ulangan hisob")}</strong><span>{selected.username || t("integrations.activeConnection", "Faol ulanish")}</span></div></div>
-            {selected.id === "telegram" && <div className="integration-modal__sales-agent">
+            {selected.id === "telegram" && (telegramSalesAllowed ? <div className="integration-modal__sales-agent">
               <div className="integration-modal__sales-agent-head">
                 <div>
                   <strong>AI sotuv agenti</strong>
@@ -538,8 +671,11 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
                   {telegramSalesSettings.enabled ? telegramSalesSettings.listenerActive ? "Agent faol" : "Agent ishga tushmoqda..." : "Agent o‘chiq"}
                 </div>
               </>}
-            </div>}
-            {selected.id === "whatsapp" && whatsAppStatus && <div className="integration-modal__sales-agent">
+            </div> : <div className="integration-modal__sales-agent">
+              <div className="integration-modal__sales-agent-head"><div><strong>AI sotuv agenti</strong><span>Telegram AI sotuvchi Sales AI tarifida mavjud.</span></div></div>
+              <button type="button" className="integration-modal__connect" onClick={() => navigate("/billing")}>Sales AI tarifini ko‘rish <ArrowUpRight size={14} /></button>
+            </div>)}
+            {selected.id === "whatsapp" && whatsAppStatus && (whatsAppSalesAllowed ? <div className="integration-modal__sales-agent">
               <div className="integration-modal__sales-agent-head">
                 <div><strong>AI sotuv agenti</strong><span>WhatsApp lichkada faqat sotuvga oid suhbatlarga javob beradi.</span></div>
                 <button type="button" role="switch" aria-checked={whatsAppStatus.enabled} className={`integration-modal__switch ${whatsAppStatus.enabled ? "is-on" : ""}`} disabled={whatsAppBusy} onClick={() => void updateWhatsAppSalesSetting({ enabled: !whatsAppStatus.enabled })}><span /></button>
@@ -551,7 +687,10 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
               <div className="integration-modal__sales-status"><span className={whatsAppStatus.enabled ? "is-active" : ""} />{whatsAppStatus.enabled ? "Agent faol" : "Agent o‘chiq"}</div>
               <div className="integration-modal__health"><small>Webhook: {whatsAppStatus.webhookSubscribed ? "WABA subscribed" : "Meta panelda webhookni tekshirish kerak"}</small></div>
               <button type="button" className="integration-modal__connect" onClick={() => void testWhatsAppConnection()} disabled={whatsAppBusy}><RefreshCw size={15} /> {whatsAppBusy ? "Tekshirilmoqda..." : "Ulanishni tekshirish"}</button>
-            </div>}
+            </div> : <div className="integration-modal__sales-agent">
+              <div className="integration-modal__sales-agent-head"><div><strong>AI sotuv agenti</strong><span>WhatsApp AI sotuvchi Sales AI tarifida mavjud. Ulanish ma’lumoti saqlanadi, lekin agent obunasiz javob bermaydi.</span></div></div>
+              <button type="button" className="integration-modal__connect" onClick={() => navigate("/billing")}>Sales AI tarifini ko‘rish <ArrowUpRight size={14} /></button>
+            </div>)}
             {selected.id === "bito" && <>
               <div className="integration-modal__health">
                 <small>MCP: {bitoStatus?.protocolVersion || "aniqlanmoqda"}</small>
@@ -592,16 +731,23 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             </div>}
             <span className="integration-modal__note">{t("integrations.telegram.sessionEncrypted", "Session Qulay AI serverida shifrlangan holda saqlanadi.")}</span>
           </> : selected.id === "whatsapp" ? <>
-            {whatsAppStatus?.configured === false && <span className="integration-modal__error">WhatsApp server kalitlari hali sozlanmagan. Avval Render ENV ni kiriting.</span>}
-            <label className="integration-modal__label">Phone Number ID</label>
-            <input type="text" className="integration-modal__field" placeholder="123456789012345" value={whatsAppPhoneNumberId} onChange={(event) => setWhatsAppPhoneNumberId(event.target.value.replace(/\D/g, ""))} />
-            <label className="integration-modal__label">WhatsApp Business Account ID (WABA)</label>
-            <input type="text" className="integration-modal__field" placeholder="123456789012345" value={whatsAppWabaId} onChange={(event) => setWhatsAppWabaId(event.target.value.replace(/\D/g, ""))} />
-            <label className="integration-modal__label">Access Token</label>
-            <input type="password" className="integration-modal__field" placeholder="Meta access token" value={whatsAppAccessToken} onChange={(event) => setWhatsAppAccessToken(event.target.value)} autoComplete="off" />
+            {whatsAppStatus?.configured === false && <span className="integration-modal__error">WhatsApp server kalitlari hali sozlanmagan. Administrator Render ENV sozlamalarini yakunlashi kerak.</span>}
+            <button type="button" className="integration-modal__connect" onClick={() => void submitWhatsAppEmbedded()} disabled={whatsAppBusy || whatsAppStatus?.configured === false || whatsAppEmbeddedConfig?.ready === false}>{whatsAppBusy ? "Meta oynasi ochilmoqda..." : "Meta orqali WhatsAppni ulash"}<ExternalLink size={15} /></button>
+            <span className="integration-modal__note">Facebook / Meta hisobingizga kiring, biznes va WhatsApp raqamingizni tanlang. ID yoki tokenni qo‘lda topish shart emas.</span>
+            {whatsAppEmbeddedConfig?.ready === false && <span className="integration-modal__note">Bir bosishda ulash hali administrator tomonidan sozlanmagan. Hozircha Advanced usul mavjud.</span>}
+            <button type="button" className="integration-modal__resend" onClick={() => setWhatsAppManualOpen((value) => !value)}>{whatsAppManualOpen ? "Qo‘lda ulashni yashirish" : "Qo‘lda ulash (Advanced)"}</button>
+            {whatsAppManualOpen && <div className="integration-modal__advanced">
+              <label className="integration-modal__label">Phone Number ID</label>
+              <input type="text" className="integration-modal__field" placeholder="123456789012345" value={whatsAppPhoneNumberId} onChange={(event) => setWhatsAppPhoneNumberId(event.target.value.replace(/\D/g, ""))} />
+              <label className="integration-modal__label">WhatsApp Business Account ID (WABA)</label>
+              <input type="text" className="integration-modal__field" placeholder="123456789012345" value={whatsAppWabaId} onChange={(event) => setWhatsAppWabaId(event.target.value.replace(/\D/g, ""))} />
+              <label className="integration-modal__label">Access Token</label>
+              <input type="password" className="integration-modal__field" placeholder="Meta access token" value={whatsAppAccessToken} onChange={(event) => setWhatsAppAccessToken(event.target.value)} autoComplete="off" />
+              <button type="button" className="integration-modal__connect" onClick={() => void submitWhatsApp()} disabled={whatsAppBusy || whatsAppStatus?.configured === false || !whatsAppPhoneNumberId || !whatsAppAccessToken}>{whatsAppBusy ? "Tekshirilmoqda..." : "Qo‘lda ulash"}<ExternalLink size={15} /></button>
+              <span className="integration-modal__note">Advanced rejim developer/admin uchun. Access token serverda shifrlanadi.</span>
+            </div>}
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
-            <button type="button" className="integration-modal__connect" onClick={() => void submitWhatsApp()} disabled={whatsAppBusy || whatsAppStatus?.configured === false || !whatsAppPhoneNumberId || !whatsAppAccessToken}>{whatsAppBusy ? "Tekshirilmoqda..." : "WhatsAppni ulash"}<ExternalLink size={15} /></button>
-            <span className="integration-modal__note">Rasmiy WhatsApp Cloud API individual chatlar uchun ishlaydi. Guruh chatlari rasmiy API’da bot uchun qo‘llanmaydi. Token serverda shifrlanadi.</span>
+            <span className="integration-modal__note">Rasmiy WhatsApp Cloud API individual chatlar uchun ishlaydi. Guruh chatlari rasmiy API’da bot uchun qo‘llanmaydi.</span>
           </> : selected.id === "bito" ? <>
             {bitoStatus?.configured === false && <span className="integration-modal__error">Bito xizmati hozir sozlanmagan. Administratorga murojaat qiling.</span>}
             {bitoStatus?.configured !== false && bitoStatus?.oauthReady === false && <span className="integration-modal__error">Bito ulanishi hozir tayyor emas. Administratorga murojaat qiling.</span>}

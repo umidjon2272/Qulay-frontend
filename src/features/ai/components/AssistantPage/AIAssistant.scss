@@ -280,3 +280,68 @@ html:root body #root .ai-page .ai-welcome,
 html:root body #root .ai-page .message-list { background: transparent; }
 html:root body #root .ai-page .ai-history__row:focus-within .ai-history__edit,
 html:root body #root .ai-page .ai-history__row:focus-within .ai-history__delete { opacity: 1; }
+
+.ai-page--subscription-required {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-subscription-gate {
+  width: min(560px, calc(100% - 32px));
+  padding: 34px;
+  border-radius: 24px;
+  border: 1px solid var(--border-color, rgba(255,255,255,.12));
+  background: var(--surface-glass, rgba(20,32,52,.76));
+  box-shadow: 0 24px 70px rgba(0,0,0,.18);
+  backdrop-filter: blur(24px);
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.ai-subscription-gate__icon {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(130,91,234,.16);
+  color: #9d7cf0;
+}
+
+.ai-subscription-gate > span {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .11em;
+  color: #9d7cf0;
+}
+
+.ai-subscription-gate h1 {
+  margin: 0;
+  font-size: clamp(24px, 3vw, 34px);
+}
+
+.ai-subscription-gate p {
+  max-width: 470px;
+  margin: 14px auto 22px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.ai-subscription-gate button {
+  min-height: 46px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #825bea, #9d5be7);
+  color: #fff;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}

@@ -19,9 +19,23 @@ export type AdminUserDetail = AdminUser & {
   security: { activeRefreshSessions: number; passwordResetRequests: number };
   integrations: { telegram: { connected: boolean; status: string }; google: { connected: boolean; status: string } };
   lastActivity: string | null;
-  subscription?: { tier: AdminPlan['tier']; status: string; currentPeriodEnd: string | null } | null;
+  subscription?: { tier: AdminPlan['tier']; status: string; currentPeriodStart?: string | null; currentPeriodEnd: string | null; bonusCredits?: number } | null;
+  pendingSubscriptionRequest?: { id: string; tier: AdminPlan['tier']; status: 'PENDING'; requestedAt: string } | null;
 };
-export type AdminPlan = { tier: 'STARTER'|'PRO'|'BUSINESS'; name:string; monthlyPrice:number; currency:'UZS'|'USD'; isActive:boolean; limits:{ aiCreditsPerMonth:number; toolActionsPerMonth:number; voiceMinutesPerMonth:number; files:number; storageMb:number; memories:number } };
+export type AdminPlan = { tier: 'STARTER'|'PRO'|'BUSINESS'|'SALES_AI'; name:string; monthlyPrice:number; currency:'UZS'|'USD'; isActive:boolean; limits:{ aiCreditsPerMonth:number; toolActionsPerMonth:number; voiceMinutesPerMonth:number; files:number; storageMb:number; memories:number } };
+
+export type AdminSubscriptionRequest = {
+  id: string;
+  tier: AdminPlan['tier'];
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELED';
+  requestedAt: string;
+  reviewedAt: string | null;
+  reviewedBy: string | null;
+  user: { id: string; email: string; firstName: string; lastName: string; subscription?: { tier: AdminPlan['tier']; status: string; currentPeriodEnd: string | null } | null };
+  reviewer?: { id: string; email: string; firstName: string; lastName: string } | null;
+  plan: AdminPlan;
+};
+
 export type AdminPage<T> = { items: T[]; meta: { page: number; limit: number; total: number; totalPages: number } };
 
 type RateLimitInfo = { max: number; windowMinutes: number };
@@ -130,6 +144,10 @@ export const adminApi = {
   runTelegramLoginDiagnostic: () => request<{ accepted: true; diagnosticId: string; deploymentVersion: string }>("/admin/diagnostics/telegram-login", { method: "POST" }),
   getTelegramRuntimeDiagnostic: () => request<{ deploymentVersion: string; nodeVersion: string; nodeEngine: string | null; telegram: { declaredRange: string | null; lockedVersion: string | null; installedPackageVersion: string; gramJsRuntimeVersion: string; lockMatchesInstalled: boolean } }>("/admin/diagnostics/telegram-runtime"),
   plans: () => request<AdminPlan[]>("/admin/plans"),
+  subscriptionRequests: (status = 'PENDING') => request<AdminSubscriptionRequest[]>(`/admin/subscription-requests?status=${encodeURIComponent(status)}`),
+  approveSubscriptionRequest: (id: string) => request(`/admin/subscription-requests/${id}/approve`, { method: 'PATCH' }),
+  rejectSubscriptionRequest: (id: string) => request(`/admin/subscription-requests/${id}/reject`, { method: 'PATCH' }),
   updatePlan: (tier: AdminPlan['tier'], input: Partial<Omit<AdminPlan,'tier'|'limits'>&AdminPlan['limits']>) => request<AdminPlan>(`/admin/plans/${tier}`, { method: 'PATCH', body: JSON.stringify(input) }),
   assignSubscription: (userId: string, tier: AdminPlan['tier'], status = 'ACTIVE') => request(`/admin/users/${userId}/subscription`, { method: 'PATCH', body: JSON.stringify({ tier, status }) }),
+  addSubscriptionCredits: (userId: string, amount: number) => request(`/admin/users/${userId}/subscription/credits`, { method: 'PATCH', body: JSON.stringify({ amount }) }),
 };

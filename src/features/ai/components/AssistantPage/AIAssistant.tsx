@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BellPlus,
+  CreditCard,
   CalendarDays,
   FolderSearch,
   ListTodo,
@@ -20,6 +21,7 @@ import { useI18n } from "../../../../i18n/useI18n";
 import { usePlatform } from "../../../../context/PlatformContext";
 import { readStorageString, writeStorageString } from "../../../../services/storage";
 import { agentApi } from "../../../../services/api/agentApi";
+import { subscriptionApi } from "../../../../services/api/subscriptionApi";
 
 import ChatHeader from "../ChatHeader/ChatHeader";
 import ChatHistoryDrawer from "../ChatHistoryDrawer/ChatHistoryDrawer";
@@ -61,6 +63,7 @@ const AIAssistant = () => {
   const [input, setInput] = useState("");
   const [isVoiceModeOpen, setIsVoiceModeOpen] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+  const [subscriptionActive, setSubscriptionActive] = useState<boolean | null>(null);
   const conversationList = useConversationList(conversations, panelOpen);
   const { query: historySearch, setQuery: setHistorySearch, items: filteredConversations } = conversationList;
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
@@ -76,6 +79,13 @@ const AIAssistant = () => {
     [conversations, activeConversationId],
   );
   useEffect(()=>{const actionId=searchParams.get('action');if(!actionId)return;void agentApi.listActions('PENDING',1,100).then((result)=>{const action=result.items.find((item)=>item.id===actionId);if(action?.conversationId)void loadConversation(action.conversationId);setSearchParams({}, {replace:true});}).catch(()=>setSearchParams({}, {replace:true}));},[loadConversation,searchParams,setSearchParams]);
+  useEffect(() => {
+    let active = true;
+    void subscriptionApi.mine()
+      .then((info) => { if (active) setSubscriptionActive(info.canUseAi); })
+      .catch(() => { if (active) setSubscriptionActive(null); });
+    return () => { active = false; };
+  }, []);
 
   const commitConversationRename = async (id: string) => {
     const title = editingTitle.trim();
@@ -103,6 +113,23 @@ const AIAssistant = () => {
     setInput("");
     window.setTimeout(() => document.querySelector<HTMLTextAreaElement>(".ai-page .chat-input textarea")?.focus(), 0);
   };
+
+  if (subscriptionActive === false) {
+    return (
+      <main className="ai-page ai-page--subscription-required">
+        <div className="ai-page__ambient ai-page__ambient--one" />
+        <div className="ai-page__ambient ai-page__ambient--two" />
+        <section className="ai-subscription-gate">
+          <div className="ai-subscription-gate__icon"><CreditCard size={24} /></div>
+          <span>{t("billing.subscriptionRequiredEyebrow", "FAOL OBUNA KERAK")}</span>
+          <h1>{t("billing.subscriptionRequiredTitle", "Qulay AI’dan foydalanish uchun tarif tanlang")}</h1>
+          <p>{t("billing.subscriptionRequiredText", "Tarif so‘rovini yuboring. Administrator tasdiqlagach obunangiz 1 oyga faollashadi va AI kreditlari ishlatilgan sari kamayadi.")}</p>
+          <button type="button" onClick={() => navigate("/billing")}>{t("billing.viewPlans", "Tariflarni ko‘rish")}</button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className={`ai-page ${panelOpen ? "" : "ai-page--panel-hidden"}`}>
       <div className="ai-page__ambient ai-page__ambient--one" />

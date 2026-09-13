@@ -189,6 +189,7 @@ export const disconnectBito = () => request<{ status: "disconnected" }>("/integr
 
 export type WhatsAppStatus = {
   configured: boolean;
+  embeddedSignupReady: boolean;
   connected: boolean;
   status: "DISCONNECTED" | "CONNECTED" | "DEGRADED" | "ERROR" | "not_configured";
   displayPhoneNumber: string | null;
@@ -207,6 +208,10 @@ export type WhatsAppStatus = {
 };
 
 export const getWhatsAppStatus = () => request<WhatsAppStatus>("/integrations/whatsapp/status");
+export type WhatsAppEmbeddedConfig = { ready: boolean; appId: string | null; configId: string | null; graphApiVersion: string };
+export const getWhatsAppEmbeddedConfig = () => request<WhatsAppEmbeddedConfig>("/integrations/whatsapp/embedded-config");
+export const connectWhatsAppEmbedded = (input: { code: string; phoneNumberId: string; wabaId: string }) =>
+  request<WhatsAppStatus>("/integrations/whatsapp/embedded-connect", { method: "POST", body: JSON.stringify(input) });
 export const connectWhatsApp = (input: { phoneNumberId: string; wabaId?: string; accessToken: string }) =>
   request<WhatsAppStatus>("/integrations/whatsapp/connect", { method: "POST", body: JSON.stringify(input) });
 export const updateWhatsAppSalesAgentSettings = (input: Partial<Pick<WhatsAppStatus, "enabled" | "salesOnly" | "voiceEnabled">>) =>

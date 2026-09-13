@@ -18,6 +18,15 @@ const MESSAGES: Record<string, { uz: string; ru: string }> = {
   MEMORY_DISABLED: { uz: "AI xotirasi o'chirilgan.", ru: "Память AI отключена." },
   FINANCE_CURRENCY_AMBIGUOUS: { uz: "Valyutani tanlang — bu davrda bir nechta valyuta mavjud.", ru: "Укажите валюту — в этом периоде несколько валют." },
   FINANCE_ACCOUNT_CURRENCY_MISMATCH: { uz: "Hisob valyutasi tranzaksiya valyutasiga mos emas.", ru: "Валюта счёта не совпадает с валютой транзакции." },
+  SUBSCRIPTION_REQUIRED: { uz: "AI’dan foydalanish uchun faol tarif kerak. Tarif va limitlar bo‘limidan tarif tanlang.", ru: "Для использования AI нужен активный тариф. Выберите тариф в разделе тарифов и лимитов." },
+  AI_CREDIT_LIMIT_REACHED: { uz: "AI kreditlaringiz tugadi. Tarifni yangilang yoki administrator orqali kredit qo‘shing.", ru: "Кредиты AI закончились. Обновите тариф или добавьте кредиты через администратора." },
+  PLAN_FEATURE_REQUIRED: { uz: "Bu imkoniyat joriy tarifingizga kirmaydi. Mos tarifni tanlang.", ru: "Эта возможность не входит в текущий тариф. Выберите подходящий тариф." },
+  PLAN_NOT_AVAILABLE: { uz: "Bu tarif hozir mavjud emas.", ru: "Этот тариф сейчас недоступен." },
+  TOOL_ACTION_LIMIT_REACHED: { uz: "Agent amallari limiti tugadi.", ru: "Лимит действий агента исчерпан." },
+  VOICE_LIMIT_REACHED: { uz: "Ovozli daqiqalar limiti tugadi.", ru: "Лимит голосовых минут исчерпан." },
+  MEMORY_LIMIT_REACHED: { uz: "AI xotira limiti tugadi.", ru: "Лимит памяти AI исчерпан." },
+  FILE_LIMIT_REACHED: { uz: "Tarifdagi fayl limiti tugadi.", ru: "Лимит файлов по тарифу исчерпан." },
+  STORAGE_LIMIT_REACHED: { uz: "Tarifdagi saqlash hajmi limiti tugadi.", ru: "Лимит хранилища по тарифу исчерпан." },
 };
 
 export const localizedErrorMessage = (code: string | undefined, locale: AppLocale): string | null => {
