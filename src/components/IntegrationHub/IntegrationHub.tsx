@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, ExternalLink, RefreshCw, ShieldCheck, Unlink, X } from "lucide-react";
+import { ArrowUpRight, BookOpen, Check, ExternalLink, KeyRound, Phone, RefreshCw, ShieldCheck, Unlink, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import QRCode from "qrcode";
@@ -152,7 +152,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const [bitoStatus, setBitoStatus] = useState<BitoStatus | null>(null);
   const [whatsAppStatus, setWhatsAppStatus] = useState<WhatsAppStatus | null>(null);
   const [whatsAppEmbeddedConfig, setWhatsAppEmbeddedConfig] = useState<WhatsAppEmbeddedConfig | null>(null);
-  const [whatsAppManualOpen, setWhatsAppManualOpen] = useState(false);
+  const [whatsAppGuideOpen, setWhatsAppGuideOpen] = useState(false);
   const [whatsAppPhoneNumberId, setWhatsAppPhoneNumberId] = useState("");
   const [whatsAppWabaId, setWhatsAppWabaId] = useState("");
   const [whatsAppAccessToken, setWhatsAppAccessToken] = useState("");
@@ -266,7 +266,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     }
     setConnectingId(null); setSelectedId(null); setUsername(""); setTelegramPhone(""); setTelegramCode(""); setTelegramPassword(""); setTelegramStep("phone"); setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramQrImage(null); setTelegramBusy(false); setTelegramError(null);
     setTelegramDelivery(null); setTelegramNextDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false); setTelegramSalesSettings(null); setTelegramSalesBusy(false);
-    setWhatsAppPhoneNumberId(""); setWhatsAppWabaId(""); setWhatsAppAccessToken(""); setWhatsAppBusy(false); setWhatsAppManualOpen(false);
+    setWhatsAppPhoneNumberId(""); setWhatsAppWabaId(""); setWhatsAppAccessToken(""); setWhatsAppBusy(false); setWhatsAppGuideOpen(false);
   };
 
   const finishTelegramConnection = async () => {
@@ -491,7 +491,10 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       });
       await syncWhatsAppStatus(status);
       setWhatsAppAccessToken("");
-      showToast("WhatsApp Cloud API ulandi.", "success");
+      showToast(
+        status.webhookSubscribed ? "WhatsApp Cloud API ulandi." : "WhatsApp saqlandi. Endi webhook holatini tekshiring.",
+        "success",
+      );
     } catch (error) {
       setTelegramError(errorMessage(error, "WhatsAppni ulab bo‘lmadi."));
     } finally {
@@ -667,8 +670,14 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
                   </label>
                 </div>
                 <div className="integration-modal__sales-status">
-                  <span className={telegramSalesSettings.listenerActive ? "is-active" : ""} />
-                  {telegramSalesSettings.enabled ? telegramSalesSettings.listenerActive ? "Agent faol" : "Agent ishga tushmoqda..." : "Agent o‘chiq"}
+                  <span className={telegramSalesSettings.listenerActive && telegramSalesSettings.listenerHealthy ? "is-active" : ""} />
+                  {telegramSalesSettings.enabled
+                    ? telegramSalesSettings.listenerActive && telegramSalesSettings.listenerHealthy
+                      ? "Agent faol"
+                      : telegramSalesSettings.listenerActive
+                        ? "Agent qayta ulanmoqda..."
+                        : "Agent ishga tushmoqda..."
+                    : "Agent o‘chiq"}
                 </div>
               </>}
             </div> : <div className="integration-modal__sales-agent">
@@ -732,20 +741,40 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             <span className="integration-modal__note">{t("integrations.telegram.sessionEncrypted", "Session Qulay AI serverida shifrlangan holda saqlanadi.")}</span>
           </> : selected.id === "whatsapp" ? <>
             {whatsAppStatus?.configured === false && <span className="integration-modal__error">WhatsApp server kalitlari hali sozlanmagan. Administrator Render ENV sozlamalarini yakunlashi kerak.</span>}
-            <button type="button" className="integration-modal__connect" onClick={() => void submitWhatsAppEmbedded()} disabled={whatsAppBusy || whatsAppStatus?.configured === false || whatsAppEmbeddedConfig?.ready === false}>{whatsAppBusy ? "Meta oynasi ochilmoqda..." : "Meta orqali WhatsAppni ulash"}<ExternalLink size={15} /></button>
-            <span className="integration-modal__note">Facebook / Meta hisobingizga kiring, biznes va WhatsApp raqamingizni tanlang. ID yoki tokenni qo‘lda topish shart emas.</span>
-            {whatsAppEmbeddedConfig?.ready === false && <span className="integration-modal__note">Bir bosishda ulash hali administrator tomonidan sozlanmagan. Hozircha Advanced usul mavjud.</span>}
-            <button type="button" className="integration-modal__resend" onClick={() => setWhatsAppManualOpen((value) => !value)}>{whatsAppManualOpen ? "Qo‘lda ulashni yashirish" : "Qo‘lda ulash (Advanced)"}</button>
-            {whatsAppManualOpen && <div className="integration-modal__advanced">
+            {whatsAppEmbeddedConfig?.ready === true && <>
+              <button type="button" className="integration-modal__connect" onClick={() => void submitWhatsAppEmbedded()} disabled={whatsAppBusy || whatsAppStatus?.configured === false}>{whatsAppBusy ? "Meta oynasi ochilmoqda..." : "Meta orqali tez ulash"}<ExternalLink size={15} /></button>
+              <span className="integration-modal__note">Meta biznes verifikatsiyasi tayyor bo‘lsa, shu usulda ID va token kiritmasdan ulanadi.</span>
+            </>}
+
+            <button type="button" className="integration-modal__resend integration-modal__resend--guide" onClick={() => setWhatsAppGuideOpen((value) => !value)}><BookOpen size={14} /> {whatsAppGuideOpen ? "Qo‘llanmani yopish" : "WhatsAppni qanday ulash?"}</button>
+            {whatsAppGuideOpen && <div className="integration-modal__whatsapp-guide">
+              <div className="integration-modal__guide-step">
+                <div className="integration-modal__guide-visual integration-modal__guide-visual--meta" aria-hidden="true"><span className="mock-dot" /><span className="mock-line" /><b>WhatsApp</b><em>API Setup</em></div>
+                <div><strong>1. Meta Developers → WhatsApp</strong><small>QULAY AI app’ini oching va “Связь с WhatsApp / API Setup” sahifasiga kiring.</small></div>
+              </div>
+              <div className="integration-modal__guide-step">
+                <div className="integration-modal__guide-visual integration-modal__guide-visual--ids" aria-hidden="true"><small>Phone Number ID</small><b>1234••••</b><small>WABA ID</small><b>9876••••</b></div>
+                <div><strong>2. Ikki ID’ni nusxalang</strong><small>Phone Number ID va WhatsApp Business Account ID (WABA) ni QULAY’dagi mos maydonlarga qo‘ying.</small></div>
+              </div>
+              <div className="integration-modal__guide-step">
+                <div className="integration-modal__guide-visual integration-modal__guide-visual--token" aria-hidden="true"><KeyRound size={13} /><span>••••••••••••</span><b>Generate token</b></div>
+                <div><strong>3. Access Token yarating</strong><small>Meta’dagi “Сгенерировать маркер / Generate token” tugmasini bosing. Tokenni kiriting va “WhatsAppni ulash”ni bosing.</small></div>
+              </div>
+              <div className="integration-modal__guide-tip"><Phone size={14} /><span>Test uchun Meta bergan test raqam va token ishlaydi. Token muddati tugasa yangi token bilan qayta ulang.</span></div>
+              <a className="integration-modal__guide-link" href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer">Meta Developers’ni ochish <ExternalLink size={13} /></a>
+            </div>}
+
+            <div className="integration-modal__advanced integration-modal__advanced--manual">
+              <div className="integration-modal__manual-head"><strong>Qo‘lda ulash</strong><span>Hozirgi ulash usuli</span></div>
               <label className="integration-modal__label">Phone Number ID</label>
               <input type="text" className="integration-modal__field" placeholder="123456789012345" value={whatsAppPhoneNumberId} onChange={(event) => setWhatsAppPhoneNumberId(event.target.value.replace(/\D/g, ""))} />
               <label className="integration-modal__label">WhatsApp Business Account ID (WABA)</label>
               <input type="text" className="integration-modal__field" placeholder="123456789012345" value={whatsAppWabaId} onChange={(event) => setWhatsAppWabaId(event.target.value.replace(/\D/g, ""))} />
               <label className="integration-modal__label">Access Token</label>
               <input type="password" className="integration-modal__field" placeholder="Meta access token" value={whatsAppAccessToken} onChange={(event) => setWhatsAppAccessToken(event.target.value)} autoComplete="off" />
-              <button type="button" className="integration-modal__connect" onClick={() => void submitWhatsApp()} disabled={whatsAppBusy || whatsAppStatus?.configured === false || !whatsAppPhoneNumberId || !whatsAppAccessToken}>{whatsAppBusy ? "Tekshirilmoqda..." : "Qo‘lda ulash"}<ExternalLink size={15} /></button>
-              <span className="integration-modal__note">Advanced rejim developer/admin uchun. Access token serverda shifrlanadi.</span>
-            </div>}
+              <button type="button" className="integration-modal__connect" onClick={() => void submitWhatsApp()} disabled={whatsAppBusy || whatsAppStatus?.configured === false || !whatsAppPhoneNumberId || !whatsAppWabaId || !whatsAppAccessToken}>{whatsAppBusy ? "Tekshirilmoqda..." : "WhatsAppni ulash"}<ExternalLink size={15} /></button>
+              <span className="integration-modal__note">Token serverda shifrlangan holda saqlanadi. Test tokeni muddati tugasa yangisini yaratib qayta ulang.</span>
+            </div>
             {telegramError && <span className="integration-modal__error">{telegramError}</span>}
             <span className="integration-modal__note">Rasmiy WhatsApp Cloud API individual chatlar uchun ishlaydi. Guruh chatlari rasmiy API’da bot uchun qo‘llanmaydi.</span>
           </> : selected.id === "bito" ? <>

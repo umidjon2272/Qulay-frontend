@@ -48,6 +48,7 @@ const STATUS_FALLBACKS: Record<number, { uz: string; ru: string }> = {
   403: { uz: "Akkauntingiz bloklangan yoki bu amal uchun ruxsatingiz yo'q.", ru: "Ваш аккаунт заблокирован или у вас нет прав на это действие." },
   404: { uz: "So'ralgan ma'lumot topilmadi.", ru: "Запрошенные данные не найдены." },
   409: { uz: "Ma’lumot holati o‘zgargan yoki bunday yozuv mavjud. Yangilab tekshiring.", ru: "Состояние изменилось или такая запись уже существует. Обновите данные." },
+  429: { uz: "Juda ko‘p so‘rov yuborildi. Bir necha soniyadan keyin qayta urinib ko‘ring.", ru: "Слишком много запросов. Повторите попытку через несколько секунд." },
 };
 
 export const getApiErrorMessage = (error: unknown, fallback = "Server bilan bog'lanib bo'lmadi."): string => {

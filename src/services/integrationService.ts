@@ -110,6 +110,8 @@ export type TelegramSalesAgentSettings = {
   maxVoiceSeconds: 60;
   replyMode: "TEXT";
   listenerActive: boolean;
+  listenerHealthy: boolean;
+  lastListenerCheckAt: string | null;
 };
 
 export const getTelegramSalesAgentSettings = () =>

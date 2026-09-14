@@ -1008,3 +1008,242 @@ html[data-theme="dark"] body #root {
 
   .integration-modal__sales-options label { background: rgba(255, 255, 255, 0.045); }
 }
+
+/* WhatsApp manual-connect helper */
+.integration-modal__resend--guide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.integration-modal__whatsapp-guide {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid rgba(118, 85, 223, 0.14);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.integration-modal__guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px;
+  border-radius: 12px;
+  background: rgba(245, 242, 252, 0.72);
+
+  > span {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    color: #7655df;
+    background: rgba(118, 85, 223, 0.1);
+  }
+
+  > div {
+    display: grid;
+    gap: 3px;
+  }
+
+  strong {
+    color: #37323f;
+    font-size: var(--font-xs);
+    font-weight: 750;
+  }
+
+  small {
+    color: #8d8798;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+}
+
+.integration-modal__guide-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  border-radius: 10px;
+  color: #7655df;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  text-decoration: none;
+  background: rgba(118, 85, 223, 0.08);
+}
+
+.integration-modal__advanced--manual {
+  margin-top: 12px;
+}
+
+.integration-modal__manual-head {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 12px;
+
+  strong {
+    color: #37323f;
+    font-size: var(--font-sm);
+    font-weight: 760;
+  }
+
+  span {
+    color: #8f8998;
+    font-size: 11px;
+  }
+}
+
+html[data-theme="dark"] body #root {
+  .integration-modal__whatsapp-guide {
+    border-color: rgba(150, 120, 255, 0.18);
+    background: rgba(20, 30, 48, 0.58);
+  }
+
+  .integration-modal__guide-step {
+    background: rgba(255, 255, 255, 0.045);
+
+    > span {
+      color: #b79cff;
+      background: rgba(140, 96, 238, 0.15);
+    }
+
+    strong { color: rgba(255, 255, 255, 0.9); }
+    small { color: rgba(235, 240, 255, 0.6); }
+  }
+
+  .integration-modal__guide-link {
+    color: #b79cff;
+    background: rgba(140, 96, 238, 0.12);
+  }
+
+  .integration-modal__manual-head {
+    strong { color: rgba(255, 255, 255, 0.9); }
+    span { color: rgba(235, 240, 255, 0.58); }
+  }
+}
+
+/* Small visual walkthroughs keep manual WhatsApp setup understandable without exposing real IDs/tokens. */
+.integration-modal__guide-visual {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  flex: 0 0 92px;
+  min-height: 64px;
+  padding: 8px;
+  border: 1px solid rgba(118, 85, 223, 0.12);
+  border-radius: 11px;
+  color: #6f54c9;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 6px 18px rgba(45, 32, 78, 0.05);
+  overflow: hidden;
+
+  b { font-size: 10px; font-weight: 780; line-height: 1.2; }
+  small, em { color: #8d8798; font-size: 8px; font-style: normal; line-height: 1.2; }
+
+  .mock-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #7655df;
+  }
+
+  .mock-line {
+    width: 56px;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(118, 85, 223, 0.14);
+  }
+}
+
+.integration-modal__guide-visual--meta {
+  grid-template-columns: 10px 1fr;
+  b, em { grid-column: 1 / -1; }
+}
+
+.integration-modal__guide-visual--ids {
+  grid-template-columns: 1fr;
+  b {
+    width: fit-content;
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: rgba(118, 85, 223, 0.08);
+  }
+}
+
+.integration-modal__guide-visual--token {
+  grid-template-columns: 16px 1fr;
+  align-items: center;
+
+  span {
+    min-width: 0;
+    padding: 3px 5px;
+    border-radius: 5px;
+    color: #82788f;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    background: rgba(118, 85, 223, 0.07);
+  }
+
+  b {
+    grid-column: 1 / -1;
+    width: fit-content;
+    padding: 3px 6px;
+    border-radius: 6px;
+    color: #fff;
+    background: #7655df;
+  }
+}
+
+.integration-modal__guide-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  color: #756f7d;
+  font-size: 10px;
+  line-height: 1.45;
+  background: rgba(118, 85, 223, 0.07);
+
+  svg { flex: 0 0 auto; margin-top: 1px; color: #7655df; }
+}
+
+html[data-theme="dark"] body #root {
+  .integration-modal__guide-visual {
+    border-color: rgba(168, 143, 255, 0.16);
+    color: #c2adff;
+    background: rgba(255, 255, 255, 0.055);
+    box-shadow: none;
+
+    small, em { color: rgba(235, 240, 255, 0.56); }
+    .mock-dot { background: #a889ff; }
+    .mock-line { background: rgba(168, 137, 255, 0.18); }
+  }
+
+  .integration-modal__guide-visual--ids b,
+  .integration-modal__guide-visual--token span { background: rgba(168, 137, 255, 0.12); }
+  .integration-modal__guide-visual--token span { color: rgba(235, 240, 255, 0.62); }
+  .integration-modal__guide-visual--token b { color: #fff; background: #8059e8; }
+
+  .integration-modal__guide-tip {
+    color: rgba(235, 240, 255, 0.62);
+    background: rgba(168, 137, 255, 0.1);
+    svg { color: #b79cff; }
+  }
+}
+
+@media (max-width: 520px) {
+  .integration-modal__guide-step {
+    display: grid;
+    grid-template-columns: 82px minmax(0, 1fr);
+  }
+  .integration-modal__guide-visual { width: 82px; min-height: 60px; }
+}

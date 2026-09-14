@@ -47,20 +47,40 @@ const ThemeSync = ({ children }: ProvidersProps) => {
   return <>{children}</>;
 };
 
-export const Providers = ({ children }: ProvidersProps) => (
-  <PlatformProvider>
-    <ToastProvider>
-      <AuthProvider>
-      <AiSettingsSync />
-      <NotificationSound />
-      <ThemeSync>
-        <ProfileProvider>
-          <IntegrationProvider>
-            <AIChatProvider>{children}</AIChatProvider>
-          </IntegrationProvider>
-        </ProfileProvider>
-      </ThemeSync>
-      </AuthProvider>
-    </ToastProvider>
-  </PlatformProvider>
-);
+export const Providers = ({ children }: ProvidersProps) => {
+  const adminRoute = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+
+  // Admin pages do not need the end-user chat, integration, profile or
+  // notification pollers. Mounting them globally caused a burst of unrelated
+  // /conversations, Telegram/Bito/Google/WhatsApp and notification requests on
+  // every admin page and could exhaust the backend IP limiter.
+  if (adminRoute) {
+    return (
+      <PlatformProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <ThemeSync>{children}</ThemeSync>
+          </AuthProvider>
+        </ToastProvider>
+      </PlatformProvider>
+    );
+  }
+
+  return (
+    <PlatformProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AiSettingsSync />
+          <NotificationSound />
+          <ThemeSync>
+            <ProfileProvider>
+              <IntegrationProvider>
+                <AIChatProvider>{children}</AIChatProvider>
+              </IntegrationProvider>
+            </ProfileProvider>
+          </ThemeSync>
+        </AuthProvider>
+      </ToastProvider>
+    </PlatformProvider>
+  );
+};

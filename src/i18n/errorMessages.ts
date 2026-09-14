@@ -27,6 +27,12 @@ const MESSAGES: Record<string, { uz: string; ru: string }> = {
   MEMORY_LIMIT_REACHED: { uz: "AI xotira limiti tugadi.", ru: "Лимит памяти AI исчерпан." },
   FILE_LIMIT_REACHED: { uz: "Tarifdagi fayl limiti tugadi.", ru: "Лимит файлов по тарифу исчерпан." },
   STORAGE_LIMIT_REACHED: { uz: "Tarifdagi saqlash hajmi limiti tugadi.", ru: "Лимит хранилища по тарифу исчерпан." },
+  WHATSAPP_SERVER_NOT_CONFIGURED: { uz: "WhatsApp server sozlamalari to‘liq emas. Administrator Render ENV sozlamalarini tekshirishi kerak.", ru: "Настройки WhatsApp на сервере не завершены. Администратору нужно проверить переменные Render ENV." },
+  WHATSAPP_ACCESS_TOKEN_INVALID: { uz: "WhatsApp Access Token yaroqsiz yoki muddati tugagan. Meta'dan yangi token olib qayta urinib ko‘ring.", ru: "Access Token WhatsApp недействителен или истёк. Создайте новый токен в Meta и повторите попытку." },
+  WHATSAPP_PHONE_OR_WABA_INVALID: { uz: "Phone Number ID yoki WABA ID noto‘g‘ri. Meta WhatsApp API Setup sahifasidagi qiymatlarni qayta tekshiring.", ru: "Phone Number ID или WABA ID неверен. Проверьте значения на странице WhatsApp API Setup в Meta." },
+  WHATSAPP_PERMISSION_REQUIRED: { uz: "WhatsApp tokenida kerakli ruxsatlar yo‘q. Tokenni WhatsApp Business Management va Messaging ruxsatlari bilan qayta yarating.", ru: "В токене WhatsApp не хватает разрешений. Создайте токен заново с разрешениями WhatsApp Business Management и Messaging." },
+  WHATSAPP_GRAPH_UNAVAILABLE: { uz: "Meta WhatsApp API vaqtincha javob bermadi. Bir ozdan keyin qayta urinib ko‘ring.", ru: "Meta WhatsApp API временно не отвечает. Повторите попытку позже." },
+  WHATSAPP_WEBHOOK_SUBSCRIBE_FAILED: { uz: "WhatsApp ulandi, lekin xabarlarni qabul qilish uchun WABA webhook obunasini yoqib bo‘lmadi. WABA ID va token ruxsatlarini tekshiring.", ru: "WhatsApp подключён, но не удалось подписать WABA на webhook для входящих сообщений. Проверьте WABA ID и разрешения токена." },
 };
 
 export const localizedErrorMessage = (code: string | undefined, locale: AppLocale): string | null => {
