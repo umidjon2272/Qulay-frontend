@@ -79,6 +79,11 @@ const ownerGuard = () => {
 
 const isAuthEndpoint = (path: string) => ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"].includes(path);
 
+const isConnectorCredentialError = (path: string, error: unknown): boolean =>
+  path.startsWith("/integrations/whatsapp")
+  && error instanceof ApiError
+  && error.code === "WHATSAPP_ACCESS_TOKEN_INVALID";
+
 const isAuthInvalidationError = (error: unknown): boolean =>
   error instanceof ApiError && (error.status === 401 || error.status === 403);
 
@@ -175,7 +180,7 @@ export const request = async <T>(path: string, options: RequestInit = {}, retry 
   } catch (error) {
     assertOwner();
     const noRefreshEndpoint = isAuthEndpoint(path);
-    if (!(error instanceof ApiError) || error.status !== 401 || !retry || noRefreshEndpoint) throw error;
+    if (!(error instanceof ApiError) || error.status !== 401 || !retry || noRefreshEndpoint || isConnectorCredentialError(path, error)) throw error;
 
     // Another request may have completed the single-flight rotation between
     // this request's first attempt and its 401 response. Reuse that token

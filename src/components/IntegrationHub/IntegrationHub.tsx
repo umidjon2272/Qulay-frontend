@@ -13,6 +13,7 @@ import {
   getTelegramStatus,
   getTelegramSalesAgentSettings,
   updateTelegramSalesAgentSettings,
+  getTelegramChats,
   disconnectGoogle,
   getGoogleConnectUrl,
   getGoogleStatus,
@@ -29,6 +30,7 @@ import {
   type BitoStatus,
   type TelegramDeliveryType,
   type TelegramSalesAgentSettings,
+  type TelegramPeer,
   type WhatsAppStatus,
   type WhatsAppEmbeddedConfig,
   getWhatsAppStatus,
@@ -145,6 +147,8 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const [telegramError, setTelegramError] = useState<string | null>(null);
   const [telegramTemporaryError, setTelegramTemporaryError] = useState(false);
   const [telegramSalesSettings, setTelegramSalesSettings] = useState<TelegramSalesAgentSettings | null>(null);
+  const [telegramGroupChats, setTelegramGroupChats] = useState<TelegramPeer[]>([]);
+  const [telegramGroupsLoading, setTelegramGroupsLoading] = useState(false);
   const [telegramSalesBusy, setTelegramSalesBusy] = useState(false);
   const [telegramDelivery, setTelegramDelivery] = useState<TelegramDeliveryType | null>(null);
   const [telegramNextDelivery, setTelegramNextDelivery] = useState<TelegramDeliveryType | null>(null);
@@ -194,15 +198,18 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   useEffect(() => {
     if (selectedId !== "telegram") return undefined;
     let active = true;
+    setTelegramGroupsLoading(true);
     void Promise.all([
       getTelegramStatus(),
       getTelegramSalesAgentSettings().catch(() => null),
-    ]).then(([status, salesSettings]) => {
+      getTelegramChats(100).catch(() => [] as TelegramPeer[]),
+    ]).then(([status, salesSettings, chats]) => {
       if (!active) return;
       setTelegramTemporaryError(Boolean(status.temporaryError));
       setTelegramSalesSettings(salesSettings);
+      setTelegramGroupChats(chats.filter((chat) => chat.type === "GROUP"));
       sync("telegram", status.connected, status.username ?? status.displayName ?? "Telegram");
-    }).catch(() => { if (active) setTelegramTemporaryError(true); });
+    }).catch(() => { if (active) setTelegramTemporaryError(true); }).finally(() => { if (active) setTelegramGroupsLoading(false); });
     return () => { active = false; };
   }, [selectedId, sync]);
 
@@ -265,7 +272,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
       connectTimerRef.current = null;
     }
     setConnectingId(null); setSelectedId(null); setUsername(""); setTelegramPhone(""); setTelegramCode(""); setTelegramPassword(""); setTelegramStep("phone"); setTelegramLoginMethod("phone"); setTelegramQr(null); setTelegramQrImage(null); setTelegramBusy(false); setTelegramError(null);
-    setTelegramDelivery(null); setTelegramNextDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false); setTelegramSalesSettings(null); setTelegramSalesBusy(false);
+    setTelegramDelivery(null); setTelegramNextDelivery(null); setTelegramResendAvailableAt(null); setTelegramTemporaryError(false); setTelegramSalesSettings(null); setTelegramGroupChats([]); setTelegramGroupsLoading(false); setTelegramSalesBusy(false);
     setWhatsAppPhoneNumberId(""); setWhatsAppWabaId(""); setWhatsAppAccessToken(""); setWhatsAppBusy(false); setWhatsAppGuideOpen(false);
   };
 
@@ -393,7 +400,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     }
   };
 
-  const updateTelegramSalesSetting = async (patch: Partial<Pick<TelegramSalesAgentSettings, "enabled" | "privateChats" | "groups" | "voiceEnabled">>) => {
+  const updateTelegramSalesSetting = async (patch: Partial<Pick<TelegramSalesAgentSettings, "enabled" | "privateChats" | "groups" | "allowedGroupIds" | "voiceEnabled">>) => {
     if (telegramSalesBusy) return;
     setTelegramSalesBusy(true);
     setTelegramError(null);
@@ -406,6 +413,15 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
     } finally {
       setTelegramSalesBusy(false);
     }
+  };
+
+  const toggleTelegramSalesGroup = (peerId: string, checked: boolean) => {
+    if (!telegramSalesSettings || telegramSalesBusy) return;
+    const current = telegramSalesSettings.allowedGroupIds ?? [];
+    const next = checked
+      ? [...new Set([...current, peerId])]
+      : current.filter((id) => id !== peerId);
+    void updateTelegramSalesSetting({ allowedGroupIds: next });
   };
 
   const syncWhatsAppStatus = async (status: WhatsAppStatus) => {
@@ -658,15 +674,25 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
                 <div className="integration-modal__sales-options">
                   <label>
                     <input type="checkbox" checked={telegramSalesSettings.privateChats} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ privateChats: event.target.checked })} />
-                    <span><strong>Lichka</strong><small>Barcha kiruvchi lichka xabarlariga javob beradi. Biznes Telegram akkaunti uchun tavsiya.</small></span>
+                    <span><strong>Smart lichka</strong><small>Oddiy salom, tanishlar va eski shaxsiy chatlarga aralashmaydi. Narx, qoldiq, buyurtma yoki real mahsulot savoli chiqsa mijozni o‘zi taniydi.</small></span>
                   </label>
                   <label>
                     <input type="checkbox" checked={telegramSalesSettings.groups} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ groups: event.target.checked })} />
-                    <span><strong>Guruhlar</strong><small>Faqat mention/reply yoki aniq sotuv savolida javob beradi.</small></span>
+                    <span><strong>Tanlangan guruhlar</strong><small>AI faqat pastda belgilangan guruhlarda ishlaydi. Boshqa guruhlarda mutlaqo jim turadi.</small></span>
                   </label>
+                  {telegramSalesSettings.groups && <div className="integration-modal__group-picker">
+                    <div className="integration-modal__group-picker-head"><strong>AI ishlaydigan guruhlar</strong><small>{(telegramSalesSettings.allowedGroupIds ?? []).length} ta tanlangan</small></div>
+                    {telegramGroupsLoading ? <span className="integration-modal__note">Guruhlar yuklanmoqda...</span> : telegramGroupChats.length ? <div className="integration-modal__group-list">
+                      {telegramGroupChats.map((group) => <label key={group.peerId} className="integration-modal__group-row">
+                        <input type="checkbox" checked={(telegramSalesSettings.allowedGroupIds ?? []).includes(group.peerId)} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => toggleTelegramSalesGroup(group.peerId, event.target.checked)} />
+                        <span><strong>{group.displayName}</strong><small>{group.username || "Telegram guruh"}</small></span>
+                      </label>)}
+                    </div> : <span className="integration-modal__note">Telegram dialoglarida guruh topilmadi. Guruhni Telegram’da ochib, keyin bu oynani qayta oching.</span>}
+                    {(telegramSalesSettings.allowedGroupIds ?? []).length === 0 && <span className="integration-modal__note">Guruhlar yoqilgan, lekin hech biri tanlanmagan — AI hozir hech qaysi guruhda javob bermaydi.</span>}
+                  </div>}
                   <label>
                     <input type="checkbox" checked={telegramSalesSettings.voiceEnabled} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ voiceEnabled: event.target.checked })} />
-                    <span><strong>Golosni tushunish</strong><small>Maksimum {telegramSalesSettings.maxVoiceSeconds} soniya. Javob text bo‘ladi.</small></span>
+                    <span><strong>Golosni tushunish</strong><small>Maksimum {telegramSalesSettings.maxVoiceSeconds} soniya. Shaxsiy random golosga emas, faqat faol sotuv kontekstiga javob beradi.</small></span>
                   </label>
                 </div>
                 <div className="integration-modal__sales-status">

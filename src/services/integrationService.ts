@@ -106,6 +106,7 @@ export type TelegramSalesAgentSettings = {
   enabled: boolean;
   privateChats: boolean;
   groups: boolean;
+  allowedGroupIds: string[];
   voiceEnabled: boolean;
   maxVoiceSeconds: 60;
   replyMode: "TEXT";
@@ -117,7 +118,7 @@ export type TelegramSalesAgentSettings = {
 export const getTelegramSalesAgentSettings = () =>
   request<TelegramSalesAgentSettings>("/integrations/telegram/sales-agent");
 
-export const updateTelegramSalesAgentSettings = (input: Partial<Pick<TelegramSalesAgentSettings, "enabled" | "privateChats" | "groups" | "voiceEnabled">>) =>
+export const updateTelegramSalesAgentSettings = (input: Partial<Pick<TelegramSalesAgentSettings, "enabled" | "privateChats" | "groups" | "allowedGroupIds" | "voiceEnabled">>) =>
   request<TelegramSalesAgentSettings>("/integrations/telegram/sales-agent", {
     method: "PATCH",
     body: JSON.stringify(input),

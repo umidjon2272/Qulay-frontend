@@ -1247,3 +1247,58 @@ html[data-theme="dark"] body #root {
   }
   .integration-modal__guide-visual { width: 82px; min-height: 60px; }
 }
+
+.integration-modal__group-picker {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(118, 85, 223, 0.14);
+  border-radius: 12px;
+  background: rgba(248, 247, 252, 0.72);
+}
+
+.integration-modal__group-picker-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  strong {
+    color: #4a4551;
+    font-size: 11px;
+    font-weight: 760;
+  }
+
+  small {
+    color: #9a94a2;
+    font-size: 10px;
+  }
+}
+
+.integration-modal__group-list {
+  display: grid;
+  gap: 5px;
+  max-height: 190px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.integration-modal__sales-options .integration-modal__group-row {
+  padding: 8px 9px;
+  border: 1px solid rgba(210, 205, 220, 0.45);
+  background: rgba(255, 255, 255, 0.66);
+}
+
+html[data-theme="dark"] body #root {
+  .integration-modal__group-picker {
+    border-color: rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .integration-modal__group-picker-head strong { color: rgba(255, 255, 255, 0.88); }
+  .integration-modal__group-picker-head small { color: rgba(235, 240, 255, 0.5); }
+  .integration-modal__sales-options .integration-modal__group-row {
+    border-color: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.035);
+  }
+}
