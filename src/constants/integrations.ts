@@ -3,7 +3,7 @@ import {
   CalendarDays,
   HardDrive,
   MessageCircle,
-  Instagram,
+  Camera,
   Database,
   type LucideIcon,
 } from "lucide-react";
@@ -71,7 +71,7 @@ export const integrationCatalog: IntegrationDefinition[] = [
     id: "instagram",
     name: "Instagram",
     description: "DM, komment va rasm orqali AI sotuv agenti",
-    icon: Instagram,
+    icon: Camera,
     color: "purple",
   },
 ];
