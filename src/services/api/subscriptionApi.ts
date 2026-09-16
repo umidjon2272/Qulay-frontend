@@ -1,7 +1,7 @@
 import { request } from './apiClient';
 
 export type PlanTier = 'STARTER' | 'PRO' | 'BUSINESS' | 'SALES_AI';
-export type PlanFeature = 'AI_CHAT' | 'TASKS' | 'REMINDERS' | 'CALENDAR' | 'GOOGLE' | 'TELEGRAM' | 'BITO' | 'TELEGRAM_SALES' | 'WHATSAPP_SALES';
+export type PlanFeature = 'AI_CHAT' | 'TASKS' | 'REMINDERS' | 'CALENDAR' | 'GOOGLE' | 'TELEGRAM' | 'BITO' | 'TELEGRAM_SALES' | 'WHATSAPP_SALES' | 'INSTAGRAM_SALES';
 export type Plan = {
   tier: PlanTier;
   name: string;

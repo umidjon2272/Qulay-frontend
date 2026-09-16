@@ -22,6 +22,7 @@ import {
   getTelegramStatus,
   getBitoStatus,
   getWhatsAppStatus,
+  getInstagramStatus,
 } from "../services/integrationService";
 import { subscribeToWorkspaceData } from "../services/workspaceEvents";
 import { useToast } from "../hooks/useToast";
@@ -44,11 +45,12 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
   const { t } = useI18n();
 
   const refreshServerConnections = useCallback(async () => {
-    const [telegram, google, bito, whatsapp] = await Promise.allSettled([
+    const [telegram, google, bito, whatsapp, instagram] = await Promise.allSettled([
       getTelegramStatus(),
       getGoogleStatus(),
       getBitoStatus(),
       getWhatsAppStatus(),
+      getInstagramStatus(),
     ]);
     setState((current) => {
       const next = { ...current };
@@ -72,6 +74,12 @@ export const IntegrationProvider = ({ children }: { children: ReactNode }) => {
         next.whatsapp = {
           connected: whatsapp.value.connected,
           username: whatsapp.value.verifiedName ?? whatsapp.value.displayPhoneNumber ?? "WhatsApp",
+        };
+      }
+      if (instagram.status === "fulfilled") {
+        next.instagram = {
+          connected: instagram.value.connected,
+          username: instagram.value.username ?? instagram.value.displayName ?? "Instagram",
         };
       }
       return next;

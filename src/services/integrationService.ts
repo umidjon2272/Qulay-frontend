@@ -221,3 +221,66 @@ export const updateWhatsAppSalesAgentSettings = (input: Partial<Pick<WhatsAppSta
   request<WhatsAppStatus>("/integrations/whatsapp/sales-agent", { method: "PATCH", body: JSON.stringify(input) });
 export const testWhatsApp = () => request<WhatsAppStatus>("/integrations/whatsapp/test", { method: "POST" });
 export const disconnectWhatsApp = () => request<{ status: "disconnected" }>("/integrations/whatsapp/disconnect", { method: "DELETE" });
+
+
+export type InstagramStatus = {
+  configured: boolean;
+  connected: boolean;
+  status: "DISCONNECTED" | "CONNECTED" | "DEGRADED" | "ERROR" | "not_configured";
+  instagramUserId: string | null;
+  username: string | null;
+  displayName: string | null;
+  profilePictureUrl: string | null;
+  webhookSubscribed: boolean;
+  enabled: boolean;
+  dmEnabled: boolean;
+  commentsEnabled: boolean;
+  imageVisionEnabled: boolean;
+  connectedAt: string | null;
+  lastValidatedAt: string | null;
+  lastErrorCode: string | null;
+};
+
+export type InstagramPost = {
+  id: string;
+  caption: string | null;
+  mediaType: string | null;
+  mediaUrl: string | null;
+  thumbnailUrl: string | null;
+  permalink: string | null;
+  timestamp: string | null;
+};
+
+export type InstagramCommentAutomation = {
+  id: string;
+  mediaId: string;
+  mediaCaption: string | null;
+  mediaPermalink: string | null;
+  triggerText: string;
+  semanticMatch: boolean;
+  dmMessage: string;
+  publicReply: string | null;
+  sendPrivateReply: boolean;
+  replyPublicly: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const getInstagramStatus = () => request<InstagramStatus>("/integrations/instagram/status");
+export const connectInstagram = (input: { instagramUserId: string; accessToken: string }) =>
+  request<InstagramStatus>("/integrations/instagram/connect", { method: "POST", body: JSON.stringify(input) });
+export const updateInstagramSalesAgentSettings = (input: Partial<Pick<InstagramStatus, "enabled" | "dmEnabled" | "commentsEnabled" | "imageVisionEnabled">>) =>
+  request<InstagramStatus>("/integrations/instagram/sales-agent", { method: "PATCH", body: JSON.stringify(input) });
+export const testInstagram = () => request<InstagramStatus>("/integrations/instagram/test", { method: "POST" });
+export const disconnectInstagram = () => request<{ status: "disconnected" }>("/integrations/instagram/disconnect", { method: "DELETE" });
+export const getInstagramPosts = (limit = 25) => request<InstagramPost[]>(`/integrations/instagram/posts?limit=${encodeURIComponent(String(limit))}`);
+export const getInstagramAutomations = (activeOnly = false) => request<InstagramCommentAutomation[]>(`/integrations/instagram/automations?activeOnly=${activeOnly ? "true" : "false"}`);
+export const createInstagramAutomation = (input: {
+  mediaId: string; triggerText: string; dmMessage: string; publicReply?: string; semanticMatch?: boolean;
+  sendPrivateReply?: boolean; replyPublicly?: boolean; active?: boolean;
+}) => request<InstagramCommentAutomation>("/integrations/instagram/automations", { method: "POST", body: JSON.stringify(input) });
+export const updateInstagramAutomation = (id: string, input: Partial<{
+  triggerText: string; dmMessage: string; publicReply: string; semanticMatch: boolean; sendPrivateReply: boolean; replyPublicly: boolean; active: boolean;
+}>) => request<InstagramCommentAutomation>(`/integrations/instagram/automations/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) });
+export const deleteInstagramAutomation = (id: string) => request<{ id: string; mediaId: string; triggerText: string }>(`/integrations/instagram/automations/${encodeURIComponent(id)}`, { method: "DELETE" });

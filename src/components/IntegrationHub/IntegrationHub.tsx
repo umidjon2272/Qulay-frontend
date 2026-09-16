@@ -45,6 +45,8 @@ import {
 import { useI18n } from "../../i18n/useI18n";
 import { useToast } from "../../hooks/useToast";
 
+import { InstagramIntegrationPanel } from "./InstagramIntegrationPanel";
+
 import "./IntegrationHub.scss";
 
 type IntegrationHubProps = { limit?: number; columns?: number; navigateOnSelect?: boolean };
@@ -75,6 +77,7 @@ const healthForItem = (health: IntegrationsHealth | null, id: string): Integrati
   if (id === "telegram") return health.telegram;
   if (id === "bito") return health.bito;
   if (id === "whatsapp") return health.whatsapp;
+  if (id === "instagram") return health.instagram;
   return null;
 };
 
@@ -111,6 +114,7 @@ const requiredFeatureForIntegration = (id: string): PlanFeature | null => {
   if (id === "telegram") return "TELEGRAM";
   if (id === "bito") return "BITO";
   if (id === "whatsapp") return "WHATSAPP_SALES";
+  if (id === "instagram") return "INSTAGRAM_SALES";
   return null;
 };
 
@@ -260,6 +264,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
   const selectedConnected = selected?.id === "bito" ? bitoStatus?.connected === true : selected?.id === "whatsapp" ? whatsAppStatus?.connected === true : selected?.connected === true;
   const telegramSalesAllowed = planFeatures?.includes("TELEGRAM_SALES") === true;
   const whatsAppSalesAllowed = planFeatures?.includes("WHATSAPP_SALES") === true;
+  const instagramSalesAllowed = planFeatures?.includes("INSTAGRAM_SALES") === true;
   const bitoStatusLoading = selected?.id === "bito" && bitoStatus === null;
   const SelectedIcon = selected?.icon;
   const resendRemainingSeconds = telegramResendAvailableAt ? Math.max(0, Math.ceil((telegramResendAvailableAt - now) / 1000)) : 0;
@@ -653,7 +658,12 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             );
           })()}
 
-          {selectedConnected ? <>
+          {selected.id === "instagram" ? <InstagramIntegrationPanel
+            salesAllowed={instagramSalesAllowed}
+            onConnectionChange={(status) => sync("instagram", status.connected, status.username ?? status.displayName ?? "Instagram")}
+            onDisconnected={() => disconnect("instagram")}
+            onUpgrade={() => navigate("/billing")}
+          /> : selectedConnected ? <>
             <div className="integration-modal__security"><ShieldCheck size={17} /><div><strong>{t("integrations.connectedAccount", "Ulangan hisob")}</strong><span>{selected.username || t("integrations.activeConnection", "Faol ulanish")}</span></div></div>
             {selected.id === "telegram" && (telegramSalesAllowed ? <div className="integration-modal__sales-agent">
               <div className="integration-modal__sales-agent-head">

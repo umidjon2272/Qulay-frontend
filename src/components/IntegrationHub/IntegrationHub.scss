@@ -1302,3 +1302,28 @@ html[data-theme="dark"] body #root {
     background: rgba(255, 255, 255, 0.035);
   }
 }
+
+/* Instagram sales + comment automation */
+.instagram-integration-panel { display: grid; gap: 14px; width: 100%; }
+.instagram-automation { display: grid; gap: 12px; padding: 14px; border: 1px solid rgba(255,255,255,.08); border-radius: 16px; background: rgba(255,255,255,.025); }
+.instagram-automation__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.instagram-automation__head > div { display: grid; gap: 3px; }
+.instagram-automation__head strong { font-size: 14px; }
+.instagram-automation__head span { font-size: 12px; opacity: .7; }
+.instagram-posts { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; max-height: 290px; overflow: auto; padding-right: 2px; }
+.instagram-post { border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); color: inherit; border-radius: 12px; overflow: hidden; padding: 0; text-align: left; cursor: pointer; transition: .18s ease; }
+.instagram-post:hover, .instagram-post.is-selected { border-color: rgba(147,91,255,.7); background: rgba(139,83,255,.09); transform: translateY(-1px); }
+.instagram-post img, .instagram-post__placeholder { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.05); }
+.instagram-post > span:last-child { display: grid; gap: 3px; padding: 8px; }
+.instagram-post strong { font-size: 11px; line-height: 1.35; overflow: hidden; }
+.instagram-post small { font-size: 10px; opacity: .55; }
+.instagram-automation__form { display: grid; gap: 7px; padding-top: 4px; }
+.instagram-automation__textarea { min-height: 88px; resize: vertical; font-family: inherit; }
+.instagram-automation__check { display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; }
+.instagram-automation__list { display: grid; gap: 8px; margin-top: 4px; }
+.instagram-automation__row { display: grid; grid-template-columns: 1fr auto auto; gap: 9px; align-items: center; padding: 10px; border-radius: 12px; background: rgba(255,255,255,.035); }
+.instagram-automation__row > div { display: grid; gap: 3px; min-width: 0; }
+.instagram-automation__row strong { font-size: 12px; }
+.instagram-automation__row small { font-size: 10px; opacity: .6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.instagram-automation__delete { display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border: 1px solid rgba(255,100,100,.18); border-radius: 9px; background: rgba(255,70,70,.06); color: #ff8c8c; cursor: pointer; }
+@media (max-width: 760px) { .instagram-posts { grid-template-columns: repeat(2,minmax(0,1fr)); } .instagram-automation__head { flex-direction: column; } }

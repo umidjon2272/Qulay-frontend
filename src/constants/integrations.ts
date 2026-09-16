@@ -3,6 +3,7 @@ import {
   CalendarDays,
   HardDrive,
   MessageCircle,
+  Instagram,
   Database,
   type LucideIcon,
 } from "lucide-react";
@@ -13,6 +14,7 @@ export type IntegrationId =
   | "gmail"
   | "google-drive"
   | "whatsapp"
+  | "instagram"
   | "bito"
   | "notion"
   | "slack"
@@ -64,5 +66,12 @@ export const integrationCatalog: IntegrationDefinition[] = [
     description: "WhatsApp mijozlari uchun AI sotuv agenti",
     icon: MessageCircle,
     color: "green",
+  },
+  {
+    id: "instagram",
+    name: "Instagram",
+    description: "DM, komment va rasm orqali AI sotuv agenti",
+    icon: Instagram,
+    color: "purple",
   },
 ];
