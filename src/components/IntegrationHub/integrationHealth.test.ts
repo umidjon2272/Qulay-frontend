@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import { resolveWhatsAppHealth } from './integrationHealth';
 import type { IntegrationHealth } from '../../services/api/integrationsHealthApi';
 import type { WhatsAppStatus } from '../../services/integrationService';
