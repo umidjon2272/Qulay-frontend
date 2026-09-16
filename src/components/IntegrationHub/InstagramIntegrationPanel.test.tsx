@@ -10,10 +10,7 @@ const integration = vi.hoisted(() => ({
   disconnectInstagram: vi.fn(),
 }));
 
-vi.mock('../../services/integrationService', async () => {
-  const actual = await vi.importActual<typeof import('../../services/integrationService')>('../../services/integrationService');
-  return { ...actual, ...integration };
-});
+vi.mock('../../services/integrationService', () => integration);
 
 import { InstagramIntegrationPanel } from './InstagramIntegrationPanel';
 
