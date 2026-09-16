@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { request } = vi.hoisted(() => ({ request: vi.fn() }));
 vi.mock("./api/apiClient", () => ({ request }));
 
-import { getBitoConnectUrl, getTelegramQrStatus, startTelegramQrLogin } from "./integrationService";
+import { getBitoConnectUrl, getInstagramConnectUrl, getTelegramQrStatus, startTelegramQrLogin } from "./integrationService";
 
 describe("Telegram QR integration API", () => {
   beforeEach(() => request.mockReset());
@@ -16,6 +16,13 @@ describe("Telegram QR integration API", () => {
     await expect(getTelegramQrStatus()).resolves.toEqual({ status: "success" });
     expect(request).toHaveBeenNthCalledWith(1, "/integrations/telegram/qr/start", { method: "POST" });
     expect(request).toHaveBeenNthCalledWith(2, "/integrations/telegram/qr/status");
+  });
+
+  it("starts Instagram OAuth through the authenticated API client", async () => {
+    request.mockResolvedValueOnce({ url: "https://www.instagram.com/oauth/authorize?state=safe" });
+
+    await expect(getInstagramConnectUrl()).resolves.toMatchObject({ url: "https://www.instagram.com/oauth/authorize?state=safe" });
+    expect(request).toHaveBeenCalledWith("/integrations/instagram/auth-url");
   });
 
   it("starts Bito OAuth through the authenticated API client", async () => {

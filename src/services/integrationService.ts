@@ -225,6 +225,7 @@ export const disconnectWhatsApp = () => request<{ status: "disconnected" }>("/in
 
 export type InstagramStatus = {
   configured: boolean;
+  oauthReady: boolean;
   connected: boolean;
   status: "DISCONNECTED" | "CONNECTED" | "DEGRADED" | "ERROR" | "not_configured";
   instagramUserId: string | null;
@@ -268,6 +269,7 @@ export type InstagramCommentAutomation = {
 };
 
 export const getInstagramStatus = () => request<InstagramStatus>("/integrations/instagram/status");
+export const getInstagramConnectUrl = () => request<{ url: string }>("/integrations/instagram/auth-url");
 export const connectInstagram = (input: { instagramUserId: string; accessToken: string }) =>
   request<InstagramStatus>("/integrations/instagram/connect", { method: "POST", body: JSON.stringify(input) });
 export const updateInstagramSalesAgentSettings = (input: Partial<Pick<InstagramStatus, "enabled" | "dmEnabled" | "commentsEnabled" | "imageVisionEnabled">>) =>

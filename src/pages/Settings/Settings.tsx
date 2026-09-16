@@ -31,7 +31,7 @@ import ChangePasswordModal from "../../components/ChangePasswordModal/ChangePass
 import IntegrationHub from "../../components/IntegrationHub/IntegrationHub";
 import { getSettings, updateSettings } from "../../services/settingsService";
 import { playNotificationChime } from '../../services/notificationSound';
-import { getBitoStatus, getGoogleStatus } from "../../services/integrationService";
+import { getBitoStatus, getGoogleStatus, getInstagramStatus } from "../../services/integrationService";
 import { useAuth } from "../../hooks/useAuth";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import { updateProfile } from "../../services/profileService";
@@ -162,12 +162,12 @@ const Settings = () => {
 
   useEffect(() => {
     const oauthIntegration = searchParams.get("integration");
-    if (active !== "integrations" && oauthIntegration !== "google" && oauthIntegration !== "bito") return;
+    if (active !== "integrations" && oauthIntegration !== "google" && oauthIntegration !== "bito" && oauthIntegration !== "instagram") return;
     const oauthStatus = searchParams.get("status");
     const oauthReason = searchParams.get("reason");
     const oauthErrorCode = searchParams.get("errorCode");
     const oauthMessage = searchParams.get("message");
-    const oauthKey = oauthIntegration === "google" || oauthIntegration === "bito"
+    const oauthKey = oauthIntegration === "google" || oauthIntegration === "bito" || oauthIntegration === "instagram"
       ? `${oauthIntegration}:${oauthStatus ?? "status"}:${oauthReason ?? ""}:${oauthErrorCode ?? ""}`
       : null;
     let activeRequest = true;
@@ -184,6 +184,21 @@ const Settings = () => {
         }
         setSearchParams({ tab: "integrations", focus: "bito" }, { replace: true });
       }).catch((error) => showToast(error instanceof Error && error.message ? error.message : "Bito ulanish holatini tekshirib bo'lmadi", "error"));
+      return () => { activeRequest = false; };
+    }
+
+    if (oauthIntegration === "instagram") {
+      void getInstagramStatus().then((status) => {
+        if (!activeRequest) return;
+        sync("instagram", status.connected, status.username ?? status.displayName ?? "Instagram");
+        if (oauthKey && oauthHandledRef.current !== oauthKey) {
+          oauthHandledRef.current = oauthKey;
+          if (oauthStatus === "connected" && status.connected) showToast(status.username ? `Instagram @${status.username} ulandi` : "Instagram ulandi", "success");
+          else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast("Instagram ulanishi bekor qilindi", "info");
+          else if (oauthStatus === "error") showToast(oauthMessage || (oauthErrorCode ? `Instagram OAuth xatosi: ${oauthErrorCode}` : "Instagram ulanishini yakunlab bo'lmadi"), "error");
+        }
+        setSearchParams({ tab: "integrations", focus: "instagram" }, { replace: true });
+      }).catch((error) => showToast(error instanceof Error && error.message ? error.message : "Instagram ulanish holatini tekshirib bo'lmadi", "error"));
       return () => { activeRequest = false; };
     }
 

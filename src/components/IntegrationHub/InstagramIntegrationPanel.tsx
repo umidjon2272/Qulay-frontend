@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError } from "../../services/api/apiClient";
 import {
   connectInstagram,
+  getInstagramConnectUrl,
   createInstagramAutomation,
   deleteInstagramAutomation,
   disconnectInstagram,
@@ -34,6 +35,7 @@ export const InstagramIntegrationPanel = ({ salesAllowed, onConnectionChange, on
   const [instagramUserId, setInstagramUserId] = useState("");
   const [accessToken, setAccessToken] = useState("");
   const [busy, setBusy] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const [loadingPosts, setLoadingPosts] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedMediaId, setSelectedMediaId] = useState("");
@@ -165,17 +167,37 @@ export const InstagramIntegrationPanel = ({ salesAllowed, onConnectionChange, on
   if (!status) return <span className="integration-modal__note">Instagram holati tekshirilmoqda...</span>;
 
   if (!connected) return <div className="instagram-integration-panel">
-    {status.configured === false && <span className="integration-modal__error">Instagram server sozlamalari hali tayyor emas. Render ENV’da Instagram App Secret, webhook verify token va encryption key sozlanishi kerak.</span>}
-    <div className="integration-modal__advanced integration-modal__advanced--manual">
-      <div className="integration-modal__manual-head"><strong>Instagram Professional akkauntini ulash</strong><span>Meta Graph API</span></div>
-      <label className="integration-modal__label">Instagram User ID</label>
-      <input className="integration-modal__field" inputMode="numeric" placeholder="1784..." value={instagramUserId} onChange={(event) => setInstagramUserId(event.target.value.replace(/\D/g, ""))} />
-      <label className="integration-modal__label">Access Token</label>
-      <input className="integration-modal__field" type="password" placeholder="Meta access token" autoComplete="off" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} />
-      <button type="button" className="integration-modal__connect" disabled={busy || status.configured === false || !instagramUserId || !accessToken} onClick={() => void submitConnect()}>{busy ? "Tekshirilmoqda..." : "Instagramni ulash"}<ExternalLink size={15} /></button>
-      <span className="integration-modal__note">Token faqat backendda shifrlangan holda saqlanadi. DM, comment va postlar professional Instagram akkaunti orqali ishlaydi.</span>
-      <a className="integration-modal__guide-link" href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer">Meta Developers’ni ochish <ExternalLink size={13} /></a>
-    </div>
+    {status.configured === false && <span className="integration-modal__error">Instagram server sozlamalari hali tayyor emas. Administrator Meta/Render sozlamalarini yakunlashi kerak.</span>}
+    {salesAllowed ? <>
+      <button
+        type="button"
+        className="integration-modal__connect"
+        disabled={busy || !status.oauthReady}
+        onClick={() => {
+          if (busy) return;
+          setBusy(true); setError(null);
+          void getInstagramConnectUrl()
+            .then(({ url }) => { window.location.assign(url); })
+            .catch((err) => { setError(errorMessage(err, "Instagram login oynasini ochib bo‘lmadi.")); setBusy(false); });
+        }}
+      >{busy ? "Instagram oynasi ochilmoqda..." : "Instagram bilan ulash"}<ExternalLink size={15} /></button>
+      <span className="integration-modal__note">Instagram Professional akkauntingizga kirasiz va ruxsat berasiz. User ID yoki tokenni qo‘lda kiritish shart emas.</span>
+      {!status.oauthReady && <span className="integration-modal__error">Instagram tez ulash hali administrator tomonidan sozlanmagan.</span>}
+    </> : <button type="button" className="integration-modal__connect" onClick={onUpgrade}>Tarifni ko‘rish</button>}
+
+    {salesAllowed && <>
+      <button type="button" className="integration-modal__resend" onClick={() => setManualOpen((value) => !value)}>{manualOpen ? "Qo‘lda ulashni yopish" : "Qo‘lda ulash / Advanced"}</button>
+      {manualOpen && <div className="integration-modal__advanced integration-modal__advanced--manual">
+        <div className="integration-modal__manual-head"><strong>Qo‘lda ulash</strong><span>Fallback</span></div>
+        <label className="integration-modal__label">Instagram User ID</label>
+        <input className="integration-modal__field" inputMode="numeric" placeholder="1784..." value={instagramUserId} onChange={(event) => setInstagramUserId(event.target.value.replace(/\D/g, ""))} />
+        <label className="integration-modal__label">Access Token</label>
+        <input className="integration-modal__field" type="password" placeholder="Meta access token" autoComplete="off" value={accessToken} onChange={(event) => setAccessToken(event.target.value)} />
+        <button type="button" className="integration-modal__connect" disabled={busy || status.configured === false || !instagramUserId || !accessToken} onClick={() => void submitConnect()}>{busy ? "Tekshirilmoqda..." : "Qo‘lda ulash"}<ExternalLink size={15} /></button>
+        <span className="integration-modal__note">Bu usul faqat tez ulash ishlamasa kerak bo‘ladi. Token backendda shifrlangan holda saqlanadi.</span>
+        <a className="integration-modal__guide-link" href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer">Meta Developers’ni ochish <ExternalLink size={13} /></a>
+      </div>}
+    </>}
     {error && <span className="integration-modal__error">{error}</span>}
   </div>;
 
