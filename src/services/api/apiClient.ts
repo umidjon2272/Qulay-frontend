@@ -79,10 +79,16 @@ const ownerGuard = () => {
 
 const isAuthEndpoint = (path: string) => ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout"].includes(path);
 
-const isConnectorCredentialError = (path: string, error: unknown): boolean =>
-  path.startsWith("/integrations/whatsapp")
-  && error instanceof ApiError
-  && error.code === "WHATSAPP_ACCESS_TOKEN_INVALID";
+const isConnectorCredentialError = (path: string, error: unknown): boolean => {
+  if (!(error instanceof ApiError)) return false;
+  if (path.startsWith("/integrations/whatsapp")) {
+    return error.code === "WHATSAPP_ACCESS_TOKEN_INVALID" || /^WHATSAPP_GRAPH_(?:190|HTTP_40[13])$/u.test(error.code ?? "");
+  }
+  if (path.startsWith("/integrations/instagram")) {
+    return error.code === "INSTAGRAM_ACCESS_TOKEN_INVALID" || error.code === "INSTAGRAM_PERMISSION_REQUIRED";
+  }
+  return false;
+};
 
 const isAuthInvalidationError = (error: unknown): boolean =>
   error instanceof ApiError && (error.status === 401 || error.status === 403);

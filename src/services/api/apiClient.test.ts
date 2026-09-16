@@ -54,3 +54,25 @@ describe('voice upload and chat cancellation', () => {
     expect(getTokens()).toEqual({ accessToken: 'b', refreshToken: 'rb' });
   });
 });
+
+describe('connector credential errors', () => {
+  beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('does not refresh or clear the QULAY session for an Instagram Meta token 401', async () => {
+    saveAuth({ accessToken: 'qulay-access', refreshToken: 'qulay-refresh' }, { id: 'owner-1' } as User);
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      message: 'Instagram token expired',
+      code: 'INSTAGRAM_ACCESS_TOKEN_INVALID',
+    }), { status: 401, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(request('/integrations/instagram/test', { method: 'POST' })).rejects.toMatchObject({
+      status: 401,
+      code: 'INSTAGRAM_ACCESS_TOKEN_INVALID',
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(getTokens()).toEqual({ accessToken: 'qulay-access', refreshToken: 'qulay-refresh' });
+  });
+});

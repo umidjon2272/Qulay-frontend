@@ -46,6 +46,7 @@ import { useI18n } from "../../i18n/useI18n";
 import { useToast } from "../../hooks/useToast";
 
 import { InstagramIntegrationPanel } from "./InstagramIntegrationPanel";
+import { resolveWhatsAppHealth } from "./integrationHealth";
 
 import "./IntegrationHub.scss";
 
@@ -83,30 +84,7 @@ const healthForItem = (health: IntegrationsHealth | null, id: string): Integrati
 
 const resolvedHealthForItem = (health: IntegrationsHealth | null, id: string, whatsAppStatus: WhatsAppStatus | null): IntegrationHealth | null => {
   const base = healthForItem(health, id);
-  if (id !== "whatsapp" || !whatsAppStatus) return base;
-  if (whatsAppStatus.connected) {
-    return {
-      ...(base ?? {
-        lastSuccessfulSyncAt: whatsAppStatus.lastValidatedAt ?? whatsAppStatus.connectedAt,
-        lastCheckedAt: new Date().toISOString(),
-        lastErrorCode: null,
-      }),
-      state: "CONNECTED",
-      connected: true,
-      lastSuccessfulSyncAt: whatsAppStatus.lastValidatedAt ?? whatsAppStatus.connectedAt ?? base?.lastSuccessfulSyncAt ?? null,
-      lastErrorCode: null,
-    };
-  }
-  if (!base || base.connected) {
-    return {
-      state: "DISCONNECTED",
-      connected: false,
-      lastSuccessfulSyncAt: base?.lastSuccessfulSyncAt ?? whatsAppStatus.lastValidatedAt ?? whatsAppStatus.connectedAt ?? null,
-      lastCheckedAt: new Date().toISOString(),
-      lastErrorCode: null,
-    };
-  }
-  return base;
+  return id === "whatsapp" ? resolveWhatsAppHealth(base, whatsAppStatus) : base;
 };
 
 const requiredFeatureForIntegration = (id: string): PlanFeature | null => {

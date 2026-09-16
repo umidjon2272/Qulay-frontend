@@ -33,6 +33,8 @@ const MESSAGES: Record<string, { uz: string; ru: string }> = {
   WHATSAPP_PERMISSION_REQUIRED: { uz: "WhatsApp tokenida kerakli ruxsatlar yo‘q. Tokenni WhatsApp Business Management va Messaging ruxsatlari bilan qayta yarating.", ru: "В токене WhatsApp не хватает разрешений. Создайте токен заново с разрешениями WhatsApp Business Management и Messaging." },
   WHATSAPP_GRAPH_UNAVAILABLE: { uz: "Meta WhatsApp API vaqtincha javob bermadi. Bir ozdan keyin qayta urinib ko‘ring.", ru: "Meta WhatsApp API временно не отвечает. Повторите попытку позже." },
   WHATSAPP_WEBHOOK_SUBSCRIBE_FAILED: { uz: "WhatsApp ulandi, lekin xabarlarni qabul qilish uchun WABA webhook obunasini yoqib bo‘lmadi. WABA ID va token ruxsatlarini tekshiring.", ru: "WhatsApp подключён, но не удалось подписать WABA на webhook для входящих сообщений. Проверьте WABA ID и разрешения токена." },
+  INSTAGRAM_ACCESS_TOKEN_INVALID: { uz: "Instagram ruxsati muddati tugagan yoki bekor qilingan. Instagramni qayta ulang.", ru: "Разрешение Instagram истекло или было отозвано. Подключите Instagram заново." },
+  INSTAGRAM_PERMISSION_REQUIRED: { uz: "Instagram uchun kerakli Meta ruxsatlari yetarli emas. Instagramni qayta ulang yoki Meta ruxsatlarini tekshiring.", ru: "Для Instagram не хватает разрешений Meta. Подключите Instagram заново или проверьте разрешения Meta." },
 };
 
 export const localizedErrorMessage = (code: string | undefined, locale: AppLocale): string | null => {
