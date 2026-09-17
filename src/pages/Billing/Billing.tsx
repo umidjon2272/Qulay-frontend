@@ -13,7 +13,7 @@ const planCopy: Record<PlanTier, { audience: string; description: string; bullet
   STARTER: { audience: 'Shaxsiy foydalanish', description: 'Kundalik AI yordamchi uchun.', bullets: ['AI chat', 'Vazifalar va eslatmalar', 'Calendar'] },
   PRO: { audience: 'Faol foydalanuvchi', description: 'Ish jarayonlarini AI bilan bog‘lash uchun.', bullets: ['Start imkoniyatlari', 'Google Calendar / Drive', 'Telegram integratsiyasi'] },
   BUSINESS: { audience: 'Biznes egasi', description: 'Biznes ma’lumotlari bilan ishlaydigan AI.', bullets: ['Pro imkoniyatlari', 'Bito ERP', 'Ombor, savdo va analytics savollari'] },
-  SALES_AI: { audience: 'Sotuv uchun', description: 'Mijozlar bilan ishlaydigan AI sotuvchi.', bullets: ['Business imkoniyatlari', 'Telegram AI sotuvchi', 'WhatsApp AI sotuvchi', 'Bito orqali real narx va qoldiq'] },
+  SALES_AI: { audience: 'Sotuv uchun', description: 'Mijozlar bilan ishlaydigan AI sotuvchi.', bullets: ['Business imkoniyatlari', 'Telegram AI sotuvchi', 'Bito orqali real narx va qoldiq', 'WhatsApp / Instagram — tez kunda'] },
 };
 
 const planIcon = (tier: PlanTier) => tier === 'SALES_AI' ? <Send size={16}/> : tier === 'BUSINESS' ? <BriefcaseBusiness size={16}/> : tier === 'PRO' ? <Bot size={16}/> : <MessageCircleMore size={16}/>;
@@ -69,7 +69,7 @@ const Billing = () => {
         <button className="business-button business-button--ghost" style={{width:'100%',marginTop:18}} disabled={isActive||isPending||Boolean(requesting)} onClick={()=>void choosePlan(plan.tier)}>{isActive?'Faol tarif':isPending?'Admin tasdig‘i kutilmoqda':requesting===plan.tier?'Yuborilmoqda...':'Tarifni tanlash'}</button>
       </article>;
     })}</section>
-    <p style={{marginTop:16,color:'var(--text-secondary)',fontSize:12}}>Kredit — QULAY AI ichidagi foydalanish limiti. Texnik tokenlar userga ko‘rsatilmaydi. WhatsApp Meta xabar xarajatlari usage bo‘yicha alohida bo‘lishi mumkin.</p>
+    <p style={{marginTop:16,color:'var(--text-secondary)',fontSize:12}}>Kredit — QULAY AI ichidagi foydalanish limiti. Texnik tokenlar userga ko‘rsatilmaydi. WhatsApp va Instagram sotuv kanallari hozircha faol emas.</p>
   </main>;
 };
 export default Billing;

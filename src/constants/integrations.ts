@@ -63,15 +63,17 @@ export const integrationCatalog: IntegrationDefinition[] = [
   {
     id: "whatsapp",
     name: "WhatsApp",
-    description: "WhatsApp mijozlari uchun AI sotuv agenti",
+    description: "WhatsApp AI sotuv agenti — tez kunda",
     icon: MessageCircle,
     color: "green",
+    comingSoon: true,
   },
   {
     id: "instagram",
     name: "Instagram",
-    description: "DM, komment va rasm orqali AI sotuv agenti",
+    description: "Instagram AI sotuv agenti — tez kunda",
     icon: Camera,
     color: "purple",
+    comingSoon: true,
   },
 ];

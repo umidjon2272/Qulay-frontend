@@ -507,8 +507,8 @@ const Settings = () => {
             {active === "integrations" && (
               <div className="settings-card settings-card--wide">
                 <div className="settings-integrations__header">
-                  <div><h2>{t("settings.integrations", "Integratsiyalar")}</h2><p>{t("settings.integrations.subtitle", "Telegram, Google Calendar, Google Drive va WhatsApp.")}</p></div>
-                  <span className="settings-integrations__stats">{t("settings.connectedCount", "{count} ta ulangan", { count: integrations.filter((item) => item.connected).length })}</span>
+                  <div><h2>{t("settings.integrations", "Integratsiyalar")}</h2><p>{t("settings.integrations.subtitle", "Telegram, Google Calendar, Google Drive va Bito.")}</p></div>
+                  <span className="settings-integrations__stats">{t("settings.connectedCount", "{count} ta ulangan", { count: integrations.filter((item) => item.connected && !item.comingSoon).length })}</span>
                 </div>
                 <IntegrationHub columns={1} />
               </div>
