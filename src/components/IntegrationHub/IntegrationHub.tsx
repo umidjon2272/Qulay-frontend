@@ -662,7 +662,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
                 <div className="integration-modal__sales-options">
                   <label>
                     <input type="checkbox" checked={telegramSalesSettings.privateChats} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ privateChats: event.target.checked })} />
-                    <span><strong>Smart lichka</strong><small>Oddiy salom, tanishlar va eski shaxsiy chatlarga aralashmaydi. Narx, qoldiq, buyurtma yoki real mahsulot savoli chiqsa mijozni o‘zi taniydi.</small></span>
+                    <span><strong>Professional lichka</strong><small>Yoqilganda har bir kiruvchi shaxsiy xabarni mijoz suhbati sifatida davom ettiradi — qisqa gap, typo, “ha/mayli”, rasm va goloslarda ham sababsiz jim qolmaydi.</small></span>
                   </label>
                   <label>
                     <input type="checkbox" checked={telegramSalesSettings.groups} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ groups: event.target.checked })} />
@@ -680,7 +680,7 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
                   </div>}
                   <label>
                     <input type="checkbox" checked={telegramSalesSettings.voiceEnabled} disabled={telegramSalesBusy || !telegramSalesSettings.enabled} onChange={(event) => void updateTelegramSalesSetting({ voiceEnabled: event.target.checked })} />
-                    <span><strong>Golosni tushunish</strong><small>Maksimum {telegramSalesSettings.maxVoiceSeconds} soniya. Shaxsiy random golosga emas, faqat faol sotuv kontekstiga javob beradi.</small></span>
+                    <span><strong>Golosni tushunish</strong><small>Maksimum {telegramSalesSettings.maxVoiceSeconds} soniya. Professional lichkada golosni ham mijoz xabari sifatida tushunadi.</small></span>
                   </label>
                 </div>
                 <div className="integration-modal__sales-status">
@@ -700,11 +700,10 @@ const IntegrationHub = ({ limit, columns = 5, navigateOnSelect = false }: Integr
             </div>)}
             {selected.id === "whatsapp" && whatsAppStatus && (whatsAppSalesAllowed ? <div className="integration-modal__sales-agent">
               <div className="integration-modal__sales-agent-head">
-                <div><strong>AI sotuv agenti</strong><span>WhatsApp lichkada faqat sotuvga oid suhbatlarga javob beradi.</span></div>
+                <div><strong>AI sotuv agenti</strong><span>WhatsApp biznes inboxida har bir mijoz xabarini professional sotuvchi kabi davom ettiradi.</span></div>
                 <button type="button" role="switch" aria-checked={whatsAppStatus.enabled} className={`integration-modal__switch ${whatsAppStatus.enabled ? "is-on" : ""}`} disabled={whatsAppBusy} onClick={() => void updateWhatsAppSalesSetting({ enabled: !whatsAppStatus.enabled })}><span /></button>
               </div>
               <div className="integration-modal__sales-options">
-                <label><input type="checkbox" checked={whatsAppStatus.salesOnly} disabled={whatsAppBusy || !whatsAppStatus.enabled} onChange={(event) => void updateWhatsAppSalesSetting({ salesOnly: event.target.checked })} /><span><strong>Faqat sotuv</strong><small>Sotuvga aloqasiz yangi xabarlarga javob bermaydi; aktiv sotuv suhbatidagi follow-upni davom ettiradi.</small></span></label>
                 <label><input type="checkbox" checked={whatsAppStatus.voiceEnabled} disabled={whatsAppBusy || !whatsAppStatus.enabled} onChange={(event) => void updateWhatsAppSalesSetting({ voiceEnabled: event.target.checked })} /><span><strong>Golosni tushunish</strong><small>Maksimum {whatsAppStatus.maxVoiceSeconds} soniya. Javob text bo‘ladi.</small></span></label>
               </div>
               <div className="integration-modal__sales-status"><span className={whatsAppStatus.enabled ? "is-active" : ""} />{whatsAppStatus.enabled ? "Agent faol" : "Agent o‘chiq"}</div>
