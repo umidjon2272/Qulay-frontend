@@ -166,7 +166,6 @@ const Settings = () => {
     const oauthStatus = searchParams.get("status");
     const oauthReason = searchParams.get("reason");
     const oauthErrorCode = searchParams.get("errorCode");
-    const oauthMessage = searchParams.get("message");
     const oauthKey = oauthIntegration === "google" || oauthIntegration === "bito" || oauthIntegration === "instagram"
       ? `${oauthIntegration}:${oauthStatus ?? "status"}:${oauthReason ?? ""}:${oauthErrorCode ?? ""}`
       : null;
@@ -178,12 +177,12 @@ const Settings = () => {
         sync("bito", status.connected, status.serverName ?? status.serverHost ?? "Bito ERP");
         if (oauthKey && oauthHandledRef.current !== oauthKey) {
           oauthHandledRef.current = oauthKey;
-          if (oauthStatus === "connected" && status.connected) showToast(`Bito ERP ulandi. ${status.toolCount} ta MCP tool topildi.`, "success");
-          else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast("Bito ulanishi bekor qilindi", "info");
-          else if (oauthStatus === "error") showToast(oauthMessage || (oauthErrorCode ? `Bito OAuth xatosi: ${oauthErrorCode}` : "Bito ulanishini yakunlab bo'lmadi"), "error");
+          if (oauthStatus === "connected" && status.connected) showToast(t("integrations.bito.connectedToast", "Bito ERP ulandi. {count} ta MCP tool topildi.", { count: status.toolCount }), "success");
+          else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast(t("integrations.bito.cancelled", "Bito ulanishi bekor qilindi"), "info");
+          else if (oauthStatus === "error") showToast(oauthErrorCode ? t("integrations.bito.oauthErrorCode", "Bito OAuth xatosi: {code}", { code: oauthErrorCode }) : t("integrations.bito.finishError", "Bito ulanishini yakunlab bo‘lmadi"), "error");
         }
         setSearchParams({ tab: "integrations", focus: "bito" }, { replace: true });
-      }).catch((error) => showToast(error instanceof Error && error.message ? error.message : "Bito ulanish holatini tekshirib bo'lmadi", "error"));
+      }).catch(() => showToast(t("integrations.bito.statusError", "Bito ulanish holatini tekshirib bo‘lmadi"), "error"));
       return () => { activeRequest = false; };
     }
 
@@ -193,12 +192,12 @@ const Settings = () => {
         sync("instagram", status.connected, status.username ?? status.displayName ?? "Instagram");
         if (oauthKey && oauthHandledRef.current !== oauthKey) {
           oauthHandledRef.current = oauthKey;
-          if (oauthStatus === "connected" && status.connected) showToast(status.username ? `Instagram @${status.username} ulandi` : "Instagram ulandi", "success");
-          else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast("Instagram ulanishi bekor qilindi", "info");
-          else if (oauthStatus === "error") showToast(oauthMessage || (oauthErrorCode ? `Instagram OAuth xatosi: ${oauthErrorCode}` : "Instagram ulanishini yakunlab bo'lmadi"), "error");
+          if (oauthStatus === "connected" && status.connected) showToast(status.username ? t("integrations.instagram.connectedUser", "Instagram @{username} ulandi", { username: status.username }) : t("integrations.instagram.connected", "Instagram ulandi"), "success");
+          else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast(t("integrations.instagram.cancelled", "Instagram ulanishi bekor qilindi"), "info");
+          else if (oauthStatus === "error") showToast(oauthErrorCode ? t("integrations.instagram.oauthErrorCode", "Instagram OAuth xatosi: {code}", { code: oauthErrorCode }) : t("integrations.instagram.finishError", "Instagram ulanishini yakunlab bo‘lmadi"), "error");
         }
         setSearchParams({ tab: "integrations", focus: "instagram" }, { replace: true });
-      }).catch((error) => showToast(error instanceof Error && error.message ? error.message : "Instagram ulanish holatini tekshirib bo'lmadi", "error"));
+      }).catch(() => showToast(t("integrations.instagram.statusError", "Instagram ulanish holatini tekshirib bo‘lmadi"), "error"));
       return () => { activeRequest = false; };
     }
 
@@ -214,11 +213,11 @@ const Settings = () => {
           const connectedServices = [status.calendarEnabled ? "Calendar" : null, status.driveEnabled ? "Drive" : null].filter(Boolean).join(` ${t("common.and", "va")} `);
           showToast(connectedServices ? t("settings.google.connectedWith", "Google {services} ulandi", { services: connectedServices }) : t("settings.google.connectedNoScopes", "Google akkaunti ulandi, lekin kerakli ruxsatlar topilmadi"), connectedServices ? "success" : "error");
         } else if (oauthStatus === "cancelled" || oauthReason === "cancelled") showToast(t("settings.google.cancelled", "Google ulanishi bekor qilindi"), "info");
-        else if (oauthStatus === "error") showToast(oauthMessage || (oauthErrorCode ? t("settings.google.oauthErrorCode", "Google OAuth xatosi: {code}", { code: oauthErrorCode }) : t("settings.google.finishFailed", "Google ulanishini yakunlab bo'lmadi")), "error");
+        else if (oauthStatus === "error") showToast(oauthErrorCode ? t("settings.google.oauthErrorCode", "Google OAuth xatosi: {code}", { code: oauthErrorCode }) : t("settings.google.finishFailed", "Google ulanishini yakunlab bo'lmadi"), "error");
       }
 
       if (oauthIntegration === "google") setSearchParams({ tab: "integrations" }, { replace: true });
-    }).catch((error) => showToast(error instanceof Error && error.message ? error.message : t("settings.google.checkFailed", "Google ulanish holatini tekshirib bo'lmadi"), "error"));
+    }).catch(() => showToast(t("settings.google.checkFailed", "Google ulanish holatini tekshirib bo'lmadi"), "error"));
     return () => { activeRequest = false; };
   }, [active, searchParams, setSearchParams, showToast, sync, t]);
 

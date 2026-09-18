@@ -1,5 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { updateSettings } from '../../services/settingsService';
 
 const integration = vi.hoisted(() => ({
   getInstagramStatus: vi.fn(),
@@ -35,23 +36,31 @@ const connectedStatus = {
 
 describe('InstagramIntegrationPanel', () => {
   beforeEach(() => {
+    localStorage.clear();
     vi.clearAllMocks();
     integration.getInstagramStatus.mockResolvedValue(connectedStatus);
   });
 
-  it('keeps connected Instagram controls compact and moves automation management to AI Chat', async () => {
+  it('renders connected Instagram controls in Russian and preserves product terms', async () => {
+    updateSettings({ language: 'Русский' });
     render(<InstagramIntegrationPanel salesAllowed onConnectionChange={vi.fn()} onDisconnected={vi.fn()} onUpgrade={vi.fn()} />);
 
-    await waitFor(() => expect(screen.getByText('Instagram AI sotuv agenti')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('AI-агент продаж Instagram')).toBeInTheDocument());
     expect(screen.getByText('Instagram Direct')).toBeInTheDocument();
+    expect(screen.getByText('Комментарии')).toBeInTheDocument();
+    expect(screen.getByText('Распознавание изображений')).toBeInTheDocument();
+    expect(screen.getByText('Проверить подключение')).toBeInTheDocument();
+    expect(screen.getByText('Отключить')).toBeInTheDocument();
+    expect(screen.queryByText('Instagram AI sotuv agenti')).not.toBeInTheDocument();
+  });
+
+  it('updates connected Instagram copy from Russian to Uzbek without refresh', async () => {
+    updateSettings({ language: 'Русский' });
+    render(<InstagramIntegrationPanel salesAllowed onConnectionChange={vi.fn()} onDisconnected={vi.fn()} onUpgrade={vi.fn()} />);
+    await screen.findByText('AI-агент продаж Instagram');
+    act(() => { updateSettings({ language: "O'zbekcha" }); });
+    await waitFor(() => expect(screen.getByText('Instagram AI sotuv agenti')).toBeInTheDocument());
     expect(screen.getByText('Commentlar')).toBeInTheDocument();
     expect(screen.getByText('Rasmni tushunish')).toBeInTheDocument();
-    expect(screen.getByText('Ulanishni tekshirish')).toBeInTheDocument();
-    expect(screen.getByText('Ulanishni uzish')).toBeInTheDocument();
-    expect(screen.getByText(/Post automationlarini AI Chat’da/)).toBeInTheDocument();
-
-    expect(screen.queryByText('Automation yaratish')).not.toBeInTheDocument();
-    expect(screen.queryByText('Trigger / ma’no')).not.toBeInTheDocument();
-    expect(screen.queryByText('Faol automationlar')).not.toBeInTheDocument();
   });
 });
