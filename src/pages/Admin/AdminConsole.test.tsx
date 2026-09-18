@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { normalizeAdminSettings } from "../../services/api/adminApi";
-import { SettingsView } from "./AdminConsole";
+import { formatActivityDate, formatLoginDate, SettingsView } from "./AdminConsole";
 
 describe("SettingsView (admin settings crash regression)", () => {
   it("renders nothing (no throw) when data is null — the pre-load state", () => {
@@ -15,7 +15,7 @@ describe("SettingsView (admin settings crash regression)", () => {
 
     expect(() => render(<SettingsView data={staleUsageData} />)).not.toThrow();
     expect(screen.getAllByText("Ma'lumot mavjud emas.").length).toBeGreaterThan(0);
-    expect(screen.getByDisplayValue("Qulay AI")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("Qulay AI")).not.toBeInTheDocument();
   });
 
   it("renders real values for a fully-shaped, well-formed response", () => {
@@ -33,5 +33,11 @@ describe("SettingsView (admin settings crash regression)", () => {
     expect(screen.queryByText("Ma'lumot mavjud emas.")).not.toBeInTheDocument();
     expect(screen.getByText("15m")).toBeInTheDocument();
     expect(screen.getByText("Sozlangan")).toBeInTheDocument();
+  });
+
+  it("keeps never-logged-in and no-activity states distinct", () => {
+    const t = (_key: string, fallback: string) => fallback;
+    expect(formatLoginDate(t, null)).toBe("Hali kirmagan");
+    expect(formatActivityDate(t, null)).toBe("Faollik mavjud emas");
   });
 });

@@ -36,7 +36,7 @@ describe("normalizeAdminSettings", () => {
     expect(missingSections).toEqual(["platform", "security", "notifications", "integrations", "storage", "system"]);
     // The exact access that used to crash with "Cannot read properties of undefined (reading 'name')":
     expect(() => data.platform.name).not.toThrow();
-    expect(data.platform.name).toBe("Qulay AI");
+    expect(data.platform.name).toBe("");
   });
 
   it("degrades gracefully when only some sections are present", () => {
@@ -47,6 +47,13 @@ describe("normalizeAdminSettings", () => {
     expect(missingSections).toEqual(["security", "notifications", "integrations", "storage", "system"]);
     expect(data.platform.name).toBe("Qulay AI");
     expect(data.security.accessTokenExpiresIn).toBe("");
+  });
+
+  it("does not treat a partially-shaped section as real data", () => {
+    const { data, missingSections } = normalizeAdminSettings({ platform: { name: "Qulay AI" } });
+    expect(missingSections).toContain("platform");
+    expect(data.platform.name).toBe("");
+    expect(data.platform.registrationEnabled).toBe(false);
   });
 
   it.each([null, undefined, "not an object", 42, [], true])("never throws for malformed input: %p", (raw) => {

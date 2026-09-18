@@ -4,7 +4,7 @@ export type AdminRange = 7 | 30 | 90;
 export type AdminUser = {
   id: string; email: string; firstName: string; lastName: string; avatarUrl: string | null;
   role: "USER" | "ADMIN"; status: "ACTIVE" | "BLOCKED"; createdAt: string; updatedAt?: string;
-  lastActivity?: string | null; activeSession?: boolean; integrations?: { telegram: boolean; google: boolean };
+  lastLoginAt?: string | null; lastActivityAt?: string | null; lastActivity?: string | null; activeSession?: boolean; integrations?: { telegram: boolean; google: boolean };
 };
 export type AdminOverview = {
   range: number; generatedAt: string;
@@ -17,9 +17,9 @@ export type AdminUserDetail = AdminUser & {
   activity: Array<{ id: string; action: string; entityType: string; entityId: string | null; createdAt: string }>;
   usage: Record<string, number>;
   security: { activeRefreshSessions: number; passwordResetRequests: number };
-  integrations: { telegram: { connected: boolean; status: string }; google: { connected: boolean; status: string } };
+  integrations: Record<"telegram" | "google" | "bito" | "whatsapp" | "instagram", { connected: boolean; status: string; productEnabled?: boolean }>;
   lastActivity: string | null;
-  subscription?: { tier: AdminPlan['tier']; status: string; currentPeriodStart?: string | null; currentPeriodEnd: string | null; bonusCredits?: number } | null;
+  subscription?: { tier: AdminPlan['tier']; effectiveTier: AdminPlan['tier']; status: string; canUseAi: boolean; currentPeriodStart?: string | null; currentPeriodEnd: string | null; bonusCredits?: number; usage?: Record<string, { used: number; limit: number }> } | null;
   pendingSubscriptionRequest?: { id: string; tier: AdminPlan['tier']; status: 'PENDING'; requestedAt: string } | null;
 };
 export type AdminPlan = { tier: 'STARTER'|'PRO'|'BUSINESS'|'SALES_AI'; name:string; monthlyPrice:number; currency:'UZS'|'USD'; isActive:boolean; limits:{ aiCreditsPerMonth:number; toolActionsPerMonth:number; voiceMinutesPerMonth:number; files:number; storageMb:number; memories:number } };
@@ -48,7 +48,7 @@ export type AdminSettings = {
     rateLimits: { loginPerIp: RateLimitInfo; loginPerEmail: RateLimitInfo; registerPerIp: RateLimitInfo; registerPerEmail: RateLimitInfo; passwordReset: RateLimitInfo; globalPerIp: { max: number; windowSeconds: number } };
   };
   notifications: { workerStatus: "running" | "stopped"; intervalSeconds: number; batchSize: number; retryLimit: number };
-  integrations: { telegram: { configured: boolean; loginDiagnosticEnabled?: boolean }; google: { configured: boolean }; openai: { configured: boolean } };
+  integrations: { telegram: { configured: boolean; loginDiagnosticEnabled?: boolean }; google: { configured: boolean }; bito: { configured: boolean }; whatsapp: { configured: boolean; productEnabled: false }; instagram: { configured: boolean; oauthReady: boolean; productEnabled: false }; openai: { configured: boolean } };
   storage: { provider: string; maxFileSizeBytes: number; localWarning: string | null };
   system: { environment: string; version: string | null; api: { status: string }; database: { status: string; latencyMs: number } };
 };
@@ -56,19 +56,31 @@ export type AdminSettingsSection = keyof AdminSettings;
 export type NormalizedAdminSettings = { data: AdminSettings; missingSections: AdminSettingsSection[] };
 
 const emptyAdminSettings = (): AdminSettings => ({
-  platform: { name: "Qulay AI", defaultUserStatus: "ACTIVE", registrationEnabled: false },
+  platform: { name: "", defaultUserStatus: "ACTIVE", registrationEnabled: false },
   security: {
     accessTokenExpiresIn: "", refreshTokenExpiresIn: "",
     loginBruteForce: { maxFailures: 0, lockMinutes: 0 },
     rateLimits: { loginPerIp: { max: 0, windowMinutes: 0 }, loginPerEmail: { max: 0, windowMinutes: 0 }, registerPerIp: { max: 0, windowMinutes: 0 }, registerPerEmail: { max: 0, windowMinutes: 0 }, passwordReset: { max: 0, windowMinutes: 0 }, globalPerIp: { max: 0, windowSeconds: 0 } },
   },
   notifications: { workerStatus: "stopped", intervalSeconds: 0, batchSize: 0, retryLimit: 0 },
-  integrations: { telegram: { configured: false, loginDiagnosticEnabled: false }, google: { configured: false }, openai: { configured: false } },
+  integrations: { telegram: { configured: false, loginDiagnosticEnabled: false }, google: { configured: false }, bito: { configured: false }, whatsapp: { configured: false, productEnabled: false }, instagram: { configured: false, oauthReady: false, productEnabled: false }, openai: { configured: false } },
   storage: { provider: "", maxFileSizeBytes: 0, localWarning: null },
   system: { environment: "", version: null, api: { status: "unreachable" }, database: { status: "unreachable", latencyMs: 0 } },
 });
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null;
+
+const validSettingsSection = (key: AdminSettingsSection, value: unknown): value is Record<string, unknown> => {
+  if (!isRecord(value)) return false;
+  switch (key) {
+    case "platform": return typeof value.name === "string" && typeof value.defaultUserStatus === "string" && typeof value.registrationEnabled === "boolean";
+    case "security": return typeof value.accessTokenExpiresIn === "string" && typeof value.refreshTokenExpiresIn === "string" && isRecord(value.loginBruteForce) && isRecord(value.rateLimits);
+    case "notifications": return typeof value.workerStatus === "string" && typeof value.intervalSeconds === "number" && typeof value.batchSize === "number" && typeof value.retryLimit === "number";
+    case "integrations": return isRecord(value.telegram) && isRecord(value.google) && isRecord(value.openai);
+    case "storage": return typeof value.provider === "string" && typeof value.maxFileSizeBytes === "number";
+    case "system": return typeof value.environment === "string" && isRecord(value.api) && isRecord(value.database);
+  }
+};
 
 /** Never throws: a malformed or partially-shaped backend response degrades to safe per-section defaults instead of crashing the page. */
 export const normalizeAdminSettings = (raw: unknown): NormalizedAdminSettings => {
@@ -78,7 +90,7 @@ export const normalizeAdminSettings = (raw: unknown): NormalizedAdminSettings =>
   if (!isRecord(raw)) return { data, missingSections: sections };
   for (const key of sections) {
     const value = raw[key];
-    if (isRecord(value)) Object.assign(data[key], value);
+    if (validSettingsSection(key, value)) Object.assign(data[key], value);
     else missingSections.push(key);
   }
   return { data, missingSections };
@@ -95,11 +107,16 @@ export type AdminUsage = {
   trend: Array<{ date: string; count: number }>;
   tools: Array<{ tool: string | null; count: number }>;
 };
-export type AdminConnectionCounts = { connected: number; disconnected: number; error: number };
+export type AdminConnectionCounts = { connected: number; disconnected: number; error: number; degraded?: number; authorizing?: number; productEnabled?: boolean };
 export type AdminIntegrationWarning = { provider: "telegram" | "google"; userId: string; email: string; code: string; at: string | null };
 export type AdminIntegrations = {
   telegram: AdminConnectionCounts;
   google: AdminConnectionCounts;
+  googleCalendar: AdminConnectionCounts;
+  googleDrive: AdminConnectionCounts;
+  bito: AdminConnectionCounts;
+  whatsapp: AdminConnectionCounts;
+  instagram: AdminConnectionCounts;
   health?: {
     telegram?: { lastValidatedAt: string | null; recentErrors: number };
     google?: { calendarEnabledUsers: number; driveEnabledUsers: number; recentErrors: number };

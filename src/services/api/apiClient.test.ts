@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { request, requestStream, refreshAccessToken } from './apiClient';
+import { ApiError, request, requestStream, refreshAccessToken } from './apiClient';
 import { saveAuth, getTokens } from './tokenStorage';
 import type { User } from './types';
 
@@ -74,5 +74,39 @@ describe('connector credential errors', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(getTokens()).toEqual({ accessToken: 'qulay-access', refreshToken: 'qulay-refresh' });
+  });
+});
+
+describe('admin request storm protection', () => {
+  beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('coalesces concurrent identical GET requests into one network call', async () => {
+    saveAuth({ accessToken: 'access', refreshToken: 'refresh' }, { id: 'admin-1' } as User);
+    let finish!: (response: Response) => void;
+    const fetchMock = vi.fn().mockImplementation(() => new Promise<Response>(resolve => { finish = resolve; }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const first = request<{ ok: boolean }>('/admin/users?page=1');
+    const second = request<{ ok: boolean }>('/admin/users?page=1');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    finish(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+
+    await expect(Promise.all([first, second])).resolves.toEqual([{ ok: true }, { ok: true }]);
+  });
+
+  it('honors Retry-After and blocks a local retry storm after a 429', async () => {
+    saveAuth({ accessToken: 'access', refreshToken: 'refresh' }, { id: 'admin-2' } as User);
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: 'limited' }), {
+      status: 429,
+      headers: { 'Retry-After': '7' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(request('/health/platform?cooldown-case=1')).rejects.toMatchObject({ status: 429, retryAfterSeconds: 7 });
+    const retry = request('/health/platform?cooldown-case=1');
+    await expect(retry).rejects.toBeInstanceOf(ApiError);
+    await expect(retry).rejects.toMatchObject({ status: 429 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

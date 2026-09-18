@@ -12,13 +12,15 @@ export class ApiError extends Error {
   status: number;
   details: unknown;
   code?: string;
+  retryAfterSeconds?: number;
 
-  constructor(status: number, message: string, details?: unknown, code?: string) {
+  constructor(status: number, message: string, details?: unknown, code?: string, retryAfterSeconds?: number) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.details = details;
     this.code = code;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
 }
 
@@ -123,7 +125,14 @@ const rawRequest = async <T>(path: string, options: RequestInit = {}, token?: st
       const message = typeof body === "object" && body !== null && "message" in body
         ? String((body as { message: unknown }).message)
         : "API request failed";
-      const error = new ApiError(response.status, message, body, errorCodeOf(body));
+      const retryAfter = response.headers.get('Retry-After');
+      const retryAfterCandidate = retryAfter === null
+        ? undefined
+        : /^\d+$/u.test(retryAfter.trim())
+          ? Number.parseInt(retryAfter, 10)
+          : Math.max(0, Math.ceil((Date.parse(retryAfter) - Date.now()) / 1000));
+      const parsedSeconds = retryAfterCandidate !== undefined && Number.isFinite(retryAfterCandidate) ? retryAfterCandidate : undefined;
+      const error = new ApiError(response.status, message, body, errorCodeOf(body), parsedSeconds);
       error.message = getApiErrorMessage(error);
       throw error;
     }
@@ -160,7 +169,7 @@ export const refreshAccessToken = async (): Promise<AuthTokens> => {
   return refreshPromise;
 };
 
-export const request = async <T>(path: string, options: RequestInit = {}, retry = true): Promise<T> => {
+const performRequest = async <T>(path: string, options: RequestInit = {}, retry = true): Promise<T> => {
   const assertOwner = ownerGuard();
   let accessToken = getTokens()?.accessToken;
 
@@ -212,6 +221,39 @@ export const request = async <T>(path: string, options: RequestInit = {}, retry 
       throw refreshError;
     }
   }
+};
+
+const inFlightGets = new Map<string, Promise<unknown>>();
+const rateLimitCooldowns = new Map<string, number>();
+
+const requestKey = (path: string): string => `${getStoredUser()?.id ?? 'anonymous'}:${path}`;
+
+export const request = <T>(path: string, options: RequestInit = {}, retry = true): Promise<T> => {
+  const method = (options.method ?? 'GET').toUpperCase();
+  const canCoalesce = method === 'GET' && options.body === undefined && options.signal === undefined;
+  if (!canCoalesce) return performRequest<T>(path, options, retry);
+
+  const key = requestKey(path);
+  const cooldownUntil = rateLimitCooldowns.get(key) ?? 0;
+  if (cooldownUntil > Date.now()) {
+    return Promise.reject(new ApiError(429, getApiErrorMessage(new ApiError(429, 'Rate limited')), undefined, 'RATE_LIMITED', Math.max(1, Math.ceil((cooldownUntil - Date.now()) / 1000))));
+  }
+  if (cooldownUntil) rateLimitCooldowns.delete(key);
+
+  const existing = inFlightGets.get(key);
+  if (existing) return existing as Promise<T>;
+
+  const operation = performRequest<T>(path, options, retry).catch((error: unknown) => {
+    if (error instanceof ApiError && error.status === 429) {
+      const retryAfterSeconds = Math.max(1, error.retryAfterSeconds ?? 60);
+      error.retryAfterSeconds = retryAfterSeconds;
+      rateLimitCooldowns.set(key, Date.now() + retryAfterSeconds * 1000);
+    }
+    throw error;
+  });
+  inFlightGets.set(key, operation);
+  void operation.finally(() => { if (inFlightGets.get(key) === operation) inFlightGets.delete(key); }).catch(() => undefined);
+  return operation;
 };
 
 /** Authenticated fetch that leaves the response body unbuffered for NDJSON/SSE consumers. */
